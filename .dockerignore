@@ -1,0 +1,7 @@
+.git
+.env
+Dockerfile
+README.md
+ARCHITECTURE.md
+EXAMPLE_FLOW.md
+**/*_test.go
