@@ -46,7 +46,7 @@ func run() error {
 	}
 	defer sqlDB.Close()
 
-	redisClient, err := database.NewRedisConnection(ctx, cfg)
+	redisClient, err := config.NewRedisConnection(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("connect redis: %w", err)
 	}
