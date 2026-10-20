@@ -24,6 +24,10 @@ help:
 	@echo "  redis-backup   - Backup Redis data"
 	@echo "  redis-restore  - Restore Redis data (FILE=path)"
 
+up-build:
+	docker compose down
+	docker compose up -d --build
+
 build:
 	docker compose build
 
@@ -46,10 +50,10 @@ clean:
 	docker compose down -v
 
 migrate-up:
-	docker compose exec -T postgres psql -U $(shell grep POSTGRES_USER .env | cut -d '=' -f2) -d $(shell grep POSTGRES_DB .env | cut -d '=' -f2) < migrations/000001_init.up.sql
+	docker compose exec -it postgres psql -U postgres $(shell grep POSTGRES_USER .env | cut -d '=' -f2) -d $(shell grep POSTGRES_DB .env | cut -d '=' -f2) < migrations/000001_init.up.sql
 
 migrate-down:
-	docker compose exec -T postgres psql -U $(shell grep POSTGRES_USER .env | cut -d '=' -f2) -d $(shell grep POSTGRES_DB .env | cut -d '=' -f2) < migrations/000001_init.down.sql
+	docker compose exec -it postgres psql -U postgres $(shell grep POSTGRES_USER .env | cut -d '=' -f2) -d $(shell grep POSTGRES_DB .env | cut -d '=' -f2) < migrations/000001_init.down.sql
 
 migrate-create:
 	@test -n "$(NAME)" || (echo "NAME required. Usage: make migrate-create NAME=add_users"; exit 1)

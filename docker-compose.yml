@@ -19,39 +19,39 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  postgres:
-    image: postgres:17-alpine
-    container_name: limen-postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-limen}
-      POSTGRES_USER: ${POSTGRES_USER:-limen}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
+  # postgres:
+  #   image: postgres:15.15-trixie
+  #   container_name: limen-postgres
+  #   environment:
+  #     POSTGRES_DB: ${POSTGRES_DB:-limen}
+  #     POSTGRES_USER: ${POSTGRES_USER:-limen}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+  #   ports:
+  #     - "${POSTGRES_PORT:-5432}:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - ./migrations:/docker-entrypoint-initdb.d:ro
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 10
+  #   restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    container_name: limen-redis
-    command: redis-server --appendonly yes
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    restart: unless-stopped
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: limen-redis
+  #   command: redis-server --appendonly yes
+  #   ports:
+  #     - "${REDIS_PORT:-6379}:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 10
+  #   restart: unless-stopped
 
 volumes:
   postgres_data:

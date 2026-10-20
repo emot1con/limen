@@ -1,25 +1,88 @@
 package main
 
 import (
-	"log"
+	"context"
+	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"limen/internal/adapter/http/handler"
-	"limen/internal/adapter/persistence/postgres"
-	schoolusecase "limen/internal/usecase/school"
-	userusecase "limen/internal/usecase/user"
+	"limen/internal/platform/config"
+	"limen/internal/platform/database"
 )
 
 func main() {
-	userRepository := postgres.NewUserRepository()
-	schoolRepository := postgres.NewSchoolRepository()
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
 
-	userHandler := handler.NewUserHandler(userusecase.NewCreateUseCase(userRepository))
-	schoolHandler := handler.NewSchoolHandler(schoolusecase.NewCreateUseCase(schoolRepository))
+func run() error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	logger, err := config.NewLogger(cfg)
+	if err != nil {
+		return fmt.Errorf("setup logger: %w", err)
+	}
+
+	postgresDB, err := database.NewPostgresConnection(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("connect postgres: %w", err)
+	}
+	defer postgresDB.Close()
+
+	redisClient, err := database.NewRedisConnection(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("connect redis: %w", err)
+	}
+	defer redisClient.Close()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /users", userHandler.Create)
-	mux.HandleFunc("POST /schools", schoolHandler.Create)
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
 
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", cfg.AppPort),
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		logger.WithField("address", server.Addr).Info("HTTP server started")
+		errCh <- server.ListenAndServe()
+	}()
+
+	select {
+	case err := <-errCh:
+		if !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("run HTTP server: %w", err)
+		}
+		return nil
+	case <-ctx.Done():
+		logger.Info("shutdown signal received")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		return fmt.Errorf("shutdown HTTP server: %w", err)
+	}
+	logger.Info("HTTP server stopped")
+	return nil
 }

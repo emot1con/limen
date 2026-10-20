@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	schoolusecase "limen/internal/usecase/school"
+
+	"github.com/gin-gonic/gin"
 )
 
 type SchoolHandler struct {
@@ -14,6 +16,20 @@ type SchoolHandler struct {
 func NewSchoolHandler(createSchool schoolusecase.CreateUseCase) SchoolHandler {
 	return SchoolHandler{createSchool: createSchool}
 }
+
+func (u *SchoolHandler) RegisterRoutes(r *gin.Engine) {
+	// Protected routes (require auth)
+	paymentRoutes := r.Group("/payment")
+	paymentRoutes.Use(middleware.ProtectedEndpoint())
+	paymentRoutes.Use(middleware.RateLimiterMiddleware(middleware.DefaultRateLimiterConfig()))
+
+	paymentRoutes.GET("/order/:order_id", u.GetPaymentByOrderId)
+	paymentRoutes.POST("/initiate", u.InitiatePayment)
+
+	// Webhook route (no auth - called by Midtrans)
+	r.POST("/payment/webhook/midtrans", u.HandleMidtransWebhook)
+}
+
 
 func (h SchoolHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var input schoolusecase.CreateInput
