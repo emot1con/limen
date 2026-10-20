@@ -2,29 +2,40 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"limen/internal/platform/config"
 	"time"
 
-	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
+
+	"limen/internal/platform/config"
 )
 
-func NewPostgresConnection(ctx context.Context, cfg *config.Config) (*sql.DB, error) {
+func NewPostgresConnection(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 	var lastErr error
 	backoff := cfg.PostgresInitialBackoff
 
+	gormCfg := &gorm.Config{Logger: gormlogger.Default.LogMode(gormlogger.Silent)}
+
 	for attempt := 1; attempt <= cfg.PostgresRetryAttempts; attempt++ {
-		db, err := sql.Open("postgres", cfg.PostgresDSN())
+		db, err := gorm.Open(postgres.Open(cfg.PostgresDSN()), gormCfg)
 		if err == nil {
-			db.SetMaxOpenConns(25)
-			db.SetMaxIdleConns(5)
-			db.SetConnMaxLifetime(5 * time.Minute)
-			err = db.PingContext(ctx)
+			sqlDB, dbErr := db.DB()
+			if dbErr == nil {
+				sqlDB.SetMaxOpenConns(25)
+				sqlDB.SetMaxIdleConns(5)
+				sqlDB.SetConnMaxLifetime(5 * time.Minute)
+				err = sqlDB.PingContext(ctx)
+			} else {
+				err = dbErr
+			}
 			if err == nil {
 				return db, nil
 			}
-			_ = db.Close()
+			if sqlDB, closeErr := db.DB(); closeErr == nil {
+				_ = sqlDB.Close()
+			}
 		}
 
 		lastErr = err

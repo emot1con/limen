@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"limen/internal/platform/config"
 	"limen/internal/platform/database"
 )
@@ -39,7 +40,11 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("connect postgres: %w", err)
 	}
-	defer postgresDB.Close()
+	sqlDB, err := postgresDB.DB()
+	if err != nil {
+		return fmt.Errorf("get postgres connection pool: %w", err)
+	}
+	defer sqlDB.Close()
 
 	redisClient, err := database.NewRedisConnection(ctx, cfg)
 	if err != nil {
@@ -47,15 +52,18 @@ func run() error {
 	}
 	defer redisClient.Close()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	if cfg.AppEnv == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.AppPort),
-		Handler:           mux,
+		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
