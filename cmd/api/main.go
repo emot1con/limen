@@ -58,7 +58,24 @@ func run() error {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+
+		response := gin.H{}
+
+		if err := sqlDB.PingContext(ctx); err != nil {
+			response["postgres"] = "error"
+		} else {
+			response["postgres"] = "ok"
+		}
+
+		if err := redisClient.Ping(ctx).Err(); err != nil {
+			response["redis"] = "error"
+		} else {
+			response["redis"] = "ok"
+		}
+
+		c.JSON(http.StatusOK, response)
 	})
 
 	server := &http.Server{

@@ -28,6 +28,10 @@ up-build:
 	docker compose down
 	docker compose up -d --build
 
+app: 
+	docker compose down app
+	docker compose up -d --build app
+
 build:
 	docker compose build
 
