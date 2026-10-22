@@ -19,6 +19,7 @@ type notificationModel struct {
 	Payload   json.RawMessage `gorm:"column:payload;type:jsonb"`
 	ReadAt    *time.Time      `gorm:"column:read_at"`
 	CreatedAt time.Time       `gorm:"column:created_at"`
+	DeletedAt gorm.DeletedAt  `gorm:"column:deleted_at;index"`
 }
 
 func (notificationModel) TableName() string {

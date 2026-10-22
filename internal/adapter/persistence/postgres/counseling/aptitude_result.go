@@ -12,11 +12,12 @@ import (
 )
 
 type aptitudeResultModel struct {
-	ID            string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	StudentUserID string    `gorm:"column:student_user_id"`
-	Result        string    `gorm:"column:result"`
-	AssessedAt    time.Time `gorm:"column:assessed_at"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	StudentUserID string         `gorm:"column:student_user_id"`
+	Result        string         `gorm:"column:result"`
+	AssessedAt    time.Time      `gorm:"column:assessed_at"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (aptitudeResultModel) TableName() string {

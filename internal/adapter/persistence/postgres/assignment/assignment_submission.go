@@ -12,16 +12,17 @@ import (
 )
 
 type assignmentSubmissionModel struct {
-	ID            string     `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	AssignmentID  string     `gorm:"column:assignment_id"`
-	StudentUserID string     `gorm:"column:student_user_id"`
-	SubmittedAt   *time.Time `gorm:"column:submitted_at"`
-	Score         *float64   `gorm:"column:score"`
-	Note          *string    `gorm:"column:note"`
-	GradedBy      *string    `gorm:"column:graded_by"`
-	GradedAt      *time.Time `gorm:"column:graded_at"`
-	CreatedAt     time.Time  `gorm:"column:created_at"`
-	UpdatedAt     time.Time  `gorm:"column:updated_at"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	AssignmentID  string         `gorm:"column:assignment_id"`
+	StudentUserID string         `gorm:"column:student_user_id"`
+	SubmittedAt   *time.Time     `gorm:"column:submitted_at"`
+	Score         *float64       `gorm:"column:score"`
+	Note          *string        `gorm:"column:note"`
+	GradedBy      *string        `gorm:"column:graded_by"`
+	GradedAt      *time.Time     `gorm:"column:graded_at"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (assignmentSubmissionModel) TableName() string {

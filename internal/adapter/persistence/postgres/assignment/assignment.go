@@ -12,15 +12,16 @@ import (
 )
 
 type assignmentModel struct {
-	ID            string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	ClassID       string    `gorm:"column:class_id"`
-	SubjectID     string    `gorm:"column:subject_id"`
-	TeacherUserID string    `gorm:"column:teacher_user_id"`
-	Title         string    `gorm:"column:title"`
-	Description   *string   `gorm:"column:description"`
-	DueAt         time.Time `gorm:"column:due_at"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
-	UpdatedAt     time.Time `gorm:"column:updated_at"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	ClassID       string         `gorm:"column:class_id"`
+	SubjectID     string         `gorm:"column:subject_id"`
+	TeacherUserID string         `gorm:"column:teacher_user_id"`
+	Title         string         `gorm:"column:title"`
+	Description   *string        `gorm:"column:description"`
+	DueAt         time.Time      `gorm:"column:due_at"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (assignmentModel) TableName() string {

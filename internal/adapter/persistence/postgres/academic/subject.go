@@ -11,11 +11,12 @@ import (
 )
 
 type subjectModel struct {
-	ID        string `gorm:"column:id;primaryKey"`
-	Code      string `gorm:"column:code"`
-	Name      string `gorm:"column:name"`
-	CreatedAt string `gorm:"column:created_at"`
-	UpdatedAt string `gorm:"column:updated_at"`
+	ID        string         `gorm:"column:id;primaryKey"`
+	Code      string         `gorm:"column:code"`
+	Name      string         `gorm:"column:name"`
+	CreatedAt string         `gorm:"column:created_at"`
+	UpdatedAt string         `gorm:"column:updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (subjectModel) TableName() string {

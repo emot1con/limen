@@ -11,12 +11,13 @@ import (
 )
 
 type classModel struct {
-	ID                    string  `gorm:"column:id;primaryKey"`
-	Name                  string  `gorm:"column:name"`
-	Level                 *string `gorm:"column:level"`
-	HomeroomTeacherUserID *string `gorm:"column:homeroom_teacher_user_id"`
-	CreatedAt             string  `gorm:"column:created_at"`
-	UpdatedAt             string  `gorm:"column:updated_at"`
+	ID                    string         `gorm:"column:id;primaryKey"`
+	Name                  string         `gorm:"column:name"`
+	Level                 *string        `gorm:"column:level"`
+	HomeroomTeacherUserID *string        `gorm:"column:homeroom_teacher_user_id"`
+	CreatedAt             string         `gorm:"column:created_at"`
+	UpdatedAt             string         `gorm:"column:updated_at"`
+	DeletedAt             gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (classModel) TableName() string {

@@ -10,11 +10,12 @@ import (
 )
 
 type counselingFollowupModel struct {
-	ID        string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	NoteID    string    `gorm:"column:note_id"`
-	Note      string    `gorm:"column:note"`
-	CreatedBy string    `gorm:"column:created_by"`
-	CreatedAt time.Time `gorm:"column:created_at"`
+	ID        string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	NoteID    string         `gorm:"column:note_id"`
+	Note      string         `gorm:"column:note"`
+	CreatedBy string         `gorm:"column:created_by"`
+	CreatedAt time.Time      `gorm:"column:created_at"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (counselingFollowupModel) TableName() string {

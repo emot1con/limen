@@ -13,13 +13,14 @@ import (
 )
 
 type assessmentScoreModel struct {
-	ID            string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	AssessmentID  string    `gorm:"column:assessment_id"`
-	StudentUserID string    `gorm:"column:student_user_id"`
-	Score         float64   `gorm:"column:score"`
-	UpdatedBy     *string   `gorm:"column:updated_by"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
-	UpdatedAt     time.Time `gorm:"column:updated_at"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	AssessmentID  string         `gorm:"column:assessment_id"`
+	StudentUserID string         `gorm:"column:student_user_id"`
+	Score         float64        `gorm:"column:score"`
+	UpdatedBy     *string        `gorm:"column:updated_by"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (assessmentScoreModel) TableName() string {

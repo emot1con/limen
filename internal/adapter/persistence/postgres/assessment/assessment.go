@@ -12,16 +12,17 @@ import (
 )
 
 type assessmentModel struct {
-	ID            string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	ClassID       string    `gorm:"column:class_id"`
-	SubjectID     string    `gorm:"column:subject_id"`
-	TeacherUserID string    `gorm:"column:teacher_user_id"`
-	Kind          string    `gorm:"column:kind"`
-	KKM           *float64  `gorm:"column:kkm"`
-	IsRemedial    bool      `gorm:"column:is_remedial"`
-	Period        string    `gorm:"column:period"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
-	UpdatedAt     time.Time `gorm:"column:updated_at"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	ClassID       string         `gorm:"column:class_id"`
+	SubjectID     string         `gorm:"column:subject_id"`
+	TeacherUserID string         `gorm:"column:teacher_user_id"`
+	Kind          string         `gorm:"column:kind"`
+	KKM           *float64       `gorm:"column:kkm"`
+	IsRemedial    bool           `gorm:"column:is_remedial"`
+	Period        string         `gorm:"column:period"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (assessmentModel) TableName() string {

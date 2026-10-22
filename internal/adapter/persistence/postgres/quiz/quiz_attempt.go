@@ -12,15 +12,16 @@ import (
 )
 
 type quizAttemptModel struct {
-	ID            string     `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	QuizID        string     `gorm:"column:quiz_id"`
-	StudentUserID string     `gorm:"column:student_user_id"`
-	StartedAt     time.Time  `gorm:"column:started_at"`
-	SubmittedAt   *time.Time `gorm:"column:submitted_at"`
-	Status        string     `gorm:"column:status"`
-	Score         *float64   `gorm:"column:score"`
-	CreatedAt     time.Time  `gorm:"column:created_at"`
-	UpdatedAt     time.Time  `gorm:"column:updated_at"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	QuizID        string         `gorm:"column:quiz_id"`
+	StudentUserID string         `gorm:"column:student_user_id"`
+	StartedAt     time.Time      `gorm:"column:started_at"`
+	SubmittedAt   *time.Time     `gorm:"column:submitted_at"`
+	Status        string         `gorm:"column:status"`
+	Score         *float64       `gorm:"column:score"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (quizAttemptModel) TableName() string {

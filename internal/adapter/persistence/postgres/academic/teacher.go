@@ -11,10 +11,11 @@ import (
 )
 
 type teacherModel struct {
-	UserID    string  `gorm:"column:user_id;primaryKey"`
-	NIP       *string `gorm:"column:nip"`
-	CreatedAt string  `gorm:"column:created_at"`
-	UpdatedAt string  `gorm:"column:updated_at"`
+	UserID    string         `gorm:"column:user_id;primaryKey"`
+	NIP       *string        `gorm:"column:nip"`
+	CreatedAt string         `gorm:"column:created_at"`
+	UpdatedAt string         `gorm:"column:updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (teacherModel) TableName() string {

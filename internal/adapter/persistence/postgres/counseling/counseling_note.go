@@ -12,12 +12,13 @@ import (
 )
 
 type counselingNoteModel struct {
-	ID            string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	StudentUserID string    `gorm:"column:student_user_id"`
-	AuthorID      string    `gorm:"column:author_id"`
-	Note          string    `gorm:"column:note"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
-	UpdatedAt     time.Time `gorm:"column:updated_at"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	StudentUserID string         `gorm:"column:student_user_id"`
+	AuthorID      string         `gorm:"column:author_id"`
+	Note          string         `gorm:"column:note"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (counselingNoteModel) TableName() string {

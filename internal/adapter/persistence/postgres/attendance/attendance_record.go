@@ -28,6 +28,7 @@ type attendanceRecordModel struct {
 	UpdatedBy        *string                           `gorm:"column:updated_by"`
 	CreatedAt        time.Time                         `gorm:"column:created_at"`
 	UpdatedAt        time.Time                         `gorm:"column:updated_at"`
+	DeletedAt        gorm.DeletedAt                    `gorm:"column:deleted_at;index"`
 }
 
 func (attendanceRecordModel) TableName() string {

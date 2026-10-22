@@ -13,17 +13,18 @@ import (
 )
 
 type quizAnswerModel struct {
-	ID         string     `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	AttemptID  string     `gorm:"column:attempt_id"`
-	QuestionID string     `gorm:"column:question_id"`
-	Answer     []byte     `gorm:"column:answer;type:jsonb"`
-	IsCorrect  *bool      `gorm:"column:is_correct"`
-	Score      *float64   `gorm:"column:score"`
-	Feedback   *string    `gorm:"column:feedback"`
-	GradedBy   *string    `gorm:"column:graded_by"`
-	GradedAt   *time.Time `gorm:"column:graded_at"`
-	CreatedAt  time.Time  `gorm:"column:created_at"`
-	UpdatedAt  time.Time  `gorm:"column:updated_at"`
+	ID         string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	AttemptID  string         `gorm:"column:attempt_id"`
+	QuestionID string         `gorm:"column:question_id"`
+	Answer     []byte         `gorm:"column:answer;type:jsonb"`
+	IsCorrect  *bool          `gorm:"column:is_correct"`
+	Score      *float64       `gorm:"column:score"`
+	Feedback   *string        `gorm:"column:feedback"`
+	GradedBy   *string        `gorm:"column:graded_by"`
+	GradedAt   *time.Time     `gorm:"column:graded_at"`
+	CreatedAt  time.Time      `gorm:"column:created_at"`
+	UpdatedAt  time.Time      `gorm:"column:updated_at"`
+	DeletedAt  gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (quizAnswerModel) TableName() string {
