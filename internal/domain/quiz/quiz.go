@@ -93,7 +93,7 @@ type QuizAnswer struct {
 }
 
 type QuestionBankRepository interface {
-	Create(context.Context, QuestionBank) error
+	Create(context.Context, QuestionBank) (string, error)
 	FindByID(context.Context, string) (QuestionBank, error)
 	ListByOwnerID(context.Context, string) ([]QuestionBank, error)
 	Update(context.Context, QuestionBank) error
@@ -101,7 +101,7 @@ type QuestionBankRepository interface {
 }
 
 type QuestionRepository interface {
-	Create(context.Context, Question) error
+	Create(context.Context, Question) (string, error)
 	FindByID(context.Context, string) (Question, error)
 	ListByBankID(context.Context, string) ([]Question, error)
 	Update(context.Context, Question) error
@@ -109,7 +109,7 @@ type QuestionRepository interface {
 }
 
 type QuizRepository interface {
-	Create(context.Context, Quiz) error
+	Create(context.Context, Quiz) (string, error)
 	FindByID(context.Context, string) (Quiz, error)
 	ListByOwnerID(context.Context, string) ([]Quiz, error)
 	Update(context.Context, Quiz) error
@@ -123,7 +123,7 @@ type QuizQuestionRepository interface {
 }
 
 type QuizAttemptRepository interface {
-	Create(context.Context, QuizAttempt) error
+	Create(context.Context, QuizAttempt) (string, error)
 	FindByID(context.Context, string) (QuizAttempt, error)
 	ListByQuizAndStudent(context.Context, string, string) ([]QuizAttempt, error)
 	Update(context.Context, QuizAttempt) error

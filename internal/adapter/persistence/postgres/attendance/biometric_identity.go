@@ -33,7 +33,7 @@ func NewBiometricIdentityRepository(db *gorm.DB) *BiometricIdentityRepository {
 	return &BiometricIdentityRepository{db: db}
 }
 
-func (r *BiometricIdentityRepository) Create(ctx context.Context, identity attendancedomain.BiometricIdentity) error {
+func (r *BiometricIdentityRepository) Create(ctx context.Context, identity attendancedomain.BiometricIdentity) (string, error) {
 	model := biometricIdentityModel{
 		ID:            identity.ID,
 		Identifier:    identity.Identifier,
@@ -41,7 +41,10 @@ func (r *BiometricIdentityRepository) Create(ctx context.Context, identity atten
 		SubjectType:   identity.SubjectType,
 		IsActive:      identity.IsActive,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *BiometricIdentityRepository) FindByIdentifier(ctx context.Context, identifier string) (attendancedomain.BiometricIdentity, error) {

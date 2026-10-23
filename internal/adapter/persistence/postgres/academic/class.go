@@ -32,14 +32,17 @@ func NewClassRepository(db *gorm.DB) *ClassRepository {
 	return &ClassRepository{db: db}
 }
 
-func (r *ClassRepository) Create(ctx context.Context, class academicdomain.Class) error {
+func (r *ClassRepository) Create(ctx context.Context, class academicdomain.Class) (string, error) {
 	model := classModel{
 		ID:                    class.ID,
 		Name:                  class.Name,
 		Level:                 class.Level,
 		HomeroomTeacherUserID: class.HomeroomTeacherUserID,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *ClassRepository) FindByID(ctx context.Context, id string) (academicdomain.Class, error) {

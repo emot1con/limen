@@ -34,7 +34,7 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 	return &NotificationRepository{db: db}
 }
 
-func (r *NotificationRepository) Create(ctx context.Context, notification auditdomain.Notification) error {
+func (r *NotificationRepository) Create(ctx context.Context, notification auditdomain.Notification) (string, error) {
 	model := notificationModel{
 		ID:      notification.ID,
 		UserID:  notification.UserID,
@@ -42,7 +42,10 @@ func (r *NotificationRepository) Create(ctx context.Context, notification auditd
 		Payload: notification.Payload,
 		ReadAt:  notification.ReadAt,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *NotificationRepository) FindByID(ctx context.Context, id string) (auditdomain.Notification, error) {

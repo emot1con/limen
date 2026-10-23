@@ -32,7 +32,8 @@ func (uc CreateUseCase) Execute(ctx context.Context, input CreateInput) (userdom
 		Email: input.Email,
 	}
 
-	if err := uc.repository.Create(ctx, user); err != nil {
+	_, err := uc.repository.Create(ctx, user)
+	if err != nil {
 		return userdomain.User{}, err
 	}
 

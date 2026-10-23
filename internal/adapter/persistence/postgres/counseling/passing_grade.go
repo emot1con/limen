@@ -33,7 +33,7 @@ func NewPassingGradeRepository(db *gorm.DB) *PassingGradeRepository {
 	return &PassingGradeRepository{db: db}
 }
 
-func (r *PassingGradeRepository) Create(ctx context.Context, grade counselingdomain.PassingGrade) error {
+func (r *PassingGradeRepository) Create(ctx context.Context, grade counselingdomain.PassingGrade) (string, error) {
 	model := passingGradeModel{
 		ID:         grade.ID,
 		University: grade.University,
@@ -41,7 +41,10 @@ func (r *PassingGradeRepository) Create(ctx context.Context, grade counselingdom
 		Score:      grade.Score,
 		Year:       grade.Year,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *PassingGradeRepository) FindByID(ctx context.Context, id string) (counselingdomain.PassingGrade, error) {

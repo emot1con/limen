@@ -31,7 +31,7 @@ type AssignmentSubmission struct {
 }
 
 type AssignmentRepository interface {
-	Create(context.Context, Assignment) error
+	Create(context.Context, Assignment) (string, error)
 	FindByID(context.Context, string) (Assignment, error)
 	Update(context.Context, Assignment) error
 	ListByClassSubject(context.Context, string, string) ([]Assignment, error)
@@ -39,7 +39,7 @@ type AssignmentRepository interface {
 }
 
 type AssignmentSubmissionRepository interface {
-	Create(context.Context, AssignmentSubmission) error
+	Create(context.Context, AssignmentSubmission) (string, error)
 	FindByID(context.Context, string) (AssignmentSubmission, error)
 	FindByAssignmentAndStudent(context.Context, string, string) (AssignmentSubmission, error)
 	Update(context.Context, AssignmentSubmission) error

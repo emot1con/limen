@@ -27,8 +27,12 @@ func NewRoleRepository(db *gorm.DB) *RoleRepository {
 	return &RoleRepository{db: db}
 }
 
-func (r *RoleRepository) Create(ctx context.Context, role userdomain.Role) error {
-	return r.db.WithContext(ctx).Create(&roleModel{Code: role.Code, Name: role.Name}).Error
+func (r *RoleRepository) Create(ctx context.Context, role userdomain.Role) (string, error) {
+	model := roleModel{Code: role.Code, Name: role.Name}
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.Code, nil
 }
 
 func (r *RoleRepository) FindByCode(ctx context.Context, code string) (userdomain.Role, error) {

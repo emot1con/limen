@@ -34,7 +34,7 @@ func NewQuestionRepository(db *gorm.DB) *QuestionRepository {
 	return &QuestionRepository{db: db}
 }
 
-func (r *QuestionRepository) Create(ctx context.Context, question quizdomain.Question) error {
+func (r *QuestionRepository) Create(ctx context.Context, question quizdomain.Question) (string, error) {
 	model := questionModel{
 		ID:        question.ID,
 		BankID:    question.BankID,
@@ -43,7 +43,10 @@ func (r *QuestionRepository) Create(ctx context.Context, question quizdomain.Que
 		Options:   question.Options,
 		AnswerKey: question.AnswerKey,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *QuestionRepository) FindByID(ctx context.Context, id string) (quizdomain.Question, error) {

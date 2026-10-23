@@ -32,14 +32,17 @@ func NewQuestionBankRepository(db *gorm.DB) *QuestionBankRepository {
 	return &QuestionBankRepository{db: db}
 }
 
-func (r *QuestionBankRepository) Create(ctx context.Context, bank quizdomain.QuestionBank) error {
+func (r *QuestionBankRepository) Create(ctx context.Context, bank quizdomain.QuestionBank) (string, error) {
 	model := questionBankModel{
 		ID:        bank.ID,
 		SubjectID: bank.SubjectID,
 		OwnerID:   bank.OwnerID,
 		Scope:     string(bank.Scope),
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *QuestionBankRepository) FindByID(ctx context.Context, id string) (quizdomain.QuestionBank, error) {

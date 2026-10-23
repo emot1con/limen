@@ -30,13 +30,16 @@ func NewTargetMajorRepository(db *gorm.DB) *TargetMajorRepository {
 	return &TargetMajorRepository{db: db}
 }
 
-func (r *TargetMajorRepository) Create(ctx context.Context, major counselingdomain.TargetMajor) error {
+func (r *TargetMajorRepository) Create(ctx context.Context, major counselingdomain.TargetMajor) (string, error) {
 	model := targetMajorModel{
 		ID:            major.ID,
 		StudentUserID: major.StudentUserID,
 		Major:         major.Major,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *TargetMajorRepository) FindByID(ctx context.Context, id string) (counselingdomain.TargetMajor, error) {

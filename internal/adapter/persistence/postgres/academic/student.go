@@ -31,13 +31,16 @@ func NewStudentRepository(db *gorm.DB) *StudentRepository {
 	return &StudentRepository{db: db}
 }
 
-func (r *StudentRepository) Create(ctx context.Context, student academicdomain.Student) error {
+func (r *StudentRepository) Create(ctx context.Context, student academicdomain.Student) (string, error) {
 	model := studentModel{
 		UserID:  student.UserID,
 		NIS:     student.NIS,
 		ClassID: student.ClassID,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.UserID, nil
 }
 
 func (r *StudentRepository) FindByUserID(ctx context.Context, userID string) (academicdomain.Student, error) {

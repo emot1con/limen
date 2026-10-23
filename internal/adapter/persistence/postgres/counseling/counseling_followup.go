@@ -30,14 +30,17 @@ func NewCounselingFollowupRepository(db *gorm.DB) *CounselingFollowupRepository 
 	return &CounselingFollowupRepository{db: db}
 }
 
-func (r *CounselingFollowupRepository) Create(ctx context.Context, followup counselingdomain.CounselingFollowup) error {
+func (r *CounselingFollowupRepository) Create(ctx context.Context, followup counselingdomain.CounselingFollowup) (string, error) {
 	model := counselingFollowupModel{
 		ID:        followup.ID,
 		NoteID:    followup.NoteID,
 		Note:      followup.Note,
 		CreatedBy: followup.CreatedBy,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *CounselingFollowupRepository) ListByNoteID(ctx context.Context, noteID string) ([]counselingdomain.CounselingFollowup, error) {

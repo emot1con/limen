@@ -29,14 +29,14 @@ type AssessmentScore struct {
 }
 
 type AssessmentRepository interface {
-	Create(context.Context, Assessment) error
+	Create(context.Context, Assessment) (string, error)
 	FindByID(context.Context, string) (Assessment, error)
 	Update(context.Context, Assessment) error
 	ListByClassSubjectPeriod(context.Context, string, string, string) ([]Assessment, error)
 }
 
 type AssessmentScoreRepository interface {
-	Create(context.Context, AssessmentScore) error
+	Create(context.Context, AssessmentScore) (string, error)
 	FindByID(context.Context, string) (AssessmentScore, error)
 	FindByAssessmentAndStudent(context.Context, string, string) (AssessmentScore, error)
 	Upsert(context.Context, AssessmentScore) error

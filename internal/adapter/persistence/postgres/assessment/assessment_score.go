@@ -35,7 +35,7 @@ func NewAssessmentScoreRepository(db *gorm.DB) *AssessmentScoreRepository {
 	return &AssessmentScoreRepository{db: db}
 }
 
-func (r *AssessmentScoreRepository) Create(ctx context.Context, score assessmentdomain.AssessmentScore) error {
+func (r *AssessmentScoreRepository) Create(ctx context.Context, score assessmentdomain.AssessmentScore) (string, error) {
 	model := assessmentScoreModel{
 		ID:            score.ID,
 		AssessmentID:  score.AssessmentID,
@@ -43,7 +43,10 @@ func (r *AssessmentScoreRepository) Create(ctx context.Context, score assessment
 		Score:         score.Score,
 		UpdatedBy:     score.UpdatedBy,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *AssessmentScoreRepository) FindByID(ctx context.Context, id string) (assessmentdomain.AssessmentScore, error) {

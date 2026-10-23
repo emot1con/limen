@@ -35,7 +35,7 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) Create(ctx context.Context, user userdomain.User) error {
+func (r *UserRepository) Create(ctx context.Context, user userdomain.User) (string, error) {
 	model := userModel{
 		ID:           user.ID,
 		Email:        user.Email,
@@ -46,7 +46,10 @@ func (r *UserRepository) Create(ctx context.Context, user userdomain.User) error
 		CreatedAt:    user.CreatedAt,
 		UpdatedAt:    user.UpdatedAt,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *UserRepository) FindByID(ctx context.Context, id string) (userdomain.User, error) {

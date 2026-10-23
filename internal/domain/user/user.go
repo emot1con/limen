@@ -49,14 +49,14 @@ type Role struct {
 }
 
 type UserRepository interface {
-	Create(context.Context, User) error
+	Create(context.Context, User) (string, error)
 	FindByID(context.Context, string) (User, error)
 	FindByEmail(context.Context, string) (User, error)
 	Update(context.Context, User) error
 }
 
 type RoleRepository interface {
-	Create(context.Context, Role) error
+	Create(context.Context, Role) (string, error)
 	FindByCode(context.Context, string) (Role, error)
 	List(context.Context) ([]Role, error)
 }
@@ -68,7 +68,7 @@ type UserRoleRepository interface {
 }
 
 type SessionRepository interface {
-	Create(context.Context, Session) error
+	Create(context.Context, Session) (string, error)
 	FindByTokenHash(context.Context, string) (Session, error)
 	Revoke(context.Context, string, time.Time) error
 	RevokeAllByUserID(context.Context, string, time.Time) error

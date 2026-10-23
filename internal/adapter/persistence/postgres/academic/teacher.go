@@ -30,12 +30,15 @@ func NewTeacherRepository(db *gorm.DB) *TeacherRepository {
 	return &TeacherRepository{db: db}
 }
 
-func (r *TeacherRepository) Create(ctx context.Context, teacher academicdomain.Teacher) error {
+func (r *TeacherRepository) Create(ctx context.Context, teacher academicdomain.Teacher) (string, error) {
 	model := teacherModel{
 		UserID: teacher.UserID,
 		NIP:    teacher.NIP,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.UserID, nil
 }
 
 func (r *TeacherRepository) FindByUserID(ctx context.Context, userID string) (academicdomain.Teacher, error) {

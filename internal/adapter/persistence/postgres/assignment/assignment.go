@@ -36,7 +36,7 @@ func NewAssignmentRepository(db *gorm.DB) *AssignmentRepository {
 	return &AssignmentRepository{db: db}
 }
 
-func (r *AssignmentRepository) Create(ctx context.Context, assignment assignmentdomain.Assignment) error {
+func (r *AssignmentRepository) Create(ctx context.Context, assignment assignmentdomain.Assignment) (string, error) {
 	model := assignmentModel{
 		ID:            assignment.ID,
 		ClassID:       assignment.ClassID,
@@ -46,7 +46,10 @@ func (r *AssignmentRepository) Create(ctx context.Context, assignment assignment
 		Description:   assignment.Description,
 		DueAt:         assignment.DueAt,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *AssignmentRepository) FindByID(ctx context.Context, id string) (assignmentdomain.Assignment, error) {

@@ -31,14 +31,17 @@ func NewTeachingAssignmentRepository(db *gorm.DB) *TeachingAssignmentRepository 
 	return &TeachingAssignmentRepository{db: db}
 }
 
-func (r *TeachingAssignmentRepository) Create(ctx context.Context, assignment academicdomain.TeachingAssignment) error {
+func (r *TeachingAssignmentRepository) Create(ctx context.Context, assignment academicdomain.TeachingAssignment) (string, error) {
 	model := teachingAssignmentModel{
 		ID:            assignment.ID,
 		TeacherUserID: assignment.TeacherUserID,
 		SubjectID:     assignment.SubjectID,
 		ClassID:       assignment.ClassID,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *TeachingAssignmentRepository) FindByID(ctx context.Context, id string) (academicdomain.TeachingAssignment, error) {

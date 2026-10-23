@@ -48,32 +48,32 @@ type PassingGrade struct {
 }
 
 type CounselingNoteRepository interface {
-	Create(context.Context, CounselingNote) error
+	Create(context.Context, CounselingNote) (string, error)
 	FindByID(context.Context, string) (CounselingNote, error)
 	Update(context.Context, CounselingNote) error
 	ListByStudentUserID(context.Context, string) ([]CounselingNote, error)
 }
 
 type CounselingFollowupRepository interface {
-	Create(context.Context, CounselingFollowup) error
+	Create(context.Context, CounselingFollowup) (string, error)
 	ListByNoteID(context.Context, string) ([]CounselingFollowup, error)
 }
 
 type AptitudeResultRepository interface {
-	Create(context.Context, AptitudeResult) error
+	Create(context.Context, AptitudeResult) (string, error)
 	FindByID(context.Context, string) (AptitudeResult, error)
 	ListByStudentUserID(context.Context, string) ([]AptitudeResult, error)
 }
 
 type TargetMajorRepository interface {
-	Create(context.Context, TargetMajor) error
+	Create(context.Context, TargetMajor) (string, error)
 	FindByID(context.Context, string) (TargetMajor, error)
 	ListByStudentUserID(context.Context, string) ([]TargetMajor, error)
 	Delete(context.Context, string) error
 }
 
 type PassingGradeRepository interface {
-	Create(context.Context, PassingGrade) error
+	Create(context.Context, PassingGrade) (string, error)
 	FindByID(context.Context, string) (PassingGrade, error)
 	ListByUniversityMajorYear(context.Context, string, string, int) ([]PassingGrade, error)
 	Update(context.Context, PassingGrade) error

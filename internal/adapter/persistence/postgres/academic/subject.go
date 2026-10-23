@@ -31,13 +31,16 @@ func NewSubjectRepository(db *gorm.DB) *SubjectRepository {
 	return &SubjectRepository{db: db}
 }
 
-func (r *SubjectRepository) Create(ctx context.Context, subject academicdomain.Subject) error {
+func (r *SubjectRepository) Create(ctx context.Context, subject academicdomain.Subject) (string, error) {
 	model := subjectModel{
 		ID:   subject.ID,
 		Code: subject.Code,
 		Name: subject.Name,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *SubjectRepository) FindByID(ctx context.Context, id string) (academicdomain.Subject, error) {

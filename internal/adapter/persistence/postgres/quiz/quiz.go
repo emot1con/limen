@@ -37,7 +37,7 @@ func NewQuizRepository(db *gorm.DB) *QuizRepository {
 	return &QuizRepository{db: db}
 }
 
-func (r *QuizRepository) Create(ctx context.Context, quiz quizdomain.Quiz) error {
+func (r *QuizRepository) Create(ctx context.Context, quiz quizdomain.Quiz) (string, error) {
 	model := quizModel{
 		ID:          quiz.ID,
 		SubjectID:   quiz.SubjectID,
@@ -48,7 +48,10 @@ func (r *QuizRepository) Create(ctx context.Context, quiz quizdomain.Quiz) error
 		StartTime:   quiz.StartTime,
 		EndTime:     quiz.EndTime,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *QuizRepository) FindByID(ctx context.Context, id string) (quizdomain.Quiz, error) {

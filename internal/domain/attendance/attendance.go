@@ -119,14 +119,14 @@ type SchoolSettingsRepository interface {
 }
 
 type DeviceRepository interface {
-	Create(context.Context, Device) error
+	Create(context.Context, Device) (string, error)
 	FindByID(context.Context, string) (Device, error)
 	Update(context.Context, Device) error
 	List(context.Context) ([]Device, error)
 }
 
 type BiometricIdentityRepository interface {
-	Create(context.Context, BiometricIdentity) error
+	Create(context.Context, BiometricIdentity) (string, error)
 	FindByIdentifier(context.Context, string) (BiometricIdentity, error)
 	ListBySubjectUserID(context.Context, string) ([]BiometricIdentity, error)
 	Update(context.Context, BiometricIdentity) error
@@ -138,7 +138,7 @@ type AttendanceEventRepository interface {
 }
 
 type AttendanceRecordRepository interface {
-	Create(context.Context, AttendanceRecord) error
+	Create(context.Context, AttendanceRecord) (string, error)
 	FindByID(context.Context, string) (AttendanceRecord, error)
 	FindBySubjectAndDate(context.Context, string, time.Time) (AttendanceRecord, error)
 	Update(context.Context, AttendanceRecord) error
@@ -147,7 +147,7 @@ type AttendanceRecordRepository interface {
 }
 
 type AttendanceCorrectionRepository interface {
-	Create(context.Context, AttendanceCorrection) error
+	Create(context.Context, AttendanceCorrection) (string, error)
 	FindByID(context.Context, string) (AttendanceCorrection, error)
 	Update(context.Context, AttendanceCorrection) error
 	ListByRecordID(context.Context, string) ([]AttendanceCorrection, error)

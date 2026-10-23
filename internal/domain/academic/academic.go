@@ -68,7 +68,7 @@ type Schedule struct {
 }
 
 type StudentRepository interface {
-	Create(context.Context, Student) error
+	Create(context.Context, Student) (string, error)
 	FindByUserID(context.Context, string) (Student, error)
 	FindByNIS(context.Context, string) (Student, error)
 	Update(context.Context, Student) error
@@ -76,7 +76,7 @@ type StudentRepository interface {
 }
 
 type TeacherRepository interface {
-	Create(context.Context, Teacher) error
+	Create(context.Context, Teacher) (string, error)
 	FindByUserID(context.Context, string) (Teacher, error)
 	FindByNIP(context.Context, string) (Teacher, error)
 	Update(context.Context, Teacher) error
@@ -84,14 +84,14 @@ type TeacherRepository interface {
 }
 
 type ClassRepository interface {
-	Create(context.Context, Class) error
+	Create(context.Context, Class) (string, error)
 	FindByID(context.Context, string) (Class, error)
 	Update(context.Context, Class) error
 	List(context.Context) ([]Class, error)
 }
 
 type SubjectRepository interface {
-	Create(context.Context, Subject) error
+	Create(context.Context, Subject) (string, error)
 	FindByID(context.Context, string) (Subject, error)
 	FindByCode(context.Context, string) (Subject, error)
 	Update(context.Context, Subject) error
@@ -99,7 +99,7 @@ type SubjectRepository interface {
 }
 
 type TeachingAssignmentRepository interface {
-	Create(context.Context, TeachingAssignment) error
+	Create(context.Context, TeachingAssignment) (string, error)
 	FindByID(context.Context, string) (TeachingAssignment, error)
 	ListByTeacherUserID(context.Context, string) ([]TeachingAssignment, error)
 	ListByClassID(context.Context, string) ([]TeachingAssignment, error)
@@ -107,7 +107,7 @@ type TeachingAssignmentRepository interface {
 }
 
 type ScheduleRepository interface {
-	Create(context.Context, Schedule) error
+	Create(context.Context, Schedule) (string, error)
 	FindByID(context.Context, string) (Schedule, error)
 	ListByClassID(context.Context, string) ([]Schedule, error)
 	Update(context.Context, Schedule) error

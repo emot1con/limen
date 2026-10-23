@@ -35,7 +35,7 @@ func NewDeviceRepository(db *gorm.DB) *DeviceRepository {
 	return &DeviceRepository{db: db}
 }
 
-func (r *DeviceRepository) Create(ctx context.Context, device attendancedomain.Device) error {
+func (r *DeviceRepository) Create(ctx context.Context, device attendancedomain.Device) (string, error) {
 	model := deviceModel{
 		ID:            device.ID,
 		Name:          device.Name,
@@ -45,7 +45,10 @@ func (r *DeviceRepository) Create(ctx context.Context, device attendancedomain.D
 		CredentialRef: device.CredentialRef,
 		LastSeenAt:    device.LastSeenAt,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *DeviceRepository) FindByID(ctx context.Context, id string) (attendancedomain.Device, error) {

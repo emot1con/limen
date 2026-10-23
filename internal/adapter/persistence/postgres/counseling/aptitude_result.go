@@ -32,14 +32,17 @@ func NewAptitudeResultRepository(db *gorm.DB) *AptitudeResultRepository {
 	return &AptitudeResultRepository{db: db}
 }
 
-func (r *AptitudeResultRepository) Create(ctx context.Context, result counselingdomain.AptitudeResult) error {
+func (r *AptitudeResultRepository) Create(ctx context.Context, result counselingdomain.AptitudeResult) (string, error) {
 	model := aptitudeResultModel{
 		ID:            result.ID,
 		StudentUserID: result.StudentUserID,
 		Result:        result.Result,
 		AssessedAt:    result.AssessedAt,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *AptitudeResultRepository) FindByID(ctx context.Context, id string) (counselingdomain.AptitudeResult, error) {

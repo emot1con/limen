@@ -36,7 +36,7 @@ func NewScheduleRepository(db *gorm.DB) *ScheduleRepository {
 	return &ScheduleRepository{db: db}
 }
 
-func (r *ScheduleRepository) Create(ctx context.Context, schedule academicdomain.Schedule) error {
+func (r *ScheduleRepository) Create(ctx context.Context, schedule academicdomain.Schedule) (string, error) {
 	model := scheduleModel{
 		ID:            schedule.ID,
 		ClassID:       schedule.ClassID,
@@ -47,7 +47,10 @@ func (r *ScheduleRepository) Create(ctx context.Context, schedule academicdomain
 		EndTime:       schedule.EndTime.Format("15:04:05"),
 		Kind:          string(schedule.Kind),
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *ScheduleRepository) FindByID(ctx context.Context, id string) (academicdomain.Schedule, error) {

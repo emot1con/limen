@@ -33,14 +33,17 @@ func NewCounselingNoteRepository(db *gorm.DB) *CounselingNoteRepository {
 	return &CounselingNoteRepository{db: db}
 }
 
-func (r *CounselingNoteRepository) Create(ctx context.Context, note counselingdomain.CounselingNote) error {
+func (r *CounselingNoteRepository) Create(ctx context.Context, note counselingdomain.CounselingNote) (string, error) {
 	model := counselingNoteModel{
 		ID:            note.ID,
 		StudentUserID: note.StudentUserID,
 		AuthorID:      note.AuthorID,
 		Note:          note.Note,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *CounselingNoteRepository) FindByID(ctx context.Context, id string) (counselingdomain.CounselingNote, error) {

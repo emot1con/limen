@@ -37,7 +37,7 @@ func NewAttendanceCorrectionRepository(db *gorm.DB) *AttendanceCorrectionReposit
 	return &AttendanceCorrectionRepository{db: db}
 }
 
-func (r *AttendanceCorrectionRepository) Create(ctx context.Context, correction attendancedomain.AttendanceCorrection) error {
+func (r *AttendanceCorrectionRepository) Create(ctx context.Context, correction attendancedomain.AttendanceCorrection) (string, error) {
 	model := attendanceCorrectionModel{
 		ID:                 correction.ID,
 		AttendanceRecordID: correction.AttendanceRecordID,
@@ -50,7 +50,10 @@ func (r *AttendanceCorrectionRepository) Create(ctx context.Context, correction 
 		ReviewedBy:         correction.ReviewedBy,
 		ReviewedAt:         correction.ReviewedAt,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *AttendanceCorrectionRepository) FindByID(ctx context.Context, id string) (attendancedomain.AttendanceCorrection, error) {

@@ -36,7 +36,7 @@ func NewSessionRepository(db *gorm.DB) *SessionRepository {
 	return &SessionRepository{db: db}
 }
 
-func (r *SessionRepository) Create(ctx context.Context, session userdomain.Session) error {
+func (r *SessionRepository) Create(ctx context.Context, session userdomain.Session) (string, error) {
 	model := sessionModel{
 		ID:         session.ID,
 		UserID:     session.UserID,
@@ -48,7 +48,10 @@ func (r *SessionRepository) Create(ctx context.Context, session userdomain.Sessi
 		IP:         session.IP,
 		UserAgent:  session.UserAgent,
 	}
-	return r.db.WithContext(ctx).Create(&model).Error
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return "", err
+	}
+	return model.ID, nil
 }
 
 func (r *SessionRepository) FindByTokenHash(ctx context.Context, tokenHash string) (userdomain.Session, error) {
