@@ -1,0 +1,2199 @@
+openapi: 3.0.3
+info:
+  title: LIMEN API
+  version: 0.1.0-proposed
+  description: >
+    Draft kontrak REST API LIMEN (Sistem Absensi Terintegrasi), Fase E.
+    Seluruh endpoint berstatus Proposed dan belum diimplementasikan.
+    Dokumen sumber naratif: docs/06-api-documentation.md.
+  contact:
+    name: Tim LIMEN
+  license:
+    name: Proprietary
+servers:
+  - url: /api/v1
+    description: Base path versi 1 (usulan)
+tags:
+  - name: Auth
+    description: Autentikasi sesi pengguna (login, logout, profil sesi).
+  - name: Attendance
+    description: Absensi kelas (guru mapel) dan absensi harian (guru wali).
+  - name: Settings
+    description: Pengaturan sekolah (jam absensi, toleransi, dsb).
+  - name: Devices
+    description: Manajemen perangkat absensi dan penerimaan event perangkat.
+  - name: Users
+    description: Manajemen akun pengguna, peran, dan profil.
+  - name: Academic
+    description: Data akademik (tahun ajaran, kelas, mata pelajaran, siswa, guru).
+  - name: Schedules
+    description: Jadwal pelajaran.
+  - name: Quiz
+    description: Pengerjaan kuis/latihan oleh siswa.
+  - name: QuestionBanks
+    description: Bank soal dan soal.
+  - name: Assignments
+    description: Penugasan/tugas.
+  - name: Assessments
+    description: Penilaian dan nilai.
+  - name: Reports
+    description: Laporan dan ekspor.
+  - name: Counseling
+    description: Bimbingan konseling.
+  - name: Aptitude
+    description: Tes minat bakat (MB) dan psikotes (PG).
+  - name: Notifications
+    description: Notifikasi pengguna.
+security:
+  - sessionCookie: []
+paths:
+  /auth/login:
+    post:
+      operationId: API-AUTH-001
+      tags: [Auth]
+      summary: Login email + password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 1 }
+      responses:
+        '200':
+          description: Sesi dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/UserSummary' }
+        '401':
+          $ref: '#/components/responses/InvalidCredentials'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /auth/logout:
+    post:
+      operationId: API-AUTH-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Auth]
+      summary: Akhiri sesi
+      responses:
+        '204': { description: Sesi dicabut }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /auth/me:
+    get:
+      operationId: API-AUTH-003
+      tags: [Auth]
+      summary: Identitas & peran sesi aktif
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserSummary' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /users:
+    get:
+      operationId: API-USR-001
+      tags: [Users]
+      summary: Daftar pengguna
+      parameters:
+        - { name: role, in: query, schema: { $ref: '#/components/schemas/RoleCode' } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/UserStatus' } }
+        - { name: q, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/UserSummary' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-USR-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Users]
+      summary: Buat pengguna
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, email, password, roles]
+              properties:
+                fullName: { type: string }
+                email: { type: string, format: email }
+                password: { type: string }
+                roles:
+                  type: array
+                  minItems: 1
+                  items: { $ref: '#/components/schemas/RoleCode' }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserSummary' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /users/{userId}:
+    parameters:
+      - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: API-USR-003
+      tags: [Users]
+      summary: Detail pengguna
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: API-USR-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Users]
+      summary: Ubah peran/status pengguna
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName: { type: string }
+                status: { $ref: '#/components/schemas/UserStatus' }
+                roles:
+                  type: array
+                  minItems: 1
+                  items: { $ref: '#/components/schemas/RoleCode' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /users/{userId}/password-reset:
+    post:
+      operationId: API-AUTH-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Auth, Users]
+      summary: Admin reset password pengguna
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword]
+              properties:
+                newPassword: { type: string }
+      responses:
+        '204': { description: Password direset; sesi dicabut }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /attendance/ingest:
+    post:
+      operationId: API-ABS-001
+      tags: [Attendance]
+      summary: Terima event absensi dari perangkat
+      security:
+        - deviceId: []
+          deviceKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId, identifier, timestamp, eventType]
+              properties:
+                deviceId: { type: string, format: uuid }
+                identifier: { type: string }
+                timestamp: { type: string, format: date-time }
+                eventType: { $ref: '#/components/schemas/AttendanceEventType' }
+      responses:
+        '200':
+          description: Diterima (termasuk duplicate = no-op)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted: { type: boolean }
+                  duplicate: { type: boolean }
+                  eventId: { type: integer, format: int64 }
+                  matched: { type: boolean }
+                  subjectType: { $ref: '#/components/schemas/SubjectType' }
+                  subjectUserId: { type: string, format: uuid, nullable: true }
+                  attendanceRecordId: { type: string, format: uuid, nullable: true }
+                  attendanceDate: { type: string, format: date }
+                  resultingStatus: { $ref: '#/components/schemas/AttendanceStatus' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/InvalidDeviceCredentials' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /attendance/records:
+    get:
+      operationId: API-ABS-002
+      tags: [Attendance]
+      summary: Daftar/rekap harian absensi
+      parameters:
+        - { name: date, in: query, schema: { type: string, format: date } }
+        - { name: dateFrom, in: query, schema: { type: string, format: date } }
+        - { name: dateTo, in: query, schema: { type: string, format: date } }
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: subjectUserId, in: query, schema: { type: string, format: uuid } }
+        - { name: subjectType, in: query, schema: { $ref: '#/components/schemas/SubjectType' } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/AttendanceStatus' } }
+        - { name: source, in: query, schema: { $ref: '#/components/schemas/AttendanceSource' } }
+        - { name: sort, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/AttendanceRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /attendance/records/{recordId}:
+    get:
+      operationId: API-ABS-003
+      tags: [Attendance]
+      summary: Detail satu rekaman harian
+      parameters:
+        - { name: recordId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttendanceRecordDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /attendance/records/{subjectUserId}/{date}:
+    put:
+      operationId: API-ABS-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Attendance]
+      summary: Guru menetapkan status belum tercatat (upsert)
+      parameters:
+        - { name: subjectUserId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/AttendanceStatus' }
+                note: { type: string }
+      responses:
+        '200':
+          description: Tersimpan (baru/ubah)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttendanceRecord' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /attendance/corrections:
+    get:
+      operationId: API-ABS-006
+      tags: [Attendance]
+      summary: Daftar koreksi
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/CorrectionStatus' } }
+        - { name: attendanceRecordId, in: query, schema: { type: string, format: uuid } }
+        - { name: requestedBy, in: query, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Correction' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-ABS-005
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Attendance]
+      summary: Ajukan koreksi absensi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attendanceRecordId, newStatus, reason]
+              properties:
+                attendanceRecordId: { type: string, format: uuid }
+                newStatus: { $ref: '#/components/schemas/AttendanceStatus' }
+                reason: { type: string }
+      responses:
+        '201':
+          description: Diajukan (pending)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Correction' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /attendance/corrections/{correctionId}/approve:
+    post:
+      operationId: API-ABS-007
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Attendance]
+      summary: Setujui koreksi
+      parameters:
+        - { name: correctionId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reviewNote: { type: string }
+      responses:
+        '200':
+          description: Disetujui; rekap resmi berubah
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Correction' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /attendance/corrections/{correctionId}/reject:
+    post:
+      operationId: API-ABS-008
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Attendance]
+      summary: Tolak koreksi
+      parameters:
+        - { name: correctionId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reviewNote]
+              properties:
+                reviewNote: { type: string }
+      responses:
+        '200':
+          description: Ditolak
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Correction' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /settings/school:
+    get:
+      operationId: API-SET-001
+      tags: [Settings]
+      summary: Baca pengaturan sekolah
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SchoolSettings' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    put:
+      operationId: API-SET-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Settings]
+      summary: Ubah jam masuk pertama
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstEntryTime]
+              properties:
+                firstEntryTime:
+                  type: string
+                  pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+                  example: '07:15'
+                lateToleranceMinutes: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SchoolSettings' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /devices:
+    get:
+      operationId: API-DEV-001
+      tags: [Devices]
+      summary: Daftar alat absensi
+      parameters:
+        - { name: isActive, in: query, schema: { type: boolean } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Device' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-DEV-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Devices]
+      summary: Registrasi alat absensi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                location: { type: string }
+                serial: { type: string }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Device' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /devices/{deviceId}:
+    parameters:
+      - { name: deviceId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: API-DEV-003
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Devices]
+      summary: Ubah data/status alat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                location: { type: string }
+                isActive: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Device' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /classes:
+    get:
+      operationId: API-MST-001
+      tags: [Academic]
+      summary: Daftar kelas
+      parameters:
+        - { name: level, in: query, schema: { type: string } }
+        - { name: q, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Class' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      operationId: API-MST-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Academic]
+      summary: Buat kelas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                level: { type: string }
+                homeroomTeacherUserId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Class' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /classes/{classId}:
+    parameters:
+      - { name: classId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: API-MST-003
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Academic]
+      summary: Ubah kelas/wali kelas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                level: { type: string }
+                homeroomTeacherUserId: { type: string, format: uuid, nullable: true }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Class' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /subjects:
+    get:
+      operationId: API-MST-004
+      tags: [Academic]
+      summary: Daftar mata pelajaran
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Subject' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      operationId: API-MST-005
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Academic]
+      summary: Buat mata pelajaran
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name]
+              properties:
+                code: { type: string }
+                name: { type: string }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subject' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /students:
+    get:
+      operationId: API-MST-006
+      tags: [Academic]
+      summary: Daftar siswa
+      parameters:
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: q, in: query, schema: { type: string } }
+        - { name: sort, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Student' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /students/{studentId}:
+    parameters:
+      - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: API-MST-007
+      tags: [Academic]
+      summary: Detail siswa
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Student' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /teaching-assignments:
+    get:
+      operationId: API-MST-008
+      tags: [Academic]
+      summary: Daftar penugasan mengajar
+      parameters:
+        - { name: teacherUserId, in: query, schema: { type: string, format: uuid } }
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: subjectId, in: query, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/TeachingAssignment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-MST-009
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Academic]
+      summary: Buat penugasan mengajar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [teacherUserId, subjectId, classId]
+              properties:
+                teacherUserId: { type: string, format: uuid }
+                subjectId: { type: string, format: uuid }
+                classId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeachingAssignment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /schedules:
+    get:
+      operationId: API-JWL-001
+      tags: [Schedules]
+      summary: Daftar jadwal
+      parameters:
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: subjectId, in: query, schema: { type: string, format: uuid } }
+        - { name: kind, in: query, schema: { $ref: '#/components/schemas/ScheduleKind' } }
+        - { name: dayOfWeek, in: query, schema: { type: integer, minimum: 1, maximum: 7 } }
+        - { name: dateFrom, in: query, schema: { type: string, format: date } }
+        - { name: dateTo, in: query, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Schedule' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-JWL-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Schedules]
+      summary: Buat jadwal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [classId, subjectId, dayOfWeek, startTime, endTime, kind]
+              properties:
+                classId: { type: string, format: uuid }
+                subjectId: { type: string, format: uuid }
+                teacherUserId: { type: string, format: uuid }
+                dayOfWeek: { type: integer, minimum: 1, maximum: 7 }
+                startTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+                endTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }
+                kind: { $ref: '#/components/schemas/ScheduleKind' }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Schedule' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /schedules/{scheduleId}:
+    parameters:
+      - { name: scheduleId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: API-JWL-003
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Schedules]
+      summary: Ubah jadwal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                classId: { type: string, format: uuid }
+                subjectId: { type: string, format: uuid }
+                teacherUserId: { type: string, format: uuid }
+                dayOfWeek: { type: integer, minimum: 1, maximum: 7 }
+                startTime: { type: string }
+                endTime: { type: string }
+                kind: { $ref: '#/components/schemas/ScheduleKind' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Schedule' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      operationId: API-JWL-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Schedules]
+      summary: Hapus jadwal
+      responses:
+        '204': { description: Dihapus }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /quizzes:
+    get:
+      operationId: API-QZ-001
+      tags: [Quiz]
+      summary: Daftar quiz
+      parameters:
+        - { name: subjectId, in: query, schema: { type: string, format: uuid } }
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/QuizSummary' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /quizzes/{quizId}:
+    parameters:
+      - { name: quizId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: API-QZ-002
+      tags: [Quiz]
+      summary: Detail quiz + soal (tanpa kunci)
+      parameters:
+        - { name: attemptId, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuizDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /quizzes/{quizId}/attempts:
+    post:
+      operationId: API-QZ-003
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Quiz]
+      summary: Mulai pengerjaan quiz
+      parameters:
+        - { name: quizId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '201':
+          description: Attempt dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attempt' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /quiz-attempts:
+    get:
+      operationId: API-QZ-006
+      tags: [Quiz]
+      summary: Riwayat pengerjaan quiz
+      parameters:
+        - { name: quizId, in: query, schema: { type: string, format: uuid } }
+        - { name: studentUserId, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Attempt' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /quiz-attempts/{attemptId}:
+    get:
+      operationId: API-QZ-007
+      tags: [Quiz]
+      summary: Hasil & rincian jawaban
+      parameters:
+        - { name: attemptId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttemptResult' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /quiz-attempts/{attemptId}/answers/{questionId}:
+    patch:
+      operationId: API-QZ-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Quiz]
+      summary: Simpan jawaban per butir
+      parameters:
+        - { name: attemptId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: questionId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userAnswer]
+              properties:
+                userAnswer:
+                  description: number | number[] | boolean | boolean[] | string | null
+      responses:
+        '200':
+          description: Tersimpan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questionId: { type: integer }
+                  userAnswer: { description: 'number | number[] | boolean | boolean[] | string | null' }
+                  isCompleted: { type: boolean }
+                  updatedAt: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /quiz-attempts/{attemptId}/submit:
+    post:
+      operationId: API-QZ-005
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Quiz]
+      summary: Kirim & nilai quiz
+      parameters:
+        - { name: attemptId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Dikirim
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttemptResult' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /quiz-attempts/{attemptId}/answers/{answerId}/grade:
+    put:
+      operationId: API-KOR-001
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Quiz]
+      summary: Koreksi jawaban siswa
+      parameters:
+        - { name: attemptId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: answerId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isCorrect: { type: boolean }
+                score: { type: number }
+                feedback: { type: string }
+      responses:
+        '200':
+          description: Tersimpan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answerId: { type: string, format: uuid }
+                  isCorrect: { type: boolean }
+                  score: { type: number }
+                  gradedBy: { type: string, format: uuid }
+                  gradedAt: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /question-banks:
+    get:
+      operationId: API-BNK-001
+      tags: [QuestionBanks]
+      summary: Daftar bank soal
+      parameters:
+        - { name: scope, in: query, schema: { type: string, enum: [latihan, ujian] } }
+        - { name: subjectId, in: query, schema: { type: string, format: uuid } }
+        - { name: ownerId, in: query, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/QuestionBank' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /question-banks/{bankId}/questions:
+    parameters:
+      - { name: bankId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: API-BNK-002
+      tags: [QuestionBanks]
+      summary: Daftar soal dalam bank
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Question' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      operationId: API-BNK-003
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [QuestionBanks]
+      summary: Tambah soal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuestionInput' }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Question' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /questions/{questionId}:
+    parameters:
+      - { name: questionId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: API-BNK-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [QuestionBanks]
+      summary: Ubah soal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuestionInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Question' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      operationId: API-BNK-005
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [QuestionBanks]
+      summary: Hapus soal
+      responses:
+        '204': { description: Dihapus }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /assignments:
+    get:
+      operationId: API-TGS-001
+      tags: [Assignments]
+      summary: Daftar tugas
+      parameters:
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: subjectId, in: query, schema: { type: string, format: uuid } }
+        - { name: teacherUserId, in: query, schema: { type: string, format: uuid } }
+        - { name: sort, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Assignment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-TGS-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Assignments]
+      summary: Buat tugas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [classId, subjectId, title, dueAt]
+              properties:
+                classId: { type: string, format: uuid }
+                subjectId: { type: string, format: uuid }
+                title: { type: string }
+                description: { type: string }
+                dueAt: { type: string, format: date-time }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Assignment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /assignments/{assignmentId}/submissions:
+    get:
+      operationId: API-TGS-003
+      tags: [Assignments]
+      summary: Daftar pekerjaan siswa
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Submission' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /assignments/{assignmentId}/submissions/{studentUserId}:
+    put:
+      operationId: API-TGS-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Assignments]
+      summary: Nilai pekerjaan siswa
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: studentUserId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                score: { type: number }
+                note: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Submission' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /assessments:
+    get:
+      operationId: API-NIL-001
+      tags: [Assessments]
+      summary: Daftar penilaian
+      parameters:
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: subjectId, in: query, schema: { type: string, format: uuid } }
+        - { name: kind, in: query, schema: { type: string } }
+        - { name: period, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Assessment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-NIL-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Assessments]
+      summary: Buat penilaian
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [classId, subjectId, kind, period]
+              properties:
+                classId: { type: string, format: uuid }
+                subjectId: { type: string, format: uuid }
+                kind: { type: string }
+                kkm: { type: number, minimum: 0 }
+                period: { type: string }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Assessment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /assessments/{assessmentId}/scores:
+    get:
+      operationId: API-NIL-003
+      tags: [Assessments]
+      summary: Rekap nilai penilaian
+      parameters:
+        - { name: assessmentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Score' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /assessments/{assessmentId}/scores/{studentUserId}:
+    put:
+      operationId: API-NIL-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Assessments]
+      summary: Input/ubah nilai siswa
+      parameters:
+        - { name: assessmentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: studentUserId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score]
+              properties:
+                score: { type: number }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Score' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /reports/attendance:
+    get:
+      operationId: API-RPT-001
+      tags: [Reports]
+      summary: Rekap absensi
+      parameters:
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: studentUserId, in: query, schema: { type: string, format: uuid } }
+        - { name: subjectType, in: query, schema: { $ref: '#/components/schemas/SubjectType' } }
+        - { name: dateFrom, in: query, schema: { type: string, format: date } }
+        - { name: dateTo, in: query, schema: { type: string, format: date } }
+        - { name: groupBy, in: query, schema: { type: string, enum: [student, class, day], default: student } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groupBy: { type: string }
+                  items: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /reports/grades:
+    get:
+      operationId: API-RPT-002
+      tags: [Reports]
+      summary: Rekap nilai
+      parameters:
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: subjectId, in: query, schema: { type: string, format: uuid } }
+        - { name: period, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items: { type: array, items: { type: object } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /students/{studentId}/report-card:
+    get:
+      operationId: API-RPT-003
+      tags: [Reports]
+      summary: Rapor siswa
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: period, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReportCard' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /counseling-notes:
+    get:
+      operationId: API-KSL-001
+      tags: [Counseling]
+      summary: Daftar catatan konseling
+      parameters:
+        - { name: studentUserId, in: query, schema: { type: string, format: uuid } }
+        - { name: classId, in: query, schema: { type: string, format: uuid } }
+        - { name: sort, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/CounselingNote' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-KSL-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Counseling]
+      summary: Catat konseling
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentUserId, note]
+              properties:
+                studentUserId: { type: string, format: uuid }
+                note: { type: string }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CounselingNote' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /counseling-notes/{noteId}:
+    parameters:
+      - { name: noteId, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: API-KSL-003
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Counseling]
+      summary: Ubah catatan konseling
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CounselingNote' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /counseling-notes/{noteId}/followups:
+    post:
+      operationId: API-KSL-004
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Counseling]
+      summary: Tambah tindak lanjut
+      parameters:
+        - { name: noteId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: { type: string }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Followup' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /students/{studentId}/aptitude-results:
+    get:
+      operationId: API-MB-001
+      tags: [Aptitude]
+      summary: Hasil minat bakat siswa
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studentUserId: { type: string, format: uuid }
+                  results:
+                    type: array
+                    items: { $ref: '#/components/schemas/AptitudeResult' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /students/{studentId}/target-majors:
+    post:
+      operationId: API-MB-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Aptitude]
+      summary: Tambah target jurusan
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [major]
+              properties:
+                major: { type: string }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TargetMajor' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /passing-grades:
+    get:
+      operationId: API-PG-001
+      tags: [Aptitude]
+      summary: Daftar passing grade
+      parameters:
+        - { name: university, in: query, schema: { type: string } }
+        - { name: major, in: query, schema: { type: string } }
+        - { name: year, in: query, schema: { type: integer } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/PassingGrade' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /passing-grades/{passingGradeId}:
+    get:
+      operationId: API-PG-002
+      tags: [Aptitude]
+      summary: Detail passing grade
+      parameters:
+        - { name: passingGradeId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PassingGrade' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /notifications:
+    get:
+      operationId: API-NTF-001
+      tags: [Notifications]
+      summary: Daftar notifikasi in-app
+      parameters:
+        - { name: unreadOnly, in: query, schema: { type: boolean } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageMeta'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Notification' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /notifications/{notificationId}/read:
+    post:
+      operationId: API-NTF-002
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Notifications]
+      summary: Tandai notifikasi dibaca
+      parameters:
+        - { name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: limen_session
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+    deviceId:
+      type: apiKey
+      in: header
+      name: X-Device-Id
+    deviceKey:
+      type: apiKey
+      in: header
+      name: X-Device-Key
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+  responses:
+    BadRequest:
+      description: Permintaan tidak valid
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthenticated:
+      description: Sesi tidak ada/kedaluwarsa
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InvalidCredentials:
+      description: Kredensial salah
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InvalidDeviceCredentials:
+      description: Kredensial perangkat salah
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Tidak memiliki hak akses
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource tidak ditemukan
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Konflik state
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Validasi gagal
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: Terlalu banyak permintaan
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: VALIDATION_ERROR }
+        message: { type: string }
+        details:
+          type: object
+          properties:
+            fields:
+              type: array
+              items: { $ref: '#/components/schemas/FieldError' }
+    FieldError:
+      type: object
+      properties:
+        field: { type: string }
+        message: { type: string }
+    PageMeta:
+      type: object
+      properties:
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer, format: int64 }
+    RoleCode:
+      type: string
+      enum: [siswa, guru_mapel, guru_wali, guru_bk, admin]
+    UserStatus:
+      type: string
+      enum: [active, inactive]
+    AttendanceStatus:
+      type: string
+      enum: [hadir, terlambat, izin, sakit, alpa]
+    AttendanceSource:
+      type: string
+      enum: [device, manual, correction]
+    AttendanceEventType:
+      type: string
+      enum: [check_in, check_out]
+    SubjectType:
+      type: string
+      enum: [student, teacher]
+    CorrectionStatus:
+      type: string
+      enum: [pending, approved, rejected]
+    ScheduleKind:
+      type: string
+      enum: [pelajaran, ujian, tryout]
+    QuestionType:
+      type: string
+      enum: [pilihan_ganda, pilihan_ganda_kompleks, benar_salah, rentang_nilai, essay]
+    UserSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        roles:
+          type: array
+          items: { $ref: '#/components/schemas/RoleCode' }
+        status: { $ref: '#/components/schemas/UserStatus' }
+    UserDetail:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          properties:
+            profile:
+              type: object
+              nullable: true
+              properties:
+                type: { $ref: '#/components/schemas/SubjectType' }
+                nis: { type: string }
+                nip: { type: string }
+    AttendanceRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        subjectType: { $ref: '#/components/schemas/SubjectType' }
+        subjectUserId: { type: string, format: uuid }
+        subjectName: { type: string }
+        classId: { type: string, format: uuid, nullable: true }
+        attendanceDate: { type: string, format: date }
+        checkInAt: { type: string, format: date-time, nullable: true }
+        checkOutAt: { type: string, format: date-time, nullable: true }
+        status: { $ref: '#/components/schemas/AttendanceStatus' }
+        source: { $ref: '#/components/schemas/AttendanceSource' }
+        checkInDeviceId: { type: string, format: uuid, nullable: true }
+        checkOutDeviceId: { type: string, format: uuid, nullable: true }
+        lateMinutes: { type: integer, nullable: true }
+    AttendanceRecordDetail:
+      type: object
+      properties:
+        record: { $ref: '#/components/schemas/AttendanceRecord' }
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer, format: int64 }
+              deviceId: { type: string, format: uuid }
+              eventType: { $ref: '#/components/schemas/AttendanceEventType' }
+              occurredAt: { type: string, format: date-time }
+        corrections:
+          type: array
+          items: { $ref: '#/components/schemas/Correction' }
+    Correction:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        attendanceRecordId: { type: string, format: uuid }
+        oldStatus: { $ref: '#/components/schemas/AttendanceStatus' }
+        newStatus: { $ref: '#/components/schemas/AttendanceStatus' }
+        status: { $ref: '#/components/schemas/CorrectionStatus' }
+        requestedBy: { type: string, format: uuid }
+        reviewedBy: { type: string, format: uuid, nullable: true }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+    SchoolSettings:
+      type: object
+      properties:
+        firstEntryTime: { type: string, example: '07:15' }
+        timezone: { type: string, example: Asia/Jakarta }
+        lateToleranceMinutes: { type: integer }
+        updatedAt: { type: string, format: date-time }
+    Device:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        location: { type: string, nullable: true }
+        serial: { type: string, nullable: true }
+        isActive: { type: boolean }
+        lastSeenAt: { type: string, format: date-time, nullable: true }
+    Class:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        level: { type: string, nullable: true }
+        homeroomTeacherUserId: { type: string, format: uuid, nullable: true }
+        studentCount: { type: integer, readOnly: true }
+    Subject:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+    Student:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        fullName: { type: string }
+        nis: { type: string }
+        classId: { type: string, format: uuid, nullable: true }
+        className: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/UserStatus' }
+    TeachingAssignment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        teacherUserId: { type: string, format: uuid }
+        subjectId: { type: string, format: uuid }
+        classId: { type: string, format: uuid }
+    Schedule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        classId: { type: string, format: uuid }
+        subjectId: { type: string, format: uuid }
+        teacherUserId: { type: string, format: uuid, nullable: true }
+        dayOfWeek: { type: integer, minimum: 1, maximum: 7 }
+        startTime: { type: string, example: '07:15' }
+        endTime: { type: string, example: '08:45' }
+        kind: { $ref: '#/components/schemas/ScheduleKind' }
+    QuizSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        subjectId: { type: string, format: uuid }
+        description: { type: string, nullable: true }
+    QuizQuestion:
+      type: object
+      properties:
+        id: { type: integer }
+        questionNumber: { type: integer }
+        type: { $ref: '#/components/schemas/QuestionType' }
+        question: { type: string }
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              label: { type: string }
+    QuizDetail:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        startTime: { type: string, format: date-time, nullable: true }
+        endTime: { type: string, format: date-time, nullable: true }
+        questions:
+          type: array
+          items: { $ref: '#/components/schemas/QuizQuestion' }
+    Attempt:
+      type: object
+      properties:
+        attemptId: { type: string, format: uuid }
+        quizId: { type: string, format: uuid }
+        quizTitle: { type: string }
+        startedAt: { type: string, format: date-time }
+        submittedAt: { type: string, format: date-time, nullable: true }
+        status: { type: string }
+        score: { type: number, nullable: true }
+    AttemptResult:
+      allOf:
+        - $ref: '#/components/schemas/Attempt'
+        - type: object
+          properties:
+            essayPending: { type: boolean }
+            answers:
+              type: array
+              items:
+                type: object
+                properties:
+                  answerId: { type: string, format: uuid }
+                  questionId: { type: integer }
+                  userAnswer: { description: 'number | number[] | boolean | boolean[] | string | null' }
+                  isCorrect: { type: boolean, nullable: true }
+    QuestionBank:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        subjectId: { type: string, format: uuid }
+        scope: { type: string, enum: [latihan, ujian] }
+        ownerId: { type: string, format: uuid }
+        questionCount: { type: integer }
+    Question:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        bankId: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/QuestionType' }
+        body: { type: string }
+        options: { type: object, nullable: true }
+        answerKey: { type: object, nullable: true }
+    QuestionInput:
+      type: object
+      required: [type, body]
+      properties:
+        type: { $ref: '#/components/schemas/QuestionType' }
+        body: { type: string }
+        options: { type: object, nullable: true }
+        answerKey: { type: object, nullable: true }
+    Assignment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        classId: { type: string, format: uuid }
+        subjectId: { type: string, format: uuid }
+        teacherUserId: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        dueAt: { type: string, format: date-time }
+    Submission:
+      type: object
+      properties:
+        studentUserId: { type: string, format: uuid }
+        studentName: { type: string }
+        submittedAt: { type: string, format: date-time, nullable: true }
+        score: { type: number, nullable: true }
+        gradedBy: { type: string, format: uuid, nullable: true }
+        gradedAt: { type: string, format: date-time, nullable: true }
+    Assessment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        classId: { type: string, format: uuid }
+        subjectId: { type: string, format: uuid }
+        teacherUserId: { type: string, format: uuid }
+        kind: { type: string }
+        kkm: { type: number, nullable: true }
+        period: { type: string }
+    Score:
+      type: object
+      properties:
+        assessmentId: { type: string, format: uuid }
+        studentUserId: { type: string, format: uuid }
+        studentName: { type: string }
+        score: { type: number }
+        updatedBy: { type: string, format: uuid, nullable: true }
+        updatedAt: { type: string, format: date-time }
+    ReportCard:
+      type: object
+      properties:
+        studentUserId: { type: string, format: uuid }
+        period: { type: string }
+        subjects:
+          type: array
+          items:
+            type: object
+            properties:
+              subjectId: { type: string, format: uuid }
+              subjectName: { type: string }
+              score: { type: number }
+              kkm: { type: number, nullable: true }
+    CounselingNote:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        studentUserId: { type: string, format: uuid }
+        authorId: { type: string, format: uuid }
+        note: { type: string }
+        createdAt: { type: string, format: date-time }
+    Followup:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        noteId: { type: string, format: uuid }
+        note: { type: string }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+    AptitudeResult:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        result: { type: string }
+        assessedAt: { type: string, format: date-time }
+    TargetMajor:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        studentUserId: { type: string, format: uuid }
+        major: { type: string }
+        createdAt: { type: string, format: date-time }
+    PassingGrade:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        university: { type: string }
+        major: { type: string }
+        score: { type: number }
+        year: { type: integer }
+    Notification:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        payload: { type: object, nullable: true }
+        readAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
