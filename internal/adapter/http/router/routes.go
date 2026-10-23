@@ -1,46 +1,37 @@
 package router
 
-// import (
-// 	"broker/handler"
-// 	"broker/middleware"
-// 	"broker/repository"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
+	"limen/internal/adapter/http/handler"
+	"limen/internal/adapter/http/middleware"
+	postgresuser "limen/internal/adapter/persistence/postgres/user"
+	"limen/internal/usecase/auth"
+)
 
-// 	"github.com/gin-contrib/cors"
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/sirupsen/logrus"
-// )
+func New(postgresDB *gorm.DB, redisClient *redis.Client) *gin.Engine {
+	router := gin.New()
+	router.Use(gin.Recovery())
 
-// func Routes() *gin.Engine {
-// 	r := gin.Default()
+	userRepo := postgresuser.NewUserRepository(postgresDB)
+	userRoleRepo := postgresuser.NewUserRoleRepository(postgresDB)
+	sessionRepo := postgresuser.NewSessionRepository(postgresDB)
 
-// 	// CORS middleware - allow all origins for development
-// 	r.Use(cors.New(cors.Config{
-// 		AllowAllOrigins:  true,
-// 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-// 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-// 		ExposeHeaders:    []string{"Content-Length"},
-// 		AllowCredentials: false,
-// 	}))
+	loginUseCase := auth.NewLoginUseCase(userRepo, userRoleRepo, sessionRepo)
+	logoutUseCase := auth.NewLogoutUseCase(sessionRepo)
+	meUseCase := auth.NewMeUseCase(userRepo, userRoleRepo)
+	resetPasswordUseCase := auth.NewResetPasswordUseCase(userRepo, sessionRepo)
 
-// 	if err := middleware.InitRedis(); err != nil {
-// 		logrus.Warnf("Failed to start Redis: %v", err)
-// 	}
+	authHandler := handler.NewAuthHandler(loginUseCase, logoutUseCase, meUseCase, resetPasswordUseCase)
+	authMiddleware := middleware.NewAuthMiddleware(sessionRepo, userRoleRepo)
+	loginRateLimiter := middleware.EmailRateLimiterMiddleware(redisClient, middleware.LoginEmailRateLimiter())
 
-// 	userRepo := repository.NewUserRepository()
-// 	userHandler := handler.NewUserHandler(userRepo)
-// 	userHandler.RegisterRoutes(r)
+	v1 := router.Group("/api/v1")
+	v1.POST("/auth/login", loginRateLimiter, authHandler.Login)
+	v1.POST("/auth/logout", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authHandler.Logout)
+	v1.GET("/auth/me", authMiddleware.Authenticate(), authHandler.Me)
+	v1.POST("/users/:userId/password-reset", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authMiddleware.RequireRole("admin"), authHandler.ResetPassword)
 
-// 	productRepo := repository.NewProductRepository()
-// 	productHandler := handler.NewProductHandler(productRepo)
-// 	productHandler.RegisterRoutes(r)
-
-// 	orderRepo := repository.NewOrderRepository()
-// 	orderHandler := handler.NewOrderHandler(userRepo, productRepo, orderRepo)
-// 	orderHandler.RegisterRoutes(r)
-
-// 	paymentRepo := repository.NewPaymentRepository()
-// 	paymentHandler := handler.NewPaymentHandler(paymentRepo)
-// 	paymentHandler.RegisterRoutes(r)
-
-// 	return r
-// }
+	return router
+}

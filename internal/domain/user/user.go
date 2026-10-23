@@ -11,6 +11,7 @@ type Status string
 const (
 	StatusActive   Status = "active"
 	StatusInactive Status = "inactive"
+	RoleAdmin             = "admin"
 )
 
 type User struct {
@@ -70,6 +71,7 @@ type UserRoleRepository interface {
 type SessionRepository interface {
 	Create(context.Context, Session) (string, error)
 	FindByTokenHash(context.Context, string) (Session, error)
+	Touch(context.Context, string, time.Time, time.Time) error
 	Revoke(context.Context, string, time.Time) error
 	RevokeAllByUserID(context.Context, string, time.Time) error
 }

@@ -1,142 +1,111 @@
 package middleware
 
 import (
-	"context"
+	"bytes"
 	_ "embed"
-	"fmt"
+	"encoding/json"
+	"io"
+	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
-	"github.com/sirupsen/logrus"
+	"limen/internal/adapter/http/response"
 )
 
 //go:embed rate_limiter.lua
 var luaScript string
 
-// RateLimiterConfig holds rate limiter configuration
 type RateLimiterConfig struct {
-	Capacity   int     // Maximum number of tokens (max requests)
-	RefillRate float64 // Tokens refilled per second
+	Capacity   int
+	RefillRate float64
 }
 
-// DefaultRateLimiterConfig returns default rate limiter settings
-// 10 requests per second with burst capacity of 20
 func DefaultRateLimiterConfig() *RateLimiterConfig {
-	return &RateLimiterConfig{
-		Capacity:   20,   // Can burst up to 20 requests
-		RefillRate: 10.0, // Refills 10 tokens per second
-	}
+	return &RateLimiterConfig{Capacity: 20, RefillRate: 10}
 }
 
-// RateLimiterMiddleware implements Token Bucket algorithm using Redis + Lua script
 func RateLimiterMiddleware(redisClient *redis.Client, config *RateLimiterConfig) gin.HandlerFunc {
-	// Load Lua script into Redis (SHA hash will be cached)
-	ctx := context.Background()
-	scriptSHA, err := redisClient.ScriptLoad(ctx, luaScript).Result()
-	if err != nil {
-		logrus.WithError(err).Fatal("Failed to load Lua script for rate limiter")
-	}
+	return rateLimiterMiddleware(redisClient, config, func(c *gin.Context) string {
+		return IPRateLimiterKey(c.ClientIP())
+	})
+}
 
-	return func(c *gin.Context) {
-		// Get user ID from JWT context using utils helper
-		userID, err := utils.GetUserIDFromContext(c)
+func EmailRateLimiterMiddleware(redisClient *redis.Client, config *RateLimiterConfig) gin.HandlerFunc {
+	return rateLimiterMiddleware(redisClient, config, func(c *gin.Context) string {
+		body, err := io.ReadAll(io.LimitReader(c.Request.Body, 1<<20))
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Unauthorized - invalid or missing user_id in context",
-			})
-			c.Abort()
-			return
+			return ""
 		}
+		c.Request.Body = io.NopCloser(bytes.NewReader(body))
+		var request struct {
+			Email string `json:"email"`
+		}
+		decoder := json.NewDecoder(bytes.NewReader(body))
+		if decoder.Decode(&request) != nil || len(request.Email) > 254 || !utf8.ValidString(request.Email) {
+			return ""
+		}
+		request.Email = strings.ToLower(strings.TrimSpace(request.Email))
+		if request.Email == "" {
+			return ""
+		}
+		return "rate_limiter:ip_email:" + IPRateLimiterKey(c.ClientIP()) + ":" + request.Email
+	})
+}
 
-		key := UserRateLimiterKey(userID)
-		now := time.Now().Unix()
-		result, err := redisClient.EvalSha(ctx, scriptSHA, []string{key},
-			config.Capacity,
-			config.RefillRate,
-			now,
-		).Result()
-
-		if err != nil {
-			logrus.WithError(err).Error("Failed to execute rate limiter Lua script")
-			// Fail open: allow request if Redis fails
+func rateLimiterMiddleware(redisClient *redis.Client, config *RateLimiterConfig, key func(*gin.Context) string) gin.HandlerFunc {
+	script := redis.NewScript(luaScript)
+	return func(c *gin.Context) {
+		if config == nil || config.Capacity < 1 || config.RefillRate <= 0 {
 			c.Next()
 			return
 		}
-
-		// Check if request is allowed
-		allowed := result.(int64)
-		if allowed == 0 {
-			// Rate limit exceeded
-			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error":       "Rate limit exceeded",
-				"message":     fmt.Sprintf("Maximum %d requests per second allowed", int(config.RefillRate)),
-				"retry_after": fmt.Sprintf("%.1f seconds", 1.0/config.RefillRate),
-			})
-			c.Abort()
+		limiterKey := key(c)
+		if limiterKey == "" {
+			c.Next()
 			return
 		}
-
-		// Request allowed, continue
+		result, err := script.Run(c.Request.Context(), redisClient, []string{limiterKey}, config.Capacity, config.RefillRate, time.Now().UnixMilli()).Int64()
+		if err != nil {
+			c.Next()
+			return
+		}
+		if result == 0 {
+			c.Header("Retry-After", strconv.Itoa(max(1, int(1/config.RefillRate))))
+			response.AbortError(c, http.StatusTooManyRequests, "RATE_LIMITED", "too many requests")
+			return
+		}
 		c.Next()
 	}
 }
 
-// Build cache key for user rate limiting
-func UserRateLimiterKey(userID string) string {
-	return fmt.Sprintf("rate_limiter:user:%s", userID)
+func IPRateLimiterKey(ip string) string {
+	if parsed := net.ParseIP(ip); parsed != nil {
+		ip = parsed.String()
+	}
+	return "rate_limiter:ip:" + strings.ReplaceAll(ip, ":", "_")
 }
 
-// RateLimiterPresets provides common rate limiting configurations
-
-// StrictRateLimiter - For sensitive endpoints (login, password reset)
-// Burst: 3 requests, Sustained: 1 request per 10 seconds
 func StrictRateLimiter() *RateLimiterConfig {
-	return &RateLimiterConfig{
-		Capacity:   3,
-		RefillRate: 0.1, // 1 request per 10 seconds
-	}
+	return &RateLimiterConfig{Capacity: 5, RefillRate: 1.0 / 60}
 }
-
-// ConservativeRateLimiter - For production API endpoints
-// Burst: 10 requests, Sustained: 5 requests per second
+func LoginEmailRateLimiter() *RateLimiterConfig {
+	return &RateLimiterConfig{Capacity: 5, RefillRate: 1.0 / 60}
+}
 func ConservativeRateLimiter() *RateLimiterConfig {
-	return &RateLimiterConfig{
-		Capacity:   10,
-		RefillRate: 5.0,
-	}
+	return &RateLimiterConfig{Capacity: 10, RefillRate: 5}
 }
-
-// ModerateRateLimiter - Default configuration (alias for DefaultRateLimiterConfig)
-// Burst: 20 requests, Sustained: 10 requests per second
-func ModerateRateLimiter() *RateLimiterConfig {
-	return DefaultRateLimiterConfig()
-}
-
-// GenerousRateLimiter - For read-heavy endpoints
-// Burst: 100 requests, Sustained: 50 requests per second
+func ModerateRateLimiter() *RateLimiterConfig { return DefaultRateLimiterConfig() }
 func GenerousRateLimiter() *RateLimiterConfig {
-	return &RateLimiterConfig{
-		Capacity:   100,
-		RefillRate: 50.0,
-	}
+	return &RateLimiterConfig{Capacity: 100, RefillRate: 50}
 }
-
-// UnlimitedRateLimiter - For internal/admin endpoints (development only)
-// Burst: 10000 requests, Sustained: 1000 requests per second
 func UnlimitedRateLimiter() *RateLimiterConfig {
-	return &RateLimiterConfig{
-		Capacity:   10000,
-		RefillRate: 1000.0,
-	}
+	return &RateLimiterConfig{Capacity: 10000, RefillRate: 1000}
 }
-
-// CustomRateLimiter - Create your own configuration
-// Example: CustomRateLimiter(5, 2.0) = 5 burst, 2 req/sec
 func CustomRateLimiter(capacity int, refillRate float64) *RateLimiterConfig {
-	return &RateLimiterConfig{
-		Capacity:   capacity,
-		RefillRate: refillRate,
-	}
+	return &RateLimiterConfig{Capacity: capacity, RefillRate: refillRate}
 }

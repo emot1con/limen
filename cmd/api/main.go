@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"limen/internal/adapter/http/router"
 	"limen/internal/platform/config"
 	"limen/internal/platform/database"
 )
@@ -55,9 +56,10 @@ func run() error {
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	router := gin.New()
-	router.Use(gin.Recovery())
-	router.GET("/health", func(c *gin.Context) {
+
+	appRouter := router.New(postgresDB, redisClient)
+
+	appRouter.GET("/health", func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 		defer cancel()
 
@@ -80,7 +82,7 @@ func run() error {
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.AppPort),
-		Handler:           router,
+		Handler:           appRouter,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
