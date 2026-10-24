@@ -50,6 +50,22 @@ func (r *UserRoleRepository) Revoke(ctx context.Context, userID, roleCode string
 	return nil
 }
 
+func (r *UserRoleRepository) Replace(ctx context.Context, userID string, roles []userdomain.UserRole) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("user_id = ?", userID).Delete(&userRoleModel{}).Error; err != nil {
+			return err
+		}
+		if len(roles) == 0 {
+			return nil
+		}
+		models := make([]userRoleModel, len(roles))
+		for i, role := range roles {
+			models[i] = userRoleModel{UserID: role.UserID, RoleCode: role.RoleCode, GrantedAt: role.GrantedAt, GrantedBy: role.GrantedBy}
+		}
+		return tx.Create(&models).Error
+	})
+}
+
 func (r *UserRoleRepository) ListByUserID(ctx context.Context, userID string) ([]userdomain.UserRole, error) {
 	var models []userRoleModel
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("role_code").Find(&models).Error; err != nil {

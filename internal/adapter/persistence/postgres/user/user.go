@@ -20,7 +20,6 @@ type userModel struct {
 	LastLoginAt  *time.Time        `gorm:"column:last_login_at"`
 	CreatedAt    time.Time         `gorm:"column:created_at"`
 	UpdatedAt    time.Time         `gorm:"column:updated_at"`
-	DeletedAt    gorm.DeletedAt    `gorm:"column:deleted_at;index"`
 }
 
 func (userModel) TableName() string {
@@ -74,6 +73,26 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (userdom
 	return r.toDomain(model), nil
 }
 
+func (r *UserRepository) List(ctx context.Context, q string, limit, offset int) ([]userdomain.User, int64, error) {
+	query := r.db.WithContext(ctx).Model(&userModel{})
+	if q != "" {
+		query = query.Where("full_name ILIKE ? OR email ILIKE ?", "%"+q+"%", "%"+q+"%")
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	var models []userModel
+	if err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&models).Error; err != nil {
+		return nil, 0, err
+	}
+	users := make([]userdomain.User, len(models))
+	for i, model := range models {
+		users[i] = r.toDomain(model)
+	}
+	return users, total, nil
+}
+
 func (r *UserRepository) Update(ctx context.Context, user userdomain.User) error {
 	result := r.db.WithContext(ctx).Model(&userModel{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
 		"email":         user.Email,
@@ -83,6 +102,17 @@ func (r *UserRepository) Update(ctx context.Context, user userdomain.User) error
 		"last_login_at": user.LastLoginAt,
 		"updated_at":    user.UpdatedAt,
 	})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+
+func (r *UserRepository) Delete(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&userModel{})
 	if result.Error != nil {
 		return result.Error
 	}

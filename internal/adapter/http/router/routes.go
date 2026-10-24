@@ -6,8 +6,12 @@ import (
 	"gorm.io/gorm"
 	"limen/internal/adapter/http/handler"
 	"limen/internal/adapter/http/middleware"
+	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
 	postgresuser "limen/internal/adapter/persistence/postgres/user"
 	"limen/internal/usecase/auth"
+	deviceuc "limen/internal/usecase/device"
+	settingsuc "limen/internal/usecase/settings"
+	useruc "limen/internal/usecase/user"
 )
 
 func New(postgresDB *gorm.DB, redisClient *redis.Client) *gin.Engine {
@@ -32,6 +36,22 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client) *gin.Engine {
 	v1.POST("/auth/logout", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authHandler.Logout)
 	v1.GET("/auth/me", authMiddleware.Authenticate(), authHandler.Me)
 	v1.POST("/users/:userId/password-reset", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authMiddleware.RequireRole("admin"), authHandler.ResetPassword)
+
+	settingsRepo := postgresattendance.NewSchoolSettingsRepository(postgresDB)
+	deviceRepo := postgresattendance.NewDeviceRepository(postgresDB)
+	roleRepo := postgresuser.NewRoleRepository(postgresDB)
+	adminHandler := handler.NewAdminHandler(settingsuc.NewUseCase(settingsRepo), deviceuc.NewUseCase(deviceRepo), useruc.NewUseCase(userRepo, roleRepo, userRoleRepo, sessionRepo))
+	adminRead := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireRole("admin"))
+	adminWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authMiddleware.RequireRole("admin"))
+	adminRead.GET("/settings/school", adminHandler.GetSettings)
+	adminWrite.PUT("/settings/school", adminHandler.UpdateSettings)
+	adminRead.GET("/devices", adminHandler.ListDevices)
+	adminWrite.POST("/devices", adminHandler.CreateDevice)
+	adminWrite.PUT("/devices/:deviceId", adminHandler.UpdateDevice)
+	adminRead.GET("/users", adminHandler.ListUsers)
+	adminWrite.POST("/users", adminHandler.CreateUser)
+	adminRead.GET("/users/:userId", adminHandler.GetUser)
+	adminWrite.PUT("/users/:userId", adminHandler.UpdateUser)
 
 	return router
 }

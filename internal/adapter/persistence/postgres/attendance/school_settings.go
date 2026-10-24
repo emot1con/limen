@@ -32,6 +32,18 @@ func NewSchoolSettingsRepository(db *gorm.DB) *SchoolSettingsRepository {
 	return &SchoolSettingsRepository{db: db}
 }
 
+func (r *SchoolSettingsRepository) Create(ctx context.Context, settings attendancedomain.SchoolSettings) error {
+	model := schoolSettingsModel{
+		ID:                   settings.ID,
+		FirstEntryTime:       settings.FirstEntryTime.Format("15:04:05"),
+		Timezone:             settings.Timezone,
+		LateToleranceMinutes: settings.LateToleranceMinutes,
+		UpdatedBy:            settings.UpdatedBy,
+		UpdatedAt:            settings.UpdatedAt,
+	}
+	return r.db.WithContext(ctx).Create(&model).Error
+}
+
 func (r *SchoolSettingsRepository) Get(ctx context.Context) (attendancedomain.SchoolSettings, error) {
 	var model schoolSettingsModel
 	err := r.db.WithContext(ctx).First(&model).Error

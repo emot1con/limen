@@ -53,7 +53,9 @@ type UserRepository interface {
 	Create(context.Context, User) (string, error)
 	FindByID(context.Context, string) (User, error)
 	FindByEmail(context.Context, string) (User, error)
+	List(context.Context, string, int, int) ([]User, int64, error)
 	Update(context.Context, User) error
+	Delete(context.Context, string) error
 }
 
 type RoleRepository interface {
@@ -65,6 +67,7 @@ type RoleRepository interface {
 type UserRoleRepository interface {
 	Grant(context.Context, UserRole) error
 	Revoke(context.Context, string, string) error
+	Replace(context.Context, string, []UserRole) error
 	ListByUserID(context.Context, string) ([]UserRole, error)
 }
 

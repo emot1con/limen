@@ -114,6 +114,7 @@ type AttendanceCorrection struct {
 }
 
 type SchoolSettingsRepository interface {
+	Create(context.Context, SchoolSettings) error
 	Get(context.Context) (SchoolSettings, error)
 	Update(context.Context, SchoolSettings) error
 }
@@ -122,7 +123,8 @@ type DeviceRepository interface {
 	Create(context.Context, Device) (string, error)
 	FindByID(context.Context, string) (Device, error)
 	Update(context.Context, Device) error
-	List(context.Context) ([]Device, error)
+	Delete(context.Context, string) error
+	List(context.Context, int, int) ([]Device, int64, error)
 }
 
 type BiometricIdentityRepository interface {

@@ -81,17 +81,32 @@ func (r *DeviceRepository) Update(ctx context.Context, device attendancedomain.D
 	return nil
 }
 
-func (r *DeviceRepository) List(ctx context.Context) ([]attendancedomain.Device, error) {
+func (r *DeviceRepository) Delete(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&deviceModel{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+
+func (r *DeviceRepository) List(ctx context.Context, limit, offset int) ([]attendancedomain.Device, int64, error) {
+	query := r.db.WithContext(ctx).Model(&deviceModel{})
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var models []deviceModel
-	err := r.db.WithContext(ctx).Order("name").Find(&models).Error
-	if err != nil {
-		return nil, err
+	if err := query.Order("name").Limit(limit).Offset(offset).Find(&models).Error; err != nil {
+		return nil, 0, err
 	}
 	devices := make([]attendancedomain.Device, len(models))
 	for i, model := range models {
 		devices[i] = r.toDomain(model)
 	}
-	return devices, nil
+	return devices, total, nil
 }
 
 func (r *DeviceRepository) toDomain(model deviceModel) attendancedomain.Device {

@@ -1,4 +1,13 @@
-.PHONY: help build up down restart logs ps clean migrate-up migrate-down migrate-create db-backup db-restore redis-backup redis-restore
+.PHONY: help build up down restart logs ps clean migrate-up migrate-down migrate-create db-backup db-restore redis-backup redis-restore swag-up swag-down
+
+SWAG_CONTAINER ?= limen-swagger-ui
+SWAG_IMAGE ?= docker.swagger.io/swaggerapi/swagger-ui
+SWAG_PORT ?= 8090
+SWAG_SPEC ?= $(CURDIR)/openapi.yaml
+SWAG_CONTAINER_SPEC ?= /usr/share/nginx/html/spec/openapi.yaml
+SWAG_SPEC_URL ?= /spec/openapi.yaml
+SWAG_SELINUX ?= Z
+SWAG_RUN_FLAGS = --rm -d --name $(SWAG_CONTAINER) -p $(SWAG_PORT):8080 -e SWAGGER_JSON_URL=$(SWAG_SPEC_URL) -v "$(SWAG_SPEC):$(SWAG_CONTAINER_SPEC):ro,$(SWAG_SELINUX)" $(SWAG_IMAGE)
 
 POSTGRES_USER ?= $(shell grep POSTGRES_USER .env | cut -d '=' -f2)
 POSTGRES_DB ?= $(shell grep POSTGRES_DB .env | cut -d '=' -f2)
@@ -23,6 +32,14 @@ help:
 	@echo "  db-restore     - Restore PostgreSQL database (FILE=path)"
 	@echo "  redis-backup   - Backup Redis data"
 	@echo "  redis-restore  - Restore Redis data (FILE=path)"
+	@echo "  swag-up        - Start Swagger UI"
+	@echo "  swag-down      - Stop Swagger UI"
+ 
+swag-up:
+	docker run $(SWAG_RUN_FLAGS)
+
+swag-down:
+	docker stop $(SWAG_CONTAINER)
 
 up-build:
 	docker compose down
