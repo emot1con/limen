@@ -359,6 +359,9 @@ func validPassword(password string) bool {
 }
 
 func writeMappedError(c *gin.Context, err error, duplicateField ...string) {
+	if !errors.Is(err, domain.ErrNotFound) && !errors.Is(err, domain.ErrAlreadyExists) && !errors.Is(err, domain.ErrInvalid) && !isUniqueViolation(err) {
+		response.TraceError(c, "handler.use_case", err)
+	}
 	if errors.Is(err, domain.ErrNotFound) {
 		response.WriteError(c, http.StatusNotFound, "NOT_FOUND", "resource not found")
 		return

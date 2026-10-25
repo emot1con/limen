@@ -9,17 +9,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"limen/internal/domain"
 	attendancedomain "limen/internal/domain/attendance"
 )
 
 type UseCase struct {
-	repo attendancedomain.DeviceRepository
-	now  func() time.Time
+	repo   attendancedomain.DeviceRepository
+	now    func() time.Time
+	logger *logrus.Logger
 }
 
-func NewUseCase(repo attendancedomain.DeviceRepository) *UseCase {
-	return &UseCase{repo: repo, now: time.Now}
+func NewUseCase(repo attendancedomain.DeviceRepository, logger *logrus.Logger) *UseCase {
+	if logger == nil {
+		logger = logrus.StandardLogger()
+	}
+	return &UseCase{repo: repo, now: time.Now, logger: logger}
 }
 
 type Device struct {
@@ -67,6 +72,7 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (CreateOutput,
 	}
 	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
+		uc.logError(err, "device_generate_key", nil)
 		return CreateOutput{}, err
 	}
 	plaintext := base64.RawURLEncoding.EncodeToString(key)
@@ -84,10 +90,12 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (CreateOutput,
 		CredentialRef: &hash,
 	})
 	if err != nil {
+		uc.logError(err, "device_create", nil)
 		return CreateOutput{}, err
 	}
 	saved, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
+		uc.logError(err, "device_get_created", logrus.Fields{"device_id": id})
 		return CreateOutput{}, err
 	}
 	return CreateOutput{Device: toDevice(saved), DeviceKey: plaintext}, nil
@@ -96,6 +104,7 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (CreateOutput,
 func (uc *UseCase) Get(ctx context.Context, id string) (Device, error) {
 	item, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
+		uc.logError(err, "device_get", logrus.Fields{"device_id": id})
 		return Device{}, err
 	}
 	return toDevice(item), nil
@@ -105,6 +114,7 @@ func (uc *UseCase) List(ctx context.Context, page, pageSize int) (Page, error) {
 	page, pageSize = normalizePage(page, pageSize)
 	items, total, err := uc.repo.List(ctx, pageSize, (page-1)*pageSize)
 	if err != nil {
+		uc.logError(err, "device_list", nil)
 		return Page{}, err
 	}
 	out := make([]Device, len(items))
@@ -117,6 +127,7 @@ func (uc *UseCase) List(ctx context.Context, page, pageSize int) (Page, error) {
 func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (Device, error) {
 	item, err := uc.repo.FindByID(ctx, input.ID)
 	if err != nil {
+		uc.logError(err, "device_get_for_update", logrus.Fields{"device_id": input.ID})
 		return Device{}, err
 	}
 	if input.Name != nil {
@@ -137,17 +148,34 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (Device, error
 	}
 	item.UpdatedAt = uc.now()
 	if err := uc.repo.Update(ctx, item); err != nil {
+		uc.logError(err, "device_update", logrus.Fields{"device_id": input.ID})
 		return Device{}, err
 	}
 	updated, err := uc.repo.FindByID(ctx, input.ID)
 	if err != nil {
+		uc.logError(err, "device_get_updated", logrus.Fields{"device_id": input.ID})
 		return Device{}, err
 	}
 	return toDevice(updated), nil
 }
 
 func (uc *UseCase) Delete(ctx context.Context, id string) error {
-	return uc.repo.Delete(ctx, id)
+	if err := uc.repo.Delete(ctx, id); err != nil {
+		uc.logError(err, "device_delete", logrus.Fields{"device_id": id})
+		return err
+	}
+	return nil
+}
+
+func (uc *UseCase) logError(err error, operation string, fields logrus.Fields) {
+	if err == nil || err == domain.ErrInvalid || err == domain.ErrNotFound || err == domain.ErrAlreadyExists {
+		return
+	}
+	entry := uc.logger.WithError(err).WithField("operation", operation)
+	if fields != nil {
+		entry = entry.WithFields(fields)
+	}
+	entry.Error("usecase failed")
 }
 
 func toDevice(item attendancedomain.Device) Device {

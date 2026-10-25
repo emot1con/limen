@@ -4,17 +4,22 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"limen/internal/domain"
 	attendancedomain "limen/internal/domain/attendance"
 )
 
 type UseCase struct {
-	repo attendancedomain.SchoolSettingsRepository
-	now  func() time.Time
+	repo   attendancedomain.SchoolSettingsRepository
+	now    func() time.Time
+	logger *logrus.Logger
 }
 
-func NewUseCase(repo attendancedomain.SchoolSettingsRepository) *UseCase {
-	return &UseCase{repo: repo, now: time.Now}
+func NewUseCase(repo attendancedomain.SchoolSettingsRepository, logger *logrus.Logger) *UseCase {
+	if logger == nil {
+		logger = logrus.StandardLogger()
+	}
+	return &UseCase{repo: repo, now: time.Now, logger: logger}
 }
 
 type Output struct {
@@ -35,6 +40,7 @@ type UpdateInput struct {
 func (uc *UseCase) Get(ctx context.Context) (Output, error) {
 	settings, err := uc.ensure(ctx)
 	if err != nil {
+		uc.logError(err, "settings_get")
 		return Output{}, err
 	}
 	return toOutput(settings), nil
@@ -47,6 +53,7 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (Output, error
 	}
 	settings, err := uc.ensure(ctx)
 	if err != nil {
+		uc.logError(err, "settings_get")
 		return Output{}, err
 	}
 	settings.FirstEntryTime = entry
@@ -59,10 +66,12 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (Output, error
 	settings.UpdatedBy = &input.UpdatedBy
 	settings.UpdatedAt = uc.now()
 	if err := uc.repo.Update(ctx, settings); err != nil {
+		uc.logError(err, "settings_update")
 		return Output{}, err
 	}
 	updated, err := uc.repo.Get(ctx)
 	if err != nil {
+		uc.logError(err, "settings_get_updated")
 		return Output{}, err
 	}
 	return toOutput(updated), nil
@@ -86,6 +95,13 @@ func (uc *UseCase) ensure(ctx context.Context) (attendancedomain.SchoolSettings,
 		return attendancedomain.SchoolSettings{}, err
 	}
 	return uc.repo.Get(ctx)
+}
+
+func (uc *UseCase) logError(err error, operation string) {
+	if err == nil || err == domain.ErrInvalid || err == domain.ErrNotFound || err == domain.ErrAlreadyExists {
+		return
+	}
+	uc.logger.WithError(err).WithField("operation", operation).Error("usecase failed")
 }
 
 func toOutput(settings attendancedomain.SchoolSettings) Output {

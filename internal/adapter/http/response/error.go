@@ -1,6 +1,11 @@
 package response
 
-import "github.com/gin-gonic/gin"
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 type FieldError struct {
 	Field   string `json:"field"`
@@ -17,6 +22,14 @@ type Error struct {
 	Details ErrorDetails `json:"details"`
 }
 
+func TraceError(c *gin.Context, operation string, err error) {
+	if err == nil {
+		return
+	}
+	c.Set("internal_error_operation", operation)
+	c.Set("internal_error_type", fmt.Sprintf("%T", err))
+}
+
 func AbortError(c *gin.Context, status int, code, message string, fields ...FieldError) {
 	if fields == nil {
 		fields = []FieldError{}
@@ -29,6 +42,9 @@ func AbortError(c *gin.Context, status int, code, message string, fields ...Fiel
 }
 
 func WriteError(c *gin.Context, status int, code, message string, fields ...FieldError) {
+	if status >= http.StatusInternalServerError {
+		c.Set("internal_error_code", code)
+	}
 	if fields == nil {
 		fields = []FieldError{}
 	}

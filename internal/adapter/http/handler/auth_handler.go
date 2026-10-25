@@ -47,6 +47,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			response.WriteError(c, http.StatusUnauthorized, "INVALID_CREDENTIALS", "invalid email or password")
 			return
 		}
+		response.TraceError(c, "auth.login", err)
 		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
 	}
@@ -71,7 +72,11 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		response.WriteError(c, http.StatusUnauthorized, "UNAUTHENTICATED", "session required")
 		return
 	}
-	_ = h.logoutUC.Execute(c.Request.Context(), auth.LogoutInput{SessionID: sessionID})
+	if err := h.logoutUC.Execute(c.Request.Context(), auth.LogoutInput{SessionID: sessionID}); err != nil {
+		response.TraceError(c, "auth.logout", err)
+		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
+		return
+	}
 	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie("session", "", -1, "/", "", true, true)
 	c.SetCookie("csrf", "", -1, "/", "", true, false)
@@ -86,6 +91,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	}
 	output, err := h.meUC.Execute(c.Request.Context(), userID)
 	if err != nil {
+		response.TraceError(c, "auth.me", err)
 		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
 	}
@@ -120,6 +126,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 			response.WriteError(c, http.StatusNotFound, "NOT_FOUND", "user not found")
 			return
 		}
+		response.TraceError(c, "auth.reset_password", err)
 		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
 	}

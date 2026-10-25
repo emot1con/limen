@@ -8,6 +8,7 @@ import (
 	academicdomain "limen/internal/domain/academic"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type classModel struct {
@@ -34,12 +35,11 @@ func NewClassRepository(db *gorm.DB) *ClassRepository {
 
 func (r *ClassRepository) Create(ctx context.Context, class academicdomain.Class) (string, error) {
 	model := classModel{
-		ID:                    class.ID,
 		Name:                  class.Name,
 		Level:                 class.Level,
 		HomeroomTeacherUserID: class.HomeroomTeacherUserID,
 	}
-	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+	if err := r.db.WithContext(ctx).Omit("ID", "CreatedAt", "UpdatedAt").Clauses(clause.Returning{Columns: []clause.Column{{Name: "id"}}}).Create(&model).Error; err != nil {
 		return "", err
 	}
 	return model.ID, nil

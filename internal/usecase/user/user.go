@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/sirupsen/logrus"
 	"limen/internal/domain"
 	userdomain "limen/internal/domain/user"
 	"limen/internal/usecase/auth"
@@ -26,10 +27,14 @@ type UseCase struct {
 	userRole userdomain.UserRoleRepository
 	sessions userdomain.SessionRepository
 	now      func() time.Time
+	logger   *logrus.Logger
 }
 
-func NewUseCase(users userdomain.UserRepository, roles userdomain.RoleRepository, userRole userdomain.UserRoleRepository, sessions userdomain.SessionRepository) *UseCase {
-	return &UseCase{users: users, roles: roles, userRole: userRole, sessions: sessions, now: time.Now}
+func NewUseCase(users userdomain.UserRepository, roles userdomain.RoleRepository, userRole userdomain.UserRoleRepository, sessions userdomain.SessionRepository, logger *logrus.Logger) *UseCase {
+	if logger == nil {
+		logger = logrus.StandardLogger()
+	}
+	return &UseCase{users: users, roles: roles, userRole: userRole, sessions: sessions, now: time.Now, logger: logger}
 }
 
 type User struct {
@@ -76,18 +81,22 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (User, error) 
 	}
 	roles, err := normalizeRoles(input.Roles)
 	if err != nil {
+		uc.logError(err, "user_normalize_roles", nil)
 		return User{}, err
 	}
 	if err := uc.seedRoles(ctx); err != nil {
+		uc.logError(err, "user_seed_roles", nil)
 		return User{}, err
 	}
 	hash, err := auth.HashArgon2idPassword(input.Password)
 	if err != nil {
+		uc.logError(err, "user_hash_password", nil)
 		return User{}, err
 	}
 	now := uc.now()
 	id, err := uc.users.Create(ctx, userdomain.User{Email: email, PasswordHash: hash, FullName: name, Status: userdomain.StatusActive, CreatedAt: now, UpdatedAt: now})
 	if err != nil {
+		uc.logError(err, "user_create", nil)
 		return User{}, err
 	}
 	granted := make([]userdomain.UserRole, len(roles))
@@ -95,6 +104,7 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (User, error) 
 		granted[i] = userdomain.UserRole{UserID: id, RoleCode: role, GrantedAt: now, GrantedBy: optional(input.GrantedBy)}
 	}
 	if err := uc.userRole.Replace(ctx, id, granted); err != nil {
+		uc.logError(err, "user_replace_roles", logrus.Fields{"user_id": id})
 		return User{}, err
 	}
 	return uc.Get(ctx, id)
@@ -103,10 +113,12 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (User, error) 
 func (uc *UseCase) Get(ctx context.Context, id string) (User, error) {
 	item, err := uc.users.FindByID(ctx, id)
 	if err != nil {
+		uc.logError(err, "user_get", logrus.Fields{"user_id": id})
 		return User{}, err
 	}
 	roles, err := uc.userRole.ListByUserID(ctx, id)
 	if err != nil {
+		uc.logError(err, "user_list_roles", logrus.Fields{"user_id": id})
 		return User{}, err
 	}
 	return toUser(item, roleCodes(roles)), nil
@@ -116,12 +128,14 @@ func (uc *UseCase) List(ctx context.Context, q string, page, pageSize int) (Page
 	page, pageSize = normalizePage(page, pageSize)
 	items, total, err := uc.users.List(ctx, strings.TrimSpace(q), pageSize, (page-1)*pageSize)
 	if err != nil {
+		uc.logError(err, "user_list", nil)
 		return Page{}, err
 	}
 	out := make([]User, len(items))
 	for i, item := range items {
 		roles, err := uc.userRole.ListByUserID(ctx, item.ID)
 		if err != nil {
+			uc.logError(err, "user_list_roles", logrus.Fields{"user_id": item.ID})
 			return Page{}, err
 		}
 		out[i] = toUser(item, roleCodes(roles))
@@ -131,14 +145,20 @@ func (uc *UseCase) List(ctx context.Context, q string, page, pageSize int) (Page
 
 func (uc *UseCase) Delete(ctx context.Context, id string) error {
 	if err := uc.sessions.RevokeAllByUserID(ctx, id, uc.now()); err != nil {
+		uc.logError(err, "user_revoke_sessions", logrus.Fields{"user_id": id})
 		return err
 	}
-	return uc.users.Delete(ctx, id)
+	if err := uc.users.Delete(ctx, id); err != nil {
+		uc.logError(err, "user_delete", logrus.Fields{"user_id": id})
+		return err
+	}
+	return nil
 }
 
 func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) {
 	item, err := uc.users.FindByID(ctx, input.ID)
 	if err != nil {
+		uc.logError(err, "user_get_for_update", logrus.Fields{"user_id": input.ID})
 		return User{}, err
 	}
 	if input.Email != nil {
@@ -165,6 +185,7 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) 
 	}
 	item.UpdatedAt = uc.now()
 	if err := uc.users.Update(ctx, item); err != nil {
+		uc.logError(err, "user_update", logrus.Fields{"user_id": input.ID})
 		return User{}, err
 	}
 	if input.Roles != nil {
@@ -173,6 +194,7 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) 
 			return User{}, err
 		}
 		if err := uc.seedRoles(ctx); err != nil {
+			uc.logError(err, "user_seed_roles", nil)
 			return User{}, err
 		}
 		granted := make([]userdomain.UserRole, len(roles))
@@ -181,11 +203,13 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) 
 			granted[i] = userdomain.UserRole{UserID: input.ID, RoleCode: role, GrantedAt: now, GrantedBy: optional(input.GrantedBy)}
 		}
 		if err := uc.userRole.Replace(ctx, input.ID, granted); err != nil {
+			uc.logError(err, "user_replace_roles", logrus.Fields{"user_id": input.ID})
 			return User{}, err
 		}
 	}
 	if revoke {
 		if err := uc.sessions.RevokeAllByUserID(ctx, input.ID, uc.now()); err != nil {
+			uc.logError(err, "user_revoke_sessions", logrus.Fields{"user_id": input.ID})
 			return User{}, err
 		}
 	}
@@ -259,6 +283,17 @@ func roleCodes(roles []userdomain.UserRole) []string {
 		out[i] = role.RoleCode
 	}
 	return out
+}
+
+func (uc *UseCase) logError(err error, operation string, fields logrus.Fields) {
+	if err == nil || errors.Is(err, domain.ErrInvalid) || errors.Is(err, domain.ErrNotFound) || errors.Is(err, domain.ErrAlreadyExists) {
+		return
+	}
+	entry := uc.logger.WithError(err).WithField("operation", operation)
+	if fields != nil {
+		entry = entry.WithFields(fields)
+	}
+	entry.Error("usecase failed")
 }
 
 func optional(value string) *string {

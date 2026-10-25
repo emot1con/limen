@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -32,23 +31,19 @@ func (am *AuthMiddleware) Authenticate() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		fmt.Println("1")
 		tokenHash := hashToken(sessionToken)
 		session, err := am.sessionRepo.FindByTokenHash(c.Request.Context(), tokenHash)
 		if err != nil {
 			response.WriteError(c, http.StatusUnauthorized, "UNAUTHENTICATED", "invalid session")
-			fmt.Println(err)
 			c.Abort()
 			return
 		}
-		fmt.Println("2")
 		now := time.Now()
 		if session.RevokedAt != nil || session.ExpiresAt.Before(now) {
 			response.WriteError(c, http.StatusUnauthorized, "UNAUTHENTICATED", "session expired")
 			c.Abort()
 			return
 		}
-		fmt.Println("3")
 		idleExpiry := session.CreatedAt.Add(30 * time.Minute)
 		absoluteExpiry := session.CreatedAt.Add(12 * time.Hour)
 		if session.LastSeenAt != nil {
@@ -64,12 +59,14 @@ func (am *AuthMiddleware) Authenticate() gin.HandlerFunc {
 			expiresAt = absoluteExpiry
 		}
 		if err := am.sessionRepo.Touch(c.Request.Context(), session.ID, now, expiresAt); err != nil {
+			response.TraceError(c, "auth.session.touch", err)
 			response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 			c.Abort()
 			return
 		}
 		userRoles, err := am.userRoleRepo.ListByUserID(c.Request.Context(), session.UserID)
 		if err != nil {
+			response.TraceError(c, "auth.session.load_roles", err)
 			response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 			c.Abort()
 			return

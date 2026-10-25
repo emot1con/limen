@@ -9,6 +9,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"limen/internal/domain"
 	userdomain "limen/internal/domain/user"
 )
@@ -33,10 +34,14 @@ type LoginUseCase struct {
 	userRepo     userdomain.UserRepository
 	userRoleRepo userdomain.UserRoleRepository
 	sessionRepo  userdomain.SessionRepository
+	logger       *logrus.Logger
 }
 
-func NewLoginUseCase(userRepo userdomain.UserRepository, userRoleRepo userdomain.UserRoleRepository, sessionRepo userdomain.SessionRepository) *LoginUseCase {
-	return &LoginUseCase{userRepo: userRepo, userRoleRepo: userRoleRepo, sessionRepo: sessionRepo}
+func NewLoginUseCase(userRepo userdomain.UserRepository, userRoleRepo userdomain.UserRoleRepository, sessionRepo userdomain.SessionRepository, logger *logrus.Logger) *LoginUseCase {
+	if logger == nil {
+		logger = logrus.StandardLogger()
+	}
+	return &LoginUseCase{userRepo: userRepo, userRoleRepo: userRoleRepo, sessionRepo: sessionRepo, logger: logger}
 }
 
 func (uc *LoginUseCase) Execute(ctx context.Context, input LoginInput) (LoginOutput, error) {
@@ -45,6 +50,7 @@ func (uc *LoginUseCase) Execute(ctx context.Context, input LoginInput) (LoginOut
 		if errors.Is(err, domain.ErrNotFound) {
 			return LoginOutput{}, domain.ErrInvalid
 		}
+		uc.logger.WithError(err).WithField("operation", "login_find_user").Error("usecase failed")
 		return LoginOutput{}, err
 	}
 	if user.Status != userdomain.StatusActive {
@@ -55,6 +61,7 @@ func (uc *LoginUseCase) Execute(ctx context.Context, input LoginInput) (LoginOut
 	}
 	userRoles, err := uc.userRoleRepo.ListByUserID(ctx, user.ID)
 	if err != nil {
+		uc.logger.WithError(err).WithFields(logrus.Fields{"operation": "login_list_roles", "user_id": user.ID}).Error("usecase failed")
 		return LoginOutput{}, err
 	}
 	roles := make([]string, len(userRoles))
@@ -80,12 +87,15 @@ func (uc *LoginUseCase) Execute(ctx context.Context, input LoginInput) (LoginOut
 		UserAgent:  input.UserAgent,
 	}
 	if _, err := uc.sessionRepo.Create(ctx, session); err != nil {
+		uc.logger.WithError(err).WithFields(logrus.Fields{"operation": "login_create_session", "user_id": user.ID}).Error("usecase failed")
 		return LoginOutput{}, err
 	}
 	loginAt := now
 	user.LastLoginAt = &loginAt
 	user.UpdatedAt = now
-	_ = uc.userRepo.Update(ctx, user)
+	if err := uc.userRepo.Update(ctx, user); err != nil {
+		uc.logger.WithError(err).WithField("user_id", user.ID).Warn("update last login failed")
+	}
 	return LoginOutput{
 		UserID:       user.ID,
 		Email:        user.Email,

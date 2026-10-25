@@ -57,7 +57,7 @@ func run() error {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	appRouter := router.New(postgresDB, redisClient)
+	appRouter := router.New(postgresDB, redisClient, logger)
 
 	appRouter.GET("/health", func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
