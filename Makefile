@@ -1,5 +1,8 @@
 .PHONY: help build up down restart logs ps clean migrate-up migrate-down migrate-create db-backup db-restore redis-backup redis-restore swag-up swag-down
 
+include .env
+export
+
 SWAG_CONTAINER ?= limen-swagger-ui
 SWAG_IMAGE ?= docker.swagger.io/swaggerapi/swagger-ui
 SWAG_PORT ?= 8090
@@ -9,6 +12,7 @@ SWAG_SPEC_URL ?= /spec/openapi.yaml
 SWAG_SELINUX ?= Z
 SWAG_RUN_FLAGS = --rm -d --name $(SWAG_CONTAINER) -p $(SWAG_PORT):8080 -e SWAGGER_JSON_URL=$(SWAG_SPEC_URL) -v "$(SWAG_SPEC):$(SWAG_CONTAINER_SPEC):ro,$(SWAG_SELINUX)" $(SWAG_IMAGE)
 
+POSTGRES_CONTAINER ?= postgres
 POSTGRES_USER ?= $(shell grep POSTGRES_USER .env | cut -d '=' -f2)
 POSTGRES_DB ?= $(shell grep POSTGRES_DB .env | cut -d '=' -f2)
 BACKUP_DIR ?= backups
@@ -25,8 +29,8 @@ help:
 	@echo "  logs           - Show logs (tail -f)"
 	@echo "  ps             - Show running containers"
 	@echo "  clean          - Stop containers and remove volumes"
-	@echo "  migrate-up     - Run migrations up"
-	@echo "  migrate-down   - Run migrations down"
+	@echo "  migrate-up     - Run all pending migrations up"
+	@echo "  migrate-down   - Roll back all applied migrations"
 	@echo "  migrate-create - Create new migration (NAME=name)"
 	@echo "  db-backup      - Backup PostgreSQL database"
 	@echo "  db-restore     - Restore PostgreSQL database (FILE=path)"
@@ -71,10 +75,34 @@ clean:
 	docker compose down -v
 
 migrate-up:
-	docker compose exec -it postgres psql -U postgres $(shell grep POSTGRES_USER .env | cut -d '=' -f2) -d $(shell grep POSTGRES_DB .env | cut -d '=' -f2) < migrations/000001_init.up.sql
+	@set -eu; \
+	for file in migrations/*.up.sql; do \
+		version=$$(basename "$$file" .up.sql); \
+		applied=$$(docker exec -i $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -tAc "SELECT to_regclass('public.schema_migrations') IS NOT NULL"); \
+		if [ "$$applied" != "t" ]; then \
+			docker exec -i $(POSTGRES_CONTAINER) psql -v ON_ERROR_STOP=1 -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c 'CREATE TABLE public.schema_migrations (version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())'; \
+		fi; \
+		applied=$$(docker exec -i $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -tAc "SELECT EXISTS (SELECT 1 FROM public.schema_migrations WHERE version = '$${version}')"); \
+		if [ "$$applied" = "f" ]; then \
+			echo "Applying $${version}"; \
+			{ printf '%s\n' 'BEGIN;'; cat "$$file"; printf '\nINSERT INTO public.schema_migrations (version) VALUES (%s);\nCOMMIT;\n' "'$${version}'"; } | docker exec -i $(POSTGRES_CONTAINER) psql -v ON_ERROR_STOP=1 -U $(POSTGRES_USER) -d $(POSTGRES_DB); \
+		else \
+			echo "Skipping $${version} (already applied)"; \
+		fi; \
+	done
 
 migrate-down:
-	docker compose exec -it postgres psql -U postgres $(shell grep POSTGRES_USER .env | cut -d '=' -f2) -d $(shell grep POSTGRES_DB .env | cut -d '=' -f2) < migrations/000001_init.down.sql
+	@set -eu; \
+	for file in $$(ls migrations/*.down.sql 2>/dev/null | sort -r); do \
+		version=$$(basename "$$file" .down.sql); \
+		applied=$$(docker exec -i $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -tAc "SELECT to_regclass('public.schema_migrations') IS NOT NULL"); \
+		if [ "$$applied" != "t" ]; then echo "No migrations applied"; exit 0; fi; \
+		applied=$$(docker exec -i $(POSTGRES_CONTAINER) psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -tAc "SELECT EXISTS (SELECT 1 FROM public.schema_migrations WHERE version = '$${version}')"); \
+		if [ "$$applied" = "t" ]; then \
+			echo "Rolling back $${version}"; \
+			{ printf '%s\n' 'BEGIN;'; cat "$$file"; printf '\nDELETE FROM public.schema_migrations WHERE version = %s;\nCOMMIT;\n' "'$${version}'"; } | docker exec -i $(POSTGRES_CONTAINER) psql -v ON_ERROR_STOP=1 -U $(POSTGRES_USER) -d $(POSTGRES_DB); \
+		fi; \
+	done
 
 migrate-create:
 	@test -n "$(NAME)" || (echo "NAME required. Usage: make migrate-create NAME=add_users"; exit 1)

@@ -764,6 +764,32 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: API-MST-010
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Academic]
+      summary: Perbarui profil siswa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nis: { type: string }
+                classId: { type: string, format: uuid, nullable: true }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Student' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /teaching-assignments:
     get:
       operationId: API-MST-008
@@ -1915,7 +1941,7 @@ components:
               nullable: true
               properties:
                 type: { $ref: '#/components/schemas/SubjectType' }
-                nis: { type: string }
+                nis: { type: string, nullable: true }
                 nip: { type: string }
     AttendanceRecord:
       type: object
@@ -1997,7 +2023,7 @@ components:
       properties:
         userId: { type: string, format: uuid }
         fullName: { type: string }
-        nis: { type: string }
+        nis: { type: string, nullable: true }
         classId: { type: string, format: uuid, nullable: true }
         className: { type: string, nullable: true }
         status: { $ref: '#/components/schemas/UserStatus' }

@@ -12,7 +12,7 @@ import (
 
 type studentModel struct {
 	UserID    string         `gorm:"column:user_id;primaryKey"`
-	NIS       string         `gorm:"column:nis"`
+	NIS       *string        `gorm:"column:nis"`
 	ClassID   *string        `gorm:"column:class_id"`
 	CreatedAt string         `gorm:"column:created_at"`
 	UpdatedAt string         `gorm:"column:updated_at"`
@@ -69,8 +69,9 @@ func (r *StudentRepository) FindByNIS(ctx context.Context, nis string) (academic
 
 func (r *StudentRepository) Update(ctx context.Context, student academicdomain.Student) error {
 	result := r.db.WithContext(ctx).Model(&studentModel{}).Where("user_id = ?", student.UserID).Updates(map[string]interface{}{
-		"nis":      student.NIS,
-		"class_id": student.ClassID,
+		"nis":        student.NIS,
+		"class_id":   student.ClassID,
+		"updated_at": gorm.Expr("now()"),
 	})
 	if result.Error != nil {
 		return result.Error

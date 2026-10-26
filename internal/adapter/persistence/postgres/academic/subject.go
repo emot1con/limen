@@ -8,6 +8,7 @@ import (
 	academicdomain "limen/internal/domain/academic"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type subjectModel struct {
@@ -37,7 +38,7 @@ func (r *SubjectRepository) Create(ctx context.Context, subject academicdomain.S
 		Code: subject.Code,
 		Name: subject.Name,
 	}
-	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+	if err := r.db.WithContext(ctx).Omit("ID", "CreatedAt", "UpdatedAt").Clauses(clause.Returning{Columns: []clause.Column{{Name: "id"}}}).Create(&model).Error; err != nil {
 		return "", err
 	}
 	return model.ID, nil

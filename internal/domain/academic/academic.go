@@ -15,7 +15,7 @@ const (
 
 type Student struct {
 	UserID    string
-	NIS       string
+	NIS       *string
 	ClassID   *string
 	CreatedAt time.Time
 	UpdatedAt time.Time

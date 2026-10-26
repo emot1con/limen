@@ -55,7 +55,7 @@ func (h *AcademicHandler) CreateClass(c *gin.Context) {
 		uuidError(c, "homeroomTeacherUserId")
 		return
 	}
-	
+
 	fmt.Println("req after: ", req.Name, req.Level, req.HomeroomTeacherUserID)
 	out, err := h.academic.CreateClass(c.Request.Context(), req.Name, req.Level, req.HomeroomTeacherUserID)
 	if err != nil {
@@ -176,6 +176,46 @@ func (h *AcademicHandler) GetStudent(c *gin.Context) {
 	out, err := h.academic.GetStudent(c.Request.Context(), c.Param("studentId"))
 	if err != nil {
 		writeMappedError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, studentJSON(out))
+}
+
+func (h *AcademicHandler) UpdateStudent(c *gin.Context) {
+	if !ValidUUID(c.Param("studentId")) {
+		uuidError(c, "studentId")
+		return
+	}
+	var raw map[string]json.RawMessage
+	if !bindAcademic(c, &raw) {
+		return
+	}
+	var req struct {
+		NIS     *string `json:"nis"`
+		ClassID *string `json:"classId"`
+	}
+	body, _ := json.Marshal(raw)
+	if err := json.Unmarshal(body, &req); err != nil {
+		validationBody(c)
+		return
+	}
+	_, nisSet := raw["nis"]
+	_, classSet := raw["classId"]
+	if !nisSet && !classSet {
+		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "request", Message: "at least one field is required"})
+		return
+	}
+	if nisSet && (req.NIS == nil || strings.TrimSpace(*req.NIS) == "") {
+		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "nis", Message: "required"})
+		return
+	}
+	if classSet && req.ClassID != nil && !ValidUUID(*req.ClassID) {
+		uuidError(c, "classId")
+		return
+	}
+	out, err := h.academic.UpdateStudent(c.Request.Context(), c.Param("studentId"), req.NIS, req.ClassID, nisSet, classSet)
+	if err != nil {
+		writeMappedError(c, err, "nis")
 		return
 	}
 	c.JSON(http.StatusOK, studentJSON(out))

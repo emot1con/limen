@@ -34,6 +34,39 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
+func (r *UserRepository) CreateWithRoles(ctx context.Context, user userdomain.User, roles []userdomain.UserRole, createStudent bool) (string, error) {
+	var id string
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		model := userModel{
+			Email: user.Email, PasswordHash: user.PasswordHash, FullName: user.FullName,
+			Status: user.Status, LastLoginAt: user.LastLoginAt, CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt,
+		}
+		if err := tx.Create(&model).Error; err != nil {
+			return err
+		}
+		id = model.ID
+		roleModels := make([]userRoleModel, len(roles))
+		for i, role := range roles {
+			roleModels[i] = userRoleModel{UserID: id, RoleCode: role.RoleCode, GrantedAt: role.GrantedAt, GrantedBy: role.GrantedBy}
+		}
+		if len(roleModels) > 0 {
+			if err := tx.Create(&roleModels).Error; err != nil {
+				return err
+			}
+		}
+		if createStudent {
+			if err := tx.Table("students").Create(map[string]interface{}{"user_id": id}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
 func (r *UserRepository) Create(ctx context.Context, user userdomain.User) (string, error) {
 	model := userModel{
 		ID:           user.ID,

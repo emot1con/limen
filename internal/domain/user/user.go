@@ -51,6 +51,7 @@ type Role struct {
 
 type UserRepository interface {
 	Create(context.Context, User) (string, error)
+	CreateWithRoles(context.Context, User, []UserRole, bool) (string, error)
 	FindByID(context.Context, string) (User, error)
 	FindByEmail(context.Context, string) (User, error)
 	List(context.Context, string, int, int) ([]User, int64, error)

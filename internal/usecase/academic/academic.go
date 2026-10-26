@@ -29,7 +29,7 @@ type Class struct {
 type Student struct {
 	UserID    string
 	FullName  string
-	NIS       string
+	NIS       *string
 	ClassID   *string
 	ClassName *string
 	Status    userdomain.Status
@@ -41,14 +41,15 @@ type UseCase struct {
 	assignments academicdomain.TeachingAssignmentRepository
 	users       userdomain.UserRepository
 	repo        Repository
+	students    academicdomain.StudentRepository
 	logger      *logrus.Logger
 }
 
-func NewUseCase(classes academicdomain.ClassRepository, subjects academicdomain.SubjectRepository, assignments academicdomain.TeachingAssignmentRepository, users userdomain.UserRepository, repo Repository, logger *logrus.Logger) *UseCase {
+func NewUseCase(classes academicdomain.ClassRepository, subjects academicdomain.SubjectRepository, assignments academicdomain.TeachingAssignmentRepository, users userdomain.UserRepository, students academicdomain.StudentRepository, repo Repository, logger *logrus.Logger) *UseCase {
 	if logger == nil {
 		logger = logrus.StandardLogger()
 	}
-	return &UseCase{classes: classes, subjects: subjects, assignments: assignments, users: users, repo: repo, logger: logger}
+	return &UseCase{classes: classes, subjects: subjects, assignments: assignments, users: users, students: students, repo: repo, logger: logger}
 }
 
 func (uc *UseCase) ListClasses(ctx context.Context, level, q string, page, pageSize int) ([]Class, int64, error) {
@@ -79,6 +80,39 @@ func (uc *UseCase) GetStudent(ctx context.Context, id string) (Student, error) {
 	}
 	return item, err
 }
+func (uc *UseCase) UpdateStudent(ctx context.Context, id string, nis *string, classID *string, nisSet, classSet bool) (Student, error) {
+	student, err := uc.students.FindByUserID(ctx, id)
+	if err != nil {
+		uc.logError(err, "academic_get_student_for_update", logrus.Fields{"student_id": id})
+		return Student{}, err
+	}
+	if nisSet {
+		if nis == nil || strings.TrimSpace(*nis) == "" {
+			return Student{}, domain.ErrInvalid
+		}
+		value := strings.TrimSpace(*nis)
+		student.NIS = &value
+	}
+	if classSet {
+		if classID != nil {
+			if _, err := uc.classes.FindByID(ctx, *classID); err != nil {
+				uc.logError(err, "academic_validate_student_class", logrus.Fields{"class_id": *classID})
+				return Student{}, err
+			}
+		}
+		student.ClassID = classID
+	}
+	if err := uc.students.Update(ctx, student); err != nil {
+		uc.logError(err, "academic_update_student", logrus.Fields{"student_id": id})
+		return Student{}, err
+	}
+	updated, err := uc.repo.FindStudent(ctx, id)
+	if err != nil {
+		uc.logError(err, "academic_get_updated_student", logrus.Fields{"student_id": id})
+	}
+	return updated, err
+}
+
 func (uc *UseCase) ListAssignments(ctx context.Context, teacherID, classID, subjectID string, page, pageSize int) ([]academicdomain.TeachingAssignment, int64, error) {
 	items, total, err := uc.repo.ListAssignments(ctx, teacherID, classID, subjectID, pageSize, (page-1)*pageSize)
 	if err != nil {

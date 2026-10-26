@@ -94,17 +94,14 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (User, error) 
 		return User{}, err
 	}
 	now := uc.now()
-	id, err := uc.users.Create(ctx, userdomain.User{Email: email, PasswordHash: hash, FullName: name, Status: userdomain.StatusActive, CreatedAt: now, UpdatedAt: now})
-	if err != nil {
-		uc.logError(err, "user_create", nil)
-		return User{}, err
-	}
+	newUser := userdomain.User{Email: email, PasswordHash: hash, FullName: name, Status: userdomain.StatusActive, CreatedAt: now, UpdatedAt: now}
 	granted := make([]userdomain.UserRole, len(roles))
 	for i, role := range roles {
-		granted[i] = userdomain.UserRole{UserID: id, RoleCode: role, GrantedAt: now, GrantedBy: optional(input.GrantedBy)}
+		granted[i] = userdomain.UserRole{RoleCode: role, GrantedAt: now, GrantedBy: optional(input.GrantedBy)}
 	}
-	if err := uc.userRole.Replace(ctx, id, granted); err != nil {
-		uc.logError(err, "user_replace_roles", logrus.Fields{"user_id": id})
+	id, err := uc.users.CreateWithRoles(ctx, newUser, granted, hasRole(roles, "siswa"))
+	if err != nil {
+		uc.logError(err, "user_create_with_roles", nil)
 		return User{}, err
 	}
 	return uc.Get(ctx, id)
@@ -283,6 +280,15 @@ func roleCodes(roles []userdomain.UserRole) []string {
 		out[i] = role.RoleCode
 	}
 	return out
+}
+
+func hasRole(roles []string, wanted string) bool {
+	for _, role := range roles {
+		if role == wanted {
+			return true
+		}
+	}
+	return false
 }
 
 func (uc *UseCase) logError(err error, operation string, fields logrus.Fields) {

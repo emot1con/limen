@@ -1,0 +1,1 @@
+ALTER TABLE "students" ALTER COLUMN "nis" SET NOT NULL;

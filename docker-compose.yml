@@ -48,28 +48,28 @@ services:
       - app
     restart: always
 
-  migrate:
-    image: migrate/migrate
-    container_name: migrate
-    user: root
-    # depends_on:
-    #   postgres:
-    #     condition: service_healthy
-    volumes:
-      - ./migrations:/migrations:Z
-    command:
-      [
-        "-path",
-        "/migrations",
-        "-database",
-        "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable",
-        "up",
-      ]
-    env_file:
-      - .env
-    restart: "no"
-    networks:
-      - app
+  # migrate:
+  #   image: migrate/migrate
+  #   container_name: migrate
+  #   user: root
+  #   # depends_on:
+  #   #   postgres:
+  #   #     condition: service_healthy
+  #   volumes:
+  #     - ./migrations:/migrations:Z
+  #   command:
+  #     [
+  #       "-path",
+  #       "/migrations",
+  #       "-database",
+  #       "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable",
+  #       "up",
+  #     ]
+  #   env_file:
+  #     - .env
+  #   restart: "no"
+  #   networks:
+  #     - app
 
 volumes:
   # postgres_data:

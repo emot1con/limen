@@ -92,9 +92,11 @@ func (r *QueryRepository) FindStudent(ctx context.Context, id string) (academicu
 const studentSelect = "s.user_id, u.full_name, s.nis, s.class_id, c.name AS class_name, u.status"
 
 type studentRow struct {
-	UserID, FullName, NIS string
-	ClassID, ClassName    *string
-	Status                userdomain.Status
+	UserID, FullName string
+	NIS              *string
+	ClassID          *string
+	ClassName        *string
+	Status           userdomain.Status
 }
 
 func (r *QueryRepository) studentQuery(ctx context.Context, classID, q string) *gorm.DB {

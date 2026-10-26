@@ -24,6 +24,7 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger) 
 	userRepo := postgresuser.NewUserRepository(postgresDB)
 	userRoleRepo := postgresuser.NewUserRoleRepository(postgresDB)
 	sessionRepo := postgresuser.NewSessionRepository(postgresDB)
+	studentRepo := postgresacademic.NewStudentRepository(postgresDB)
 
 	loginUseCase := auth.NewLoginUseCase(userRepo, userRoleRepo, sessionRepo, logger)
 	logoutUseCase := auth.NewLogoutUseCase(sessionRepo, logger)
@@ -61,6 +62,7 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger) 
 		postgresacademic.NewSubjectRepository(postgresDB),
 		postgresacademic.NewTeachingAssignmentRepository(postgresDB),
 		userRepo,
+		studentRepo,
 		postgresacademic.NewQueryRepository(postgresDB),
 		logger,
 	))
@@ -71,6 +73,7 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger) 
 	adminWrite.POST("/subjects", academicHandler.CreateSubject)
 	adminRead.GET("/students", academicHandler.ListStudents)
 	adminRead.GET("/students/:studentId", academicHandler.GetStudent)
+	adminWrite.PATCH("/students/:studentId", academicHandler.UpdateStudent)
 	adminRead.GET("/teaching-assignments", academicHandler.ListAssignments)
 	adminWrite.POST("/teaching-assignments", academicHandler.CreateAssignment)
 
