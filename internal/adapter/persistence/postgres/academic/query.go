@@ -8,14 +8,13 @@ import (
 	"limen/internal/domain"
 	academicdomain "limen/internal/domain/academic"
 	userdomain "limen/internal/domain/user"
-	academicuc "limen/internal/usecase/academic"
 )
 
 type QueryRepository struct{ db *gorm.DB }
 
 func NewQueryRepository(db *gorm.DB) *QueryRepository { return &QueryRepository{db: db} }
 
-func (r *QueryRepository) ListClasses(ctx context.Context, level, q string, limit, offset int) ([]academicuc.Class, int64, error) {
+func (r *QueryRepository) ListClasses(ctx context.Context, level, q string, limit, offset int) ([]academicdomain.ClassDetail, int64, error) {
 	query := r.db.WithContext(ctx).Table("classes c").Where("c.deleted_at IS NULL")
 	if level != "" {
 		query = query.Where("c.level = ?", level)
@@ -36,9 +35,9 @@ func (r *QueryRepository) ListClasses(ctx context.Context, level, q string, limi
 	if err != nil {
 		return nil, 0, err
 	}
-	out := make([]academicuc.Class, len(rows))
+	out := make([]academicdomain.ClassDetail, len(rows))
 	for i, v := range rows {
-		out[i] = academicuc.Class{Class: academicdomain.Class{ID: v.ID, Name: v.Name, Level: v.Level, HomeroomTeacherUserID: v.HomeroomTeacherUserID}, StudentCount: v.StudentCount}
+		out[i] = academicdomain.ClassDetail{Class: academicdomain.Class{ID: v.ID, Name: v.Name, Level: v.Level, HomeroomTeacherUserID: v.HomeroomTeacherUserID}, StudentCount: v.StudentCount}
 	}
 	return out, total, nil
 }
@@ -61,7 +60,7 @@ func (r *QueryRepository) ListSubjects(ctx context.Context, q string, limit, off
 	}
 	return out, total, nil
 }
-func (r *QueryRepository) ListStudents(ctx context.Context, classID, q, sort string, limit, offset int) ([]academicuc.Student, int64, error) {
+func (r *QueryRepository) ListStudents(ctx context.Context, classID, q, sort string, limit, offset int) ([]academicdomain.StudentDetail, int64, error) {
 	query := r.studentQuery(ctx, classID, q)
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -77,14 +76,14 @@ func (r *QueryRepository) ListStudents(ctx context.Context, classID, q, sort str
 	}
 	return students(rows), total, nil
 }
-func (r *QueryRepository) FindStudent(ctx context.Context, id string) (academicuc.Student, error) {
+func (r *QueryRepository) FindStudent(ctx context.Context, id string) (academicdomain.StudentDetail, error) {
 	var rows []studentRow
 	err := r.studentQuery(ctx, "", "").Where("s.user_id = ?", id).Select(studentSelect).Scan(&rows).Error
 	if err != nil {
-		return academicuc.Student{}, err
+		return academicdomain.StudentDetail{}, err
 	}
 	if len(rows) == 0 {
-		return academicuc.Student{}, domain.ErrNotFound
+		return academicdomain.StudentDetail{}, domain.ErrNotFound
 	}
 	return students(rows)[0], nil
 }
@@ -109,10 +108,10 @@ func (r *QueryRepository) studentQuery(ctx context.Context, classID, q string) *
 	}
 	return query
 }
-func students(rows []studentRow) []academicuc.Student {
-	out := make([]academicuc.Student, len(rows))
+func students(rows []studentRow) []academicdomain.StudentDetail {
+	out := make([]academicdomain.StudentDetail, len(rows))
 	for i, v := range rows {
-		out[i] = academicuc.Student{UserID: v.UserID, FullName: v.FullName, NIS: v.NIS, ClassID: v.ClassID, ClassName: v.ClassName, Status: v.Status}
+		out[i] = academicdomain.StudentDetail{UserID: v.UserID, FullName: v.FullName, NIS: v.NIS, ClassID: v.ClassID, ClassName: v.ClassName, Status: v.Status}
 	}
 	return out
 }
@@ -150,4 +149,4 @@ func (r *QueryRepository) AssignmentExists(ctx context.Context, teacherID, subje
 	return err == nil, err
 }
 
-var _ academicuc.Repository = (*QueryRepository)(nil)
+var _ academicdomain.QueryRepository = (*QueryRepository)(nil)

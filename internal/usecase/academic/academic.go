@@ -12,47 +12,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Repository interface {
-	ListClasses(context.Context, string, string, int, int) ([]Class, int64, error)
-	ListSubjects(context.Context, string, int, int) ([]academicdomain.Subject, int64, error)
-	ListStudents(context.Context, string, string, string, int, int) ([]Student, int64, error)
-	FindStudent(context.Context, string) (Student, error)
-	ListAssignments(context.Context, string, string, string, int, int) ([]academicdomain.TeachingAssignment, int64, error)
-	AssignmentExists(context.Context, string, string, string) (bool, error)
-}
-
-type Class struct {
-	academicdomain.Class
-	StudentCount int64
-}
-
-type Student struct {
-	UserID    string
-	FullName  string
-	NIS       *string
-	ClassID   *string
-	ClassName *string
-	Status    userdomain.Status
-}
-
 type UseCase struct {
 	classes     academicdomain.ClassRepository
 	subjects    academicdomain.SubjectRepository
 	assignments academicdomain.TeachingAssignmentRepository
 	users       userdomain.UserRepository
-	repo        Repository
+	repo        academicdomain.QueryRepository
 	students    academicdomain.StudentRepository
 	logger      *logrus.Logger
 }
 
-func NewUseCase(classes academicdomain.ClassRepository, subjects academicdomain.SubjectRepository, assignments academicdomain.TeachingAssignmentRepository, users userdomain.UserRepository, students academicdomain.StudentRepository, repo Repository, logger *logrus.Logger) *UseCase {
+func NewUseCase(classes academicdomain.ClassRepository, subjects academicdomain.SubjectRepository, assignments academicdomain.TeachingAssignmentRepository, users userdomain.UserRepository, students academicdomain.StudentRepository, repo academicdomain.QueryRepository, logger *logrus.Logger) *UseCase {
 	if logger == nil {
 		logger = logrus.StandardLogger()
 	}
 	return &UseCase{classes: classes, subjects: subjects, assignments: assignments, users: users, students: students, repo: repo, logger: logger}
 }
 
-func (uc *UseCase) ListClasses(ctx context.Context, level, q string, page, pageSize int) ([]Class, int64, error) {
+func (uc *UseCase) ListClasses(ctx context.Context, level, q string, page, pageSize int) ([]academicdomain.ClassDetail, int64, error) {
 	items, total, err := uc.repo.ListClasses(ctx, level, q, pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "academic_list_classes", nil)
@@ -66,29 +43,29 @@ func (uc *UseCase) ListSubjects(ctx context.Context, q string, page, pageSize in
 	}
 	return items, total, err
 }
-func (uc *UseCase) ListStudents(ctx context.Context, classID, q, sort string, page, pageSize int) ([]Student, int64, error) {
+func (uc *UseCase) ListStudents(ctx context.Context, classID, q, sort string, page, pageSize int) ([]academicdomain.StudentDetail, int64, error) {
 	items, total, err := uc.repo.ListStudents(ctx, classID, q, sort, pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "academic_list_students", nil)
 	}
 	return items, total, err
 }
-func (uc *UseCase) GetStudent(ctx context.Context, id string) (Student, error) {
+func (uc *UseCase) GetStudent(ctx context.Context, id string) (academicdomain.StudentDetail, error) {
 	item, err := uc.repo.FindStudent(ctx, id)
 	if err != nil {
 		uc.logError(err, "academic_get_student", logrus.Fields{"student_id": id})
 	}
 	return item, err
 }
-func (uc *UseCase) UpdateStudent(ctx context.Context, id string, nis *string, classID *string, nisSet, classSet bool) (Student, error) {
+func (uc *UseCase) UpdateStudent(ctx context.Context, id string, nis *string, classID *string, nisSet, classSet bool) (academicdomain.StudentDetail, error) {
 	student, err := uc.students.FindByUserID(ctx, id)
 	if err != nil {
 		uc.logError(err, "academic_get_student_for_update", logrus.Fields{"student_id": id})
-		return Student{}, err
+		return academicdomain.StudentDetail{}, err
 	}
 	if nisSet {
 		if nis == nil || strings.TrimSpace(*nis) == "" {
-			return Student{}, domain.ErrInvalid
+			return academicdomain.StudentDetail{}, domain.ErrInvalid
 		}
 		value := strings.TrimSpace(*nis)
 		student.NIS = &value
@@ -97,14 +74,14 @@ func (uc *UseCase) UpdateStudent(ctx context.Context, id string, nis *string, cl
 		if classID != nil {
 			if _, err := uc.classes.FindByID(ctx, *classID); err != nil {
 				uc.logError(err, "academic_validate_student_class", logrus.Fields{"class_id": *classID})
-				return Student{}, err
+				return academicdomain.StudentDetail{}, err
 			}
 		}
 		student.ClassID = classID
 	}
 	if err := uc.students.Update(ctx, student); err != nil {
 		uc.logError(err, "academic_update_student", logrus.Fields{"student_id": id})
-		return Student{}, err
+		return academicdomain.StudentDetail{}, err
 	}
 	updated, err := uc.repo.FindStudent(ctx, id)
 	if err != nil {

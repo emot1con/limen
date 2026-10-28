@@ -62,7 +62,7 @@ func (h *AcademicHandler) CreateClass(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, classJSON(academicuc.Class{Class: out}))
+	c.JSON(http.StatusCreated, classJSON(academicdomain.ClassDetail{Class: out}))
 }
 
 func (h *AcademicHandler) UpdateClass(c *gin.Context) {
@@ -94,7 +94,7 @@ func (h *AcademicHandler) UpdateClass(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, classJSON(academicuc.Class{Class: out}))
+	c.JSON(http.StatusOK, classJSON(academicdomain.ClassDetail{Class: out}))
 }
 
 func (h *AcademicHandler) ListSubjects(c *gin.Context) {
@@ -287,7 +287,7 @@ func uuidError(c *gin.Context, field string) {
 	response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: field, Message: "must be a UUID"})
 }
 
-func classJSON(item academicuc.Class) gin.H {
+func classJSON(item academicdomain.ClassDetail) gin.H {
 	return gin.H{"id": item.ID, "name": item.Name, "level": item.Level, "homeroomTeacherUserId": item.HomeroomTeacherUserID, "studentCount": item.StudentCount}
 }
 
@@ -295,7 +295,7 @@ func subjectJSON(item academicdomain.Subject) gin.H {
 	return gin.H{"id": item.ID, "code": item.Code, "name": item.Name}
 }
 
-func studentJSON(item academicuc.Student) gin.H {
+func studentJSON(item academicdomain.StudentDetail) gin.H {
 	return gin.H{"userId": item.UserID, "fullName": item.FullName, "nis": item.NIS, "classId": item.ClassID, "className": item.ClassName, "status": item.Status}
 }
 

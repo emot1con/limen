@@ -3,7 +3,36 @@ package academic
 import (
 	"context"
 	"time"
+
+	userdomain "limen/internal/domain/user"
 )
+
+// ClassDetail is a read-model that enriches Class with aggregated data.
+type ClassDetail struct {
+	Class
+	StudentCount int64
+}
+
+// StudentDetail is a read-model that joins student, user, and class data.
+type StudentDetail struct {
+	UserID    string
+	FullName  string
+	NIS       *string
+	ClassID   *string
+	ClassName *string
+	Status    userdomain.Status
+}
+
+// QueryRepository exposes complex cross-table read queries.
+// It lives in the domain so adapters only need to depend on domain, not usecase.
+type QueryRepository interface {
+	ListClasses(ctx context.Context, level, q string, limit, offset int) ([]ClassDetail, int64, error)
+	ListSubjects(ctx context.Context, q string, limit, offset int) ([]Subject, int64, error)
+	ListStudents(ctx context.Context, classID, q, sort string, limit, offset int) ([]StudentDetail, int64, error)
+	FindStudent(ctx context.Context, id string) (StudentDetail, error)
+	ListAssignments(ctx context.Context, teacherID, classID, subjectID string, limit, offset int) ([]TeachingAssignment, int64, error)
+	AssignmentExists(ctx context.Context, teacherID, subjectID, classID string) (bool, error)
+}
 
 type ScheduleKind string
 

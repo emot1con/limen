@@ -3,6 +3,7 @@ package academic
 import (
 	"context"
 	"errors"
+	"time"
 
 	domain "limen/internal/domain"
 	academicdomain "limen/internal/domain/academic"
@@ -11,12 +12,12 @@ import (
 )
 
 type teachingAssignmentModel struct {
-	ID            string `gorm:"column:id;primaryKey"`
-	TeacherUserID string `gorm:"column:teacher_user_id"`
-	SubjectID     string `gorm:"column:subject_id"`
-	ClassID       string `gorm:"column:class_id"`
-	CreatedAt     string `gorm:"column:created_at"`
-	UpdatedAt     string `gorm:"column:updated_at"`
+	ID            string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	TeacherUserID string    `gorm:"column:teacher_user_id"`
+	SubjectID     string    `gorm:"column:subject_id"`
+	ClassID       string    `gorm:"column:class_id"`
+	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (teachingAssignmentModel) TableName() string {

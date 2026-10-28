@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs ps clean migrate-up migrate-down migrate-create db-backup db-restore redis-backup redis-restore swag-up swag-down
+.PHONY: help build up down restart logs ps clean migrate-up migrate-down migrate-create db-backup db-restore redis-backup redis-restore swag-up swag-down seed-admin
 
 include .env
 export
@@ -38,6 +38,7 @@ help:
 	@echo "  redis-restore  - Restore Redis data (FILE=path)"
 	@echo "  swag-up        - Start Swagger UI"
 	@echo "  swag-down      - Stop Swagger UI"
+	@echo "  seed-admin     - Create or update first admin (ADMIN_EMAIL, ADMIN_FULL_NAME, ADMIN_PASSWORD)"
  
 swag-up:
 	docker run $(SWAG_RUN_FLAGS)
@@ -172,6 +173,12 @@ redis-backup:
 	done; \
 	echo "Backup failed after $(MAX_RETRIES) attempts"; \
 	exit 1
+
+seed-admin:
+	@test -n "$(ADMIN_EMAIL)" || (echo "ADMIN_EMAIL required"; exit 1)
+	@test -n "$(ADMIN_FULL_NAME)" || (echo "ADMIN_FULL_NAME required"; exit 1)
+	@test -n "$(ADMIN_PASSWORD)" || (echo "ADMIN_PASSWORD required"; exit 1)
+	POSTGRES_HOST="$(POSTGRES_HOST)" ADMIN_EMAIL="$(ADMIN_EMAIL)" ADMIN_FULL_NAME="$(ADMIN_FULL_NAME)" ADMIN_PASSWORD="$(ADMIN_PASSWORD)" go run ./cmd/seed-admin
 
 redis-restore:
 	@test -n "$(FILE)" || (echo "FILE required. Usage: make redis-restore FILE=backups/redis_20261019_132805.rdb.gz"; exit 1)
