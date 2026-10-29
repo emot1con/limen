@@ -2,7 +2,6 @@ package academic
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"limen/internal/domain"
@@ -109,7 +108,6 @@ func (uc *UseCase) CreateClass(ctx context.Context, name string, level, teacherI
 			return academicdomain.Class{}, err
 		}
 	}
-	fmt.Println(name, level, teacherID)
 	id, err := uc.classes.Create(ctx, academicdomain.Class{Name: name, Level: trim(level), HomeroomTeacherUserID: teacherID})
 	if err != nil {
 		uc.logError(err, "academic_create_class", nil)
@@ -206,6 +204,7 @@ func (uc *UseCase) CreateAssignment(ctx context.Context, teacherID, subjectID, c
 	}
 	return item, err
 }
+
 func (uc *UseCase) logError(err error, operation string, fields logrus.Fields) {
 	if err == nil || err == domain.ErrInvalid || err == domain.ErrNotFound || err == domain.ErrAlreadyExists {
 		return

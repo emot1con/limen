@@ -135,10 +135,17 @@ type TeachingAssignmentRepository interface {
 	Delete(context.Context, string) error
 }
 
+type ScheduleFilter struct {
+	ClassID    string
+	SubjectID  string
+	Kind       ScheduleKind
+	DayOfWeeks []int16
+}
+
 type ScheduleRepository interface {
 	Create(context.Context, Schedule) (string, error)
 	FindByID(context.Context, string) (Schedule, error)
-	ListByClassID(context.Context, string) ([]Schedule, error)
+	List(context.Context, ScheduleFilter, int, int) ([]Schedule, int64, error)
 	Update(context.Context, Schedule) error
 	Delete(context.Context, string) error
 }

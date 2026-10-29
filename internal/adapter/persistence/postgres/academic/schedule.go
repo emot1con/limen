@@ -9,6 +9,7 @@ import (
 	academicdomain "limen/internal/domain/academic"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type scheduleModel struct {
@@ -24,30 +25,15 @@ type scheduleModel struct {
 	UpdatedAt     time.Time `gorm:"column:updated_at"`
 }
 
-func (scheduleModel) TableName() string {
-	return "schedules"
-}
+func (scheduleModel) TableName() string { return "schedules" }
 
-type ScheduleRepository struct {
-	db *gorm.DB
-}
+type ScheduleRepository struct{ db *gorm.DB }
 
-func NewScheduleRepository(db *gorm.DB) *ScheduleRepository {
-	return &ScheduleRepository{db: db}
-}
+func NewScheduleRepository(db *gorm.DB) *ScheduleRepository { return &ScheduleRepository{db: db} }
 
 func (r *ScheduleRepository) Create(ctx context.Context, schedule academicdomain.Schedule) (string, error) {
-	model := scheduleModel{
-		ID:            schedule.ID,
-		ClassID:       schedule.ClassID,
-		SubjectID:     schedule.SubjectID,
-		TeacherUserID: schedule.TeacherUserID,
-		DayOfWeek:     schedule.DayOfWeek,
-		StartTime:     schedule.StartTime.Format("15:04:05"),
-		EndTime:       schedule.EndTime.Format("15:04:05"),
-		Kind:          string(schedule.Kind),
-	}
-	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+	model := scheduleModel{ClassID: schedule.ClassID, SubjectID: schedule.SubjectID, TeacherUserID: schedule.TeacherUserID, DayOfWeek: schedule.DayOfWeek, StartTime: schedule.StartTime.Format("15:04:05"), EndTime: schedule.EndTime.Format("15:04:05"), Kind: string(schedule.Kind)}
+	if err := r.db.WithContext(ctx).Omit("ID", "CreatedAt", "UpdatedAt").Clauses(clause.Returning{Columns: []clause.Column{{Name: "id"}}}).Create(&model).Error; err != nil {
 		return "", err
 	}
 	return model.ID, nil
@@ -55,8 +41,7 @@ func (r *ScheduleRepository) Create(ctx context.Context, schedule academicdomain
 
 func (r *ScheduleRepository) FindByID(ctx context.Context, id string) (academicdomain.Schedule, error) {
 	var model scheduleModel
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&model).Error
-	if err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&model).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return academicdomain.Schedule{}, domain.ErrNotFound
 		}
@@ -65,29 +50,37 @@ func (r *ScheduleRepository) FindByID(ctx context.Context, id string) (academicd
 	return r.toDomain(model), nil
 }
 
-func (r *ScheduleRepository) ListByClassID(ctx context.Context, classID string) ([]academicdomain.Schedule, error) {
+func (r *ScheduleRepository) List(ctx context.Context, filter academicdomain.ScheduleFilter, limit, offset int) ([]academicdomain.Schedule, int64, error) {
+	query := r.db.WithContext(ctx).Model(&scheduleModel{})
+	if filter.ClassID != "" {
+		query = query.Where("class_id = ?", filter.ClassID)
+	}
+	if filter.SubjectID != "" {
+		query = query.Where("subject_id = ?", filter.SubjectID)
+	}
+	if filter.Kind != "" {
+		query = query.Where("kind = ?", filter.Kind)
+	}
+	if len(filter.DayOfWeeks) > 0 {
+		query = query.Where("day_of_week IN ?", filter.DayOfWeeks)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var models []scheduleModel
-	err := r.db.WithContext(ctx).Where("class_id = ?", classID).Order("day_of_week, start_time").Find(&models).Error
-	if err != nil {
-		return nil, err
+	if err := query.Order("day_of_week, start_time, id").Limit(limit).Offset(offset).Find(&models).Error; err != nil {
+		return nil, 0, err
 	}
-	schedules := make([]academicdomain.Schedule, len(models))
-	for i, m := range models {
-		schedules[i] = r.toDomain(m)
+	out := make([]academicdomain.Schedule, len(models))
+	for i, model := range models {
+		out[i] = r.toDomain(model)
 	}
-	return schedules, nil
+	return out, total, nil
 }
 
 func (r *ScheduleRepository) Update(ctx context.Context, schedule academicdomain.Schedule) error {
-	result := r.db.WithContext(ctx).Model(&scheduleModel{}).Where("id = ?", schedule.ID).Updates(map[string]interface{}{
-		"class_id":        schedule.ClassID,
-		"subject_id":      schedule.SubjectID,
-		"teacher_user_id": schedule.TeacherUserID,
-		"day_of_week":     schedule.DayOfWeek,
-		"start_time":      schedule.StartTime.Format("15:04:05"),
-		"end_time":        schedule.EndTime.Format("15:04:05"),
-		"kind":            string(schedule.Kind),
-	})
+	result := r.db.WithContext(ctx).Model(&scheduleModel{}).Where("id = ?", schedule.ID).Updates(map[string]interface{}{"class_id": schedule.ClassID, "subject_id": schedule.SubjectID, "teacher_user_id": schedule.TeacherUserID, "day_of_week": schedule.DayOfWeek, "start_time": schedule.StartTime.Format("15:04:05"), "end_time": schedule.EndTime.Format("15:04:05"), "kind": string(schedule.Kind), "updated_at": gorm.Expr("now()")})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -111,18 +104,7 @@ func (r *ScheduleRepository) Delete(ctx context.Context, id string) error {
 func (r *ScheduleRepository) toDomain(model scheduleModel) academicdomain.Schedule {
 	startTime, _ := time.Parse("15:04:05", model.StartTime)
 	endTime, _ := time.Parse("15:04:05", model.EndTime)
-	return academicdomain.Schedule{
-		ID:            model.ID,
-		ClassID:       model.ClassID,
-		SubjectID:     model.SubjectID,
-		TeacherUserID: model.TeacherUserID,
-		DayOfWeek:     model.DayOfWeek,
-		StartTime:     startTime,
-		EndTime:       endTime,
-		Kind:          academicdomain.ScheduleKind(model.Kind),
-		CreatedAt:     model.CreatedAt,
-		UpdatedAt:     model.UpdatedAt,
-	}
+	return academicdomain.Schedule{ID: model.ID, ClassID: model.ClassID, SubjectID: model.SubjectID, TeacherUserID: model.TeacherUserID, DayOfWeek: model.DayOfWeek, StartTime: startTime, EndTime: endTime, Kind: academicdomain.ScheduleKind(model.Kind), CreatedAt: model.CreatedAt, UpdatedAt: model.UpdatedAt}
 }
 
 var _ academicdomain.ScheduleRepository = (*ScheduleRepository)(nil)

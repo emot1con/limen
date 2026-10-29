@@ -13,6 +13,7 @@ import (
 	academicuc "limen/internal/usecase/academic"
 	"limen/internal/usecase/auth"
 	deviceuc "limen/internal/usecase/device"
+	scheduleuc "limen/internal/usecase/schedule"
 	settingsuc "limen/internal/usecase/settings"
 	useruc "limen/internal/usecase/user"
 )
@@ -74,6 +75,19 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger) 
 	adminRead.GET("/students", academicHandler.ListStudents)
 	adminRead.GET("/students/:studentId", academicHandler.GetStudent)
 	adminWrite.PATCH("/students/:studentId", academicHandler.UpdateStudent)
+
+	scheduleHandler := handler.NewScheduleHandler(scheduleuc.NewUseCase(
+		postgresacademic.NewScheduleRepository(postgresDB),
+		postgresacademic.NewClassRepository(postgresDB),
+		postgresacademic.NewSubjectRepository(postgresDB),
+		userRepo,
+		logger,
+	))
+	adminRead.GET("/schedules", scheduleHandler.ListSchedules)
+	adminWrite.POST("/schedules", scheduleHandler.CreateSchedule)
+	adminWrite.PUT("/schedules/:scheduleId", scheduleHandler.UpdateSchedule)
+	adminWrite.DELETE("/schedules/:scheduleId", scheduleHandler.DeleteSchedule)
+
 	adminRead.GET("/teaching-assignments", academicHandler.ListAssignments)
 	adminWrite.POST("/teaching-assignments", academicHandler.CreateAssignment)
 
