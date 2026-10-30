@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	fingerprintadapter "limen/internal/adapter/fingerprint"
 	"limen/internal/adapter/http/router"
 	"limen/internal/platform/config"
 	"limen/internal/platform/database"
@@ -57,7 +58,7 @@ func run() error {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	appRouter := router.New(postgresDB, redisClient, logger)
+	appRouter := router.New(postgresDB, redisClient, logger, fingerprintadapter.NewClient(cfg.FingerprintServiceURL, cfg.FingerprintAPIKey))
 
 	appRouter.GET("/health", func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)

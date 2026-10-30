@@ -44,6 +44,11 @@ tags:
     description: Tes minat bakat (MB) dan psikotes (PG).
   - name: Notifications
     description: Notifikasi pengguna.
+  - name: Fingerprint
+    description: >
+      Gateway biometrik legacy (eks-Express) yang digabung ke API utama tanpa
+      autentikasi. Endpoint memakai base path /api (bukan /api/v1) agar tetap
+      kompatibel dengan perangkat ESP32 dan klien lama.
 security:
   - sessionCookie: []
 paths:
@@ -1797,6 +1802,158 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+  # --- Legacy Express gateway (tanpa auth, base path /api) ---
+  /api/fingerprint/identify:
+    post:
+      operationId: API-FP-001
+      tags: [Fingerprint]
+      summary: Identifikasi sidik jari dari capture mentah
+      description: >
+        Menerima capture R503 tepat 18432 byte (application/octet-stream),
+        meneruskannya ke fingerprint service, dan memperkaya hasil yang matched
+        dengan fullName/email dari database aplikasi.
+      servers:
+        - url: /
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              description: Capture R503, tepat 18432 byte.
+      responses:
+        '200':
+          description: Hasil identifikasi dari fingerprint service
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FingerprintIdentifyResult' }
+        '400':
+          description: Body bukan binary atau ukuran tidak 18432 byte
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GatewayError' }
+        '413':
+          description: Body melebihi 64 KB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GatewayError' }
+        '500':
+          description: Fingerprint service tidak dapat dijangkau
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GatewayError' }
+  /api/fingerprint/enroll:
+    post:
+      operationId: API-FP-002
+      tags: [Fingerprint]
+      summary: Enrollment template (JSON base64)
+      servers:
+        - url: /
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [externalUserId, template]
+              properties:
+                externalUserId: { type: string, format: uuid }
+                template: { type: string, description: Template sidik jari (base64). }
+      responses:
+        '200':
+          description: Hasil enrollment dari fingerprint service
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '400':
+          description: externalUserId/template kosong
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GatewayError' }
+        '500':
+          description: Fingerprint service tidak dapat dijangkau
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GatewayError' }
+  /api/fingerprint/enroll/raw:
+    post:
+      operationId: API-FP-003
+      tags: [Fingerprint]
+      summary: Enrollment dari capture mentah
+      servers:
+        - url: /
+      security: []
+      parameters:
+        - { name: externalUserId, in: query, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              description: Capture R503, tepat 18432 byte.
+      responses:
+        '200':
+          description: Hasil enrollment dari fingerprint service
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '400':
+          description: externalUserId kosong, body bukan binary, atau ukuran salah
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GatewayError' }
+        '413':
+          description: Body melebihi 64 KB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GatewayError' }
+        '500':
+          description: Fingerprint service tidak dapat dijangkau
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GatewayError' }
+  /api/fingerprint/latest:
+    get:
+      operationId: API-FP-004
+      tags: [Fingerprint]
+      summary: Hasil identifikasi terakhir
+      description: >
+        Mengembalikan hasil terakhir dari memori; setelah restart fallback ke
+        baris terakhir tabel identifications. data bernilai null bila belum ada.
+      servers:
+        - url: /
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FingerprintLatestResponse' }
+  /api/fingerprint/stream:
+    get:
+      operationId: API-FP-005
+      tags: [Fingerprint]
+      summary: SSE stream hasil identifikasi
+      description: >
+        Server-Sent Events. Mengirim event terakhir segera bila ada, lalu event
+        baru setiap identifikasi selesai. Komentar : connected dan : keepalive
+        bukan event data. Keepalive setiap 25 detik.
+      servers:
+        - url: /
+      security: []
+      responses:
+        '200':
+          description: Stream event
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: 'Format: data: <json>\n\n'
 components:
   securitySchemes:
     sessionCookie:
@@ -2223,3 +2380,31 @@ components:
         payload: { type: object, nullable: true }
         readAt: { type: string, format: date-time, nullable: true }
         createdAt: { type: string, format: date-time }
+    FingerprintIdentifyResult:
+      type: object
+      description: Hasil identifikasi; field mengikuti respons fingerprint service.
+      additionalProperties: true
+      properties:
+        matched: { type: boolean }
+        externalUserId: { type: string, format: uuid, nullable: true }
+        fingerprintId: { type: integer, format: int64, nullable: true }
+        score: { type: number, nullable: true }
+        candidateCount: { type: integer }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        scanId: { type: integer }
+        timestamp: { type: string, format: date-time }
+    FingerprintLatestResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/FingerprintIdentifyResult'
+    GatewayError:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string }
+        error: { type: string }

@@ -10,17 +10,20 @@ import (
 	postgresacademic "limen/internal/adapter/persistence/postgres/academic"
 	postgresassessment "limen/internal/adapter/persistence/postgres/assessment"
 	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
+	postgresfingerprint "limen/internal/adapter/persistence/postgres/fingerprint"
 	postgresuser "limen/internal/adapter/persistence/postgres/user"
+	fingerprintdomain "limen/internal/domain/fingerprint"
 	academicuc "limen/internal/usecase/academic"
 	assessmentuc "limen/internal/usecase/assessment"
 	"limen/internal/usecase/auth"
 	deviceuc "limen/internal/usecase/device"
+	fingerprintuc "limen/internal/usecase/fingerprint"
 	scheduleuc "limen/internal/usecase/schedule"
 	settingsuc "limen/internal/usecase/settings"
 	useruc "limen/internal/usecase/user"
 )
 
-func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger) *gin.Engine {
+func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, fingerprintGateway fingerprintdomain.Gateway) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery(), middleware.RequestLogger(logger))
 
@@ -106,6 +109,19 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger) 
 	adminWrite.POST("/assessments", assessmentHandler.Create)
 	adminRead.GET("/assessments/:assessmentId/scores", assessmentHandler.ListScores)
 	adminWrite.PUT("/assessments/:assessmentId/scores/:studentUserId", assessmentHandler.UpsertScore)
+
+	// Legacy Express gateway endpoints, merged into the main API without auth.
+	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(
+		fingerprintGateway,
+		postgresfingerprint.NewIdentificationRepository(postgresDB),
+		userRepo,
+		logger,
+	))
+	router.POST("/api/fingerprint/identify", fingerprintHandler.Identify)
+	router.POST("/api/fingerprint/enroll", fingerprintHandler.Enroll)
+	router.POST("/api/fingerprint/enroll/raw", fingerprintHandler.EnrollRaw)
+	router.GET("/api/fingerprint/latest", fingerprintHandler.Latest)
+	router.GET("/api/fingerprint/stream", fingerprintHandler.Stream)
 
 	return router
 }

@@ -28,6 +28,8 @@ type Config struct {
 	RedisRetryAttempts     int
 	RedisInitialBackoff    time.Duration
 	RedisMaxBackoff        time.Duration
+	FingerprintServiceURL  string
+	FingerprintAPIKey      string
 }
 
 func LoadConfig() (*Config, error) {
@@ -45,6 +47,8 @@ func LoadConfig() (*Config, error) {
 		PostgresMaxBackoff:     getEnvDuration("POSTGRES_RETRY_MAX_BACKOFF", 10*time.Second),
 		RedisInitialBackoff:    getEnvDuration("REDIS_RETRY_INITIAL_BACKOFF", time.Second),
 		RedisMaxBackoff:        getEnvDuration("REDIS_RETRY_MAX_BACKOFF", 10*time.Second),
+		FingerprintServiceURL:  getEnv("FINGERPRINT_SERVICE_URL", "http://localhost:5001"),
+		FingerprintAPIKey:      firstNonEmpty(getEnv("FINGERPRINT_API_KEY", ""), getEnv("ApiKey__Value", "")),
 	}
 
 	var err error
@@ -94,6 +98,15 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func getEnvInt(key string, fallback int) (int, error) {
