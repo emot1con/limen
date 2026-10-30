@@ -8,9 +8,11 @@ import (
 	"limen/internal/adapter/http/handler"
 	"limen/internal/adapter/http/middleware"
 	postgresacademic "limen/internal/adapter/persistence/postgres/academic"
+	postgresassessment "limen/internal/adapter/persistence/postgres/assessment"
 	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
 	postgresuser "limen/internal/adapter/persistence/postgres/user"
 	academicuc "limen/internal/usecase/academic"
+	assessmentuc "limen/internal/usecase/assessment"
 	"limen/internal/usecase/auth"
 	deviceuc "limen/internal/usecase/device"
 	scheduleuc "limen/internal/usecase/schedule"
@@ -90,6 +92,20 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger) 
 
 	adminRead.GET("/teaching-assignments", academicHandler.ListAssignments)
 	adminWrite.POST("/teaching-assignments", academicHandler.CreateAssignment)
+
+	assessmentHandler := handler.NewAssessmentHandler(assessmentuc.NewUseCase(
+		postgresassessment.NewAssessmentRepository(postgresDB),
+		postgresassessment.NewAssessmentScoreRepository(postgresDB),
+		postgresacademic.NewClassRepository(postgresDB),
+		postgresacademic.NewSubjectRepository(postgresDB),
+		studentRepo,
+		userRepo,
+		logger,
+	))
+	adminRead.GET("/assessments", assessmentHandler.List)
+	adminWrite.POST("/assessments", assessmentHandler.Create)
+	adminRead.GET("/assessments/:assessmentId/scores", assessmentHandler.ListScores)
+	adminWrite.PUT("/assessments/:assessmentId/scores/:studentUserId", assessmentHandler.UpsertScore)
 
 	return router
 }

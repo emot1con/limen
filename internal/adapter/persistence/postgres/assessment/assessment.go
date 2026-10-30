@@ -85,20 +85,33 @@ func (r *AssessmentRepository) Update(ctx context.Context, assessment assessment
 	return nil
 }
 
-func (r *AssessmentRepository) ListByClassSubjectPeriod(ctx context.Context, classID, subjectID, period string) ([]assessmentdomain.Assessment, error) {
+func (r *AssessmentRepository) List(ctx context.Context, filter assessmentdomain.AssessmentFilter, limit, offset int) ([]assessmentdomain.Assessment, int64, error) {
+	query := r.db.WithContext(ctx).Model(&assessmentModel{})
+	if filter.ClassID != "" {
+		query = query.Where("class_id = ?", filter.ClassID)
+	}
+	if filter.SubjectID != "" {
+		query = query.Where("subject_id = ?", filter.SubjectID)
+	}
+	if filter.Kind != "" {
+		query = query.Where("kind = ?", filter.Kind)
+	}
+	if filter.Period != "" {
+		query = query.Where("period = ?", filter.Period)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var models []assessmentModel
-	err := r.db.WithContext(ctx).
-		Where("class_id = ? AND subject_id = ? AND period = ?", classID, subjectID, period).
-		Order("created_at, id").
-		Find(&models).Error
-	if err != nil {
-		return nil, err
+	if err := query.Order("created_at, id").Limit(limit).Offset(offset).Find(&models).Error; err != nil {
+		return nil, 0, err
 	}
 	assessments := make([]assessmentdomain.Assessment, len(models))
 	for i, model := range models {
 		assessments[i] = r.toDomain(model)
 	}
-	return assessments, nil
+	return assessments, total, nil
 }
 
 func (r *AssessmentRepository) toDomain(model assessmentModel) assessmentdomain.Assessment {

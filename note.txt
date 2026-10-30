@@ -1,0 +1,1 @@
+PUT /assessments/{assessmentId}/scores/{studentUserId}: student.classid harus sama dengan assessment.classid

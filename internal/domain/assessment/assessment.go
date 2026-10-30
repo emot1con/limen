@@ -28,11 +28,20 @@ type AssessmentScore struct {
 	UpdatedAt     time.Time
 }
 
+type AssessmentFilter struct {
+	ClassID, SubjectID, Kind, Period string
+}
+
+type ScoreDetail struct {
+	AssessmentScore
+	StudentName string
+}
+
 type AssessmentRepository interface {
 	Create(context.Context, Assessment) (string, error)
 	FindByID(context.Context, string) (Assessment, error)
 	Update(context.Context, Assessment) error
-	ListByClassSubjectPeriod(context.Context, string, string, string) ([]Assessment, error)
+	List(context.Context, AssessmentFilter, int, int) ([]Assessment, int64, error)
 }
 
 type AssessmentScoreRepository interface {
@@ -40,6 +49,7 @@ type AssessmentScoreRepository interface {
 	FindByID(context.Context, string) (AssessmentScore, error)
 	FindByAssessmentAndStudent(context.Context, string, string) (AssessmentScore, error)
 	Upsert(context.Context, AssessmentScore) error
-	ListByAssessmentID(context.Context, string) ([]AssessmentScore, error)
+	List(context.Context, string, int, int) ([]ScoreDetail, int64, error)
+	FindDetail(context.Context, string, string) (ScoreDetail, error)
 	ListByStudentUserID(context.Context, string) ([]AssessmentScore, error)
 }

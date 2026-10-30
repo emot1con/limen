@@ -87,21 +87,48 @@ func (r *AssessmentScoreRepository) Upsert(ctx context.Context, score assessment
 			"score",
 			"updated_by",
 			"updated_at",
+			"deleted_at",
 		}),
 	}).Create(&model).Error
 }
 
-func (r *AssessmentScoreRepository) ListByAssessmentID(ctx context.Context, assessmentID string) ([]assessmentdomain.AssessmentScore, error) {
-	var models []assessmentScoreModel
-	err := r.db.WithContext(ctx).Where("assessment_id = ?", assessmentID).Order("student_user_id").Find(&models).Error
+func (r *AssessmentScoreRepository) List(ctx context.Context, assessmentID string, limit, offset int) ([]assessmentdomain.ScoreDetail, int64, error) {
+	query := r.db.WithContext(ctx).Table("assessment_scores s").Joins("JOIN users u ON u.id = s.student_user_id").Where("s.assessment_id = ? AND s.deleted_at IS NULL", assessmentID)
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	var rows []struct {
+		ID, AssessmentID, StudentUserID, StudentName string
+		Score                                        float64
+		UpdatedBy                                    *string
+		CreatedAt, UpdatedAt                         time.Time
+	}
+	if err := query.Select("s.id, s.assessment_id, s.student_user_id, s.score, s.updated_by, s.created_at, s.updated_at, u.full_name AS student_name").Order("u.full_name, s.student_user_id").Limit(limit).Offset(offset).Scan(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+	out := make([]assessmentdomain.ScoreDetail, len(rows))
+	for i, row := range rows {
+		out[i] = assessmentdomain.ScoreDetail{AssessmentScore: assessmentdomain.AssessmentScore{ID: row.ID, AssessmentID: row.AssessmentID, StudentUserID: row.StudentUserID, Score: row.Score, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}, StudentName: row.StudentName}
+	}
+	return out, total, nil
+}
+
+func (r *AssessmentScoreRepository) FindDetail(ctx context.Context, assessmentID, studentUserID string) (assessmentdomain.ScoreDetail, error) {
+	var row struct {
+		ID, AssessmentID, StudentUserID, StudentName string
+		Score                                        float64
+		UpdatedBy                                    *string
+		CreatedAt, UpdatedAt                         time.Time
+	}
+	err := r.db.WithContext(ctx).Table("assessment_scores s").Joins("JOIN users u ON u.id = s.student_user_id").Where("s.assessment_id = ? AND s.student_user_id = ? AND s.deleted_at IS NULL", assessmentID, studentUserID).Select("s.id, s.assessment_id, s.student_user_id, s.score, s.updated_by, s.created_at, s.updated_at, u.full_name AS student_name").Scan(&row).Error
 	if err != nil {
-		return nil, err
+		return assessmentdomain.ScoreDetail{}, err
 	}
-	scores := make([]assessmentdomain.AssessmentScore, len(models))
-	for i, model := range models {
-		scores[i] = r.toDomain(model)
+	if row.ID == "" {
+		return assessmentdomain.ScoreDetail{}, domain.ErrNotFound
 	}
-	return scores, nil
+	return assessmentdomain.ScoreDetail{AssessmentScore: assessmentdomain.AssessmentScore{ID: row.ID, AssessmentID: row.AssessmentID, StudentUserID: row.StudentUserID, Score: row.Score, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}, StudentName: row.StudentName}, nil
 }
 
 func (r *AssessmentScoreRepository) ListByStudentUserID(ctx context.Context, studentUserID string) ([]assessmentdomain.AssessmentScore, error) {
