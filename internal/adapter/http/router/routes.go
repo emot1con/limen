@@ -117,11 +117,11 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 		userRepo,
 		logger,
 	))
-	router.POST("/api/fingerprint/identify", fingerprintHandler.Identify)
-	router.POST("/api/fingerprint/enroll", fingerprintHandler.Enroll)
-	router.POST("/api/fingerprint/enroll/raw", fingerprintHandler.EnrollRaw)
-	router.GET("/api/fingerprint/latest", fingerprintHandler.Latest)
-	router.GET("/api/fingerprint/stream", fingerprintHandler.Stream)
+	v1.POST("/fingerprint/identify", fingerprintHandler.Identify)
+	v1.POST("/fingerprint/enroll", fingerprintHandler.Enroll)
+	v1.POST("/fingerprint/enroll/raw", fingerprintHandler.EnrollRaw)
+	v1.GET("/fingerprint/latest", fingerprintHandler.Latest)
+	v1.GET("/fingerprint/stream", fingerprintHandler.Stream)
 
 	return router
 }

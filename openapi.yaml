@@ -47,8 +47,8 @@ tags:
   - name: Fingerprint
     description: >
       Gateway biometrik legacy (eks-Express) yang digabung ke API utama tanpa
-      autentikasi. Endpoint memakai base path /api (bukan /api/v1) agar tetap
-      kompatibel dengan perangkat ESP32 dan klien lama.
+      autentikasi. Endpoint tersedia di root (/fingerprint/*), bukan di bawah
+      /api/v1, agar tetap kompatibel dengan perangkat ESP32 dan klien lama.
 security:
   - sessionCookie: []
 paths:
@@ -1803,7 +1803,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
   # --- Legacy Express gateway (tanpa auth, base path /api) ---
-  /api/fingerprint/identify:
+  /fingerprint/identify:
     post:
       operationId: API-FP-001
       tags: [Fingerprint]
@@ -1844,7 +1844,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GatewayError' }
-  /api/fingerprint/enroll:
+  /fingerprint/enroll:
     post:
       operationId: API-FP-002
       tags: [Fingerprint]
@@ -1878,7 +1878,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GatewayError' }
-  /api/fingerprint/enroll/raw:
+  /fingerprint/enroll/raw:
     post:
       operationId: API-FP-003
       tags: [Fingerprint]
@@ -1917,7 +1917,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GatewayError' }
-  /api/fingerprint/latest:
+  /fingerprint/latest:
     get:
       operationId: API-FP-004
       tags: [Fingerprint]
@@ -1934,7 +1934,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/FingerprintLatestResponse' }
-  /api/fingerprint/stream:
+  /fingerprint/stream:
     get:
       operationId: API-FP-005
       tags: [Fingerprint]
