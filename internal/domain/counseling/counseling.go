@@ -72,10 +72,17 @@ type TargetMajorRepository interface {
 	Delete(context.Context, string) error
 }
 
+type PassingGradeFilter struct {
+	University string
+	Major      string
+	Year       int
+	YearSet    bool
+}
+
 type PassingGradeRepository interface {
 	Create(context.Context, PassingGrade) (string, error)
 	FindByID(context.Context, string) (PassingGrade, error)
-	ListByUniversityMajorYear(context.Context, string, string, int) ([]PassingGrade, error)
+	List(context.Context, PassingGradeFilter, int, int) ([]PassingGrade, int64, error)
 	Update(context.Context, PassingGrade) error
 	Delete(context.Context, string) error
 }

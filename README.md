@@ -2,7 +2,7 @@
 
 Backend Sistem Informasi Akademik dan Manajemen Sekolah. Fitur aktif fokus pada autentikasi, pengelolaan pengguna, pengaturan sekolah, perangkat absensi, data akademik, jadwal, dan penugasan mengajar.
 
-> Status: endpoint aktif belum mencakup semua domain pada requirement dan `openapi.yaml`. Fitur absensi, nilai, tugas, kuis, konseling, minat-bakat, dan passing grade masih berupa skema/kontrak atau belum tersedia pada router aktif.
+> Status: endpoint aktif belum mencakup semua domain pada requirement dan `openapi.yaml`. Fitur absensi, nilai, tugas, kuis, dan konseling masih berupa skema/kontrak atau belum tersedia pada router aktif.
 
 ## Stack
 
@@ -135,6 +135,8 @@ Autentikasi memakai sesi berbasis cookie. Endpoint tulis yang sudah masuk membut
 | Akademik | `GET`, `POST`, `PUT /classes`; `GET`, `POST /subjects`; `GET /students`; `GET`, `PATCH /students/:studentId` |
 | Jadwal | `GET`, `POST /schedules`; `PUT`, `DELETE /schedules/:scheduleId` |
 | Penugasan | `GET`, `POST /teaching-assignments` |
+| Minat bakat | `GET /students/:studentId/aptitude-results`; `POST /students/:studentId/target-majors` |
+| Passing grade | `GET /passing-grades`; `GET /passing-grades/:passingGradeId` |
 
 Spesifikasi API tersedia di `openapi.yaml`, tetapi sebagian endpoint di sana masih berstatus usulan. Gunakan daftar endpoint aktif di atas sebagai acuan operasional.
 

@@ -10,10 +10,12 @@ import (
 	postgresacademic "limen/internal/adapter/persistence/postgres/academic"
 	postgresassessment "limen/internal/adapter/persistence/postgres/assessment"
 	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
+	postgrescounseling "limen/internal/adapter/persistence/postgres/counseling"
 	postgresfingerprint "limen/internal/adapter/persistence/postgres/fingerprint"
 	postgresuser "limen/internal/adapter/persistence/postgres/user"
 	fingerprintdomain "limen/internal/domain/fingerprint"
 	academicuc "limen/internal/usecase/academic"
+	aptitudeuc "limen/internal/usecase/aptitude"
 	assessmentuc "limen/internal/usecase/assessment"
 	"limen/internal/usecase/auth"
 	deviceuc "limen/internal/usecase/device"
@@ -109,6 +111,20 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 	adminWrite.POST("/assessments", assessmentHandler.Create)
 	adminRead.GET("/assessments/:assessmentId/scores", assessmentHandler.ListScores)
 	adminWrite.PUT("/assessments/:assessmentId/scores/:studentUserId", assessmentHandler.UpsertScore)
+
+	aptitudeHandler := handler.NewAptitudeHandler(aptitudeuc.NewUseCase(
+		postgrescounseling.NewAptitudeResultRepository(postgresDB),
+		postgrescounseling.NewTargetMajorRepository(postgresDB),
+		postgrescounseling.NewPassingGradeRepository(postgresDB),
+		studentRepo,
+		logger,
+	))
+	aptitudeRead := v1.Group("", authMiddleware.Authenticate())
+	aptitudeWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
+	aptitudeRead.GET("/students/:studentId/aptitude-results", aptitudeHandler.ListAptitudeResults)
+	aptitudeWrite.POST("/students/:studentId/target-majors", aptitudeHandler.CreateTargetMajor)
+	aptitudeRead.GET("/passing-grades", aptitudeHandler.ListPassingGrades)
+	aptitudeRead.GET("/passing-grades/:passingGradeId", aptitudeHandler.GetPassingGrade)
 
 	// Legacy Express gateway endpoints, merged into the main API without auth.
 	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(

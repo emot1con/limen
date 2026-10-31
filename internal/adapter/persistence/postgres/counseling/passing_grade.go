@@ -59,17 +59,31 @@ func (r *PassingGradeRepository) FindByID(ctx context.Context, id string) (couns
 	return r.toDomain(model), nil
 }
 
-func (r *PassingGradeRepository) ListByUniversityMajorYear(ctx context.Context, university, major string, year int) ([]counselingdomain.PassingGrade, error) {
+func (r *PassingGradeRepository) List(ctx context.Context, filter counselingdomain.PassingGradeFilter, limit, offset int) ([]counselingdomain.PassingGrade, int64, error) {
+	query := r.db.WithContext(ctx).Model(&passingGradeModel{})
+	if filter.University != "" {
+		query = query.Where("university = ?", filter.University)
+	}
+	if filter.Major != "" {
+		query = query.Where("major = ?", filter.Major)
+	}
+	if filter.YearSet {
+		query = query.Where("year = ?", filter.Year)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var models []passingGradeModel
-	err := r.db.WithContext(ctx).Where("university = ? AND major = ? AND year = ?", university, major, year).Order("score").Find(&models).Error
+	err := query.Order("university, major, year, score").Limit(limit).Offset(offset).Find(&models).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	grades := make([]counselingdomain.PassingGrade, len(models))
 	for i, model := range models {
 		grades[i] = r.toDomain(model)
 	}
-	return grades, nil
+	return grades, total, nil
 }
 
 func (r *PassingGradeRepository) Update(ctx context.Context, grade counselingdomain.PassingGrade) error {
