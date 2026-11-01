@@ -12,6 +12,7 @@ import (
 	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
 	postgrescounseling "limen/internal/adapter/persistence/postgres/counseling"
 	postgresfingerprint "limen/internal/adapter/persistence/postgres/fingerprint"
+	postgresreports "limen/internal/adapter/persistence/postgres/reports"
 	postgresuser "limen/internal/adapter/persistence/postgres/user"
 	fingerprintdomain "limen/internal/domain/fingerprint"
 	academicuc "limen/internal/usecase/academic"
@@ -21,6 +22,7 @@ import (
 	counselinguc "limen/internal/usecase/counseling"
 	deviceuc "limen/internal/usecase/device"
 	fingerprintuc "limen/internal/usecase/fingerprint"
+	reportsuc "limen/internal/usecase/reports"
 	scheduleuc "limen/internal/usecase/schedule"
 	settingsuc "limen/internal/usecase/settings"
 	useruc "limen/internal/usecase/user"
@@ -139,6 +141,16 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 	counselingWrite.POST("/counseling-notes", counselingHandler.CreateNote)
 	counselingWrite.PUT("/counseling-notes/:noteId", counselingHandler.UpdateNote)
 	counselingWrite.POST("/counseling-notes/:noteId/followups", counselingHandler.AddFollowup)
+
+	reportHandler := handler.NewReportsHandler(reportsuc.NewUseCase(
+		postgresreports.NewQueryRepository(postgresDB),
+		studentRepo,
+		logger,
+	))
+	reportRead := v1.Group("", authMiddleware.Authenticate())
+	reportRead.GET("/reports/attendance", reportHandler.Attendance)
+	reportRead.GET("/reports/grades", reportHandler.Grades)
+	reportRead.GET("/students/:studentId/report-card", reportHandler.ReportCard)
 
 	// Legacy Express gateway endpoints, merged into the main API without auth.
 	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(

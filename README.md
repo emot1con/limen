@@ -138,6 +138,7 @@ Autentikasi memakai sesi berbasis cookie. Endpoint tulis yang sudah masuk membut
 | Minat bakat | `GET /students/:studentId/aptitude-results`; `POST /students/:studentId/target-majors` |
 | Passing grade | `GET /passing-grades`; `GET /passing-grades/:passingGradeId` |
 | Konseling | `GET`, `POST /counseling-notes`; `PUT /counseling-notes/:noteId`; `POST /counseling-notes/:noteId/followups` |
+| Laporan | `GET /reports/attendance`; `GET /reports/grades`; `GET /students/:studentId/report-card` |
 
 Spesifikasi API tersedia di `openapi.yaml`, tetapi sebagian endpoint di sana masih berstatus usulan. Gunakan daftar endpoint aktif di atas sebagai acuan operasional.
 
