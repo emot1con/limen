@@ -103,6 +103,84 @@ type QuizAnswer struct {
 	UpdatedAt  time.Time
 }
 
+type QuizStatus string
+
+const (
+	QuizStatusDraft     QuizStatus = "draft"
+	QuizStatusPublished QuizStatus = "published"
+	QuizStatusActive    QuizStatus = "active"
+	QuizStatusEnded     QuizStatus = "ended"
+)
+
+type QuizSummary struct {
+	ID          string
+	Title       string
+	SubjectID   string
+	Description *string
+}
+
+type QuizFilter struct {
+	SubjectID string
+	ClassID   string
+	Status    QuizStatus
+}
+
+type QuizQuestionDetail struct {
+	ID             int
+	QuestionNumber int
+	Type           QuestionType
+	Question       string
+	Options        []QuestionOption
+}
+
+type QuestionOption struct {
+	ID    int
+	Label string
+}
+
+type QuizDetail struct {
+	ID        string
+	Title     string
+	StartTime *time.Time
+	EndTime   *time.Time
+	Questions []QuizQuestionDetail
+}
+
+type AttemptFilter struct {
+	QuizID        string
+	StudentUserID string
+	Status        QuizAttemptStatus
+}
+
+type Attempt struct {
+	AttemptID   string
+	QuizID      string
+	QuizTitle   string
+	StartedAt   time.Time
+	SubmittedAt *time.Time
+	Status      QuizAttemptStatus
+	Score       *float64
+}
+
+type AttemptAnswer struct {
+	AnswerID   string
+	QuestionID int
+	UserAnswer json.RawMessage
+	IsCorrect  *bool
+}
+
+type AttemptResult struct {
+	Attempt
+	EssayPending bool
+	Answers      []AttemptAnswer
+}
+
+type QueryRepository interface {
+	ListQuizzes(context.Context, QuizFilter, int, int) ([]QuizSummary, int64, error)
+	GetQuizDetail(context.Context, string) (QuizDetail, error)
+	ListAttempts(context.Context, AttemptFilter, int, int) ([]Attempt, int64, error)
+}
+
 type QuestionBankRepository interface {
 	Create(context.Context, QuestionBank) (string, error)
 	FindByID(context.Context, string) (QuestionBank, error)
@@ -131,17 +209,21 @@ type QuizQuestionRepository interface {
 	Add(context.Context, QuizQuestion) error
 	Remove(context.Context, string, string) error
 	ListByQuizID(context.Context, string) ([]QuizQuestion, error)
+	FindByNumber(context.Context, string, int) (QuizQuestion, error)
 }
 
 type QuizAttemptRepository interface {
 	Create(context.Context, QuizAttempt) (string, error)
 	FindByID(context.Context, string) (QuizAttempt, error)
+	FindActive(context.Context, string, string) (QuizAttempt, error)
 	ListByQuizAndStudent(context.Context, string, string) ([]QuizAttempt, error)
 	Update(context.Context, QuizAttempt) error
 }
 
 type QuizAnswerRepository interface {
 	Upsert(context.Context, QuizAnswer) error
+	FindByID(context.Context, string) (QuizAnswer, error)
 	FindByAttemptAndQuestion(context.Context, string, string) (QuizAnswer, error)
 	ListByAttemptID(context.Context, string) ([]QuizAnswer, error)
+	Update(context.Context, QuizAnswer) error
 }

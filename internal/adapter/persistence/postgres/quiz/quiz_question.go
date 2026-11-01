@@ -2,6 +2,7 @@ package quiz
 
 import (
 	"context"
+	"errors"
 
 	domain "limen/internal/domain"
 	quizdomain "limen/internal/domain/quiz"
@@ -58,6 +59,18 @@ func (r *QuizQuestionRepository) ListByQuizID(ctx context.Context, quizID string
 		questions[i] = r.toDomain(model)
 	}
 	return questions, nil
+}
+
+func (r *QuizQuestionRepository) FindByNumber(ctx context.Context, quizID string, number int) (quizdomain.QuizQuestion, error) {
+	var model quizQuestionModel
+	err := r.db.WithContext(ctx).Where("quiz_id = ? AND question_number = ?", quizID, number).First(&model).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return quizdomain.QuizQuestion{}, domain.ErrNotFound
+		}
+		return quizdomain.QuizQuestion{}, err
+	}
+	return r.toDomain(model), nil
 }
 
 func (r *QuizQuestionRepository) toDomain(model quizQuestionModel) quizdomain.QuizQuestion {

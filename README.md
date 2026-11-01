@@ -84,6 +84,25 @@ make seed-admin \
 
 Perintah ini membutuhkan PostgreSQL aktif dan konfigurasi `.env` benar.
 
+## Seeder pengujian quiz
+
+Mengisi data uji dan menyimulasikan alur quiz secara end-to-end: membuat soal, membuat quiz, memulai pengerjaan, mengisi jawaban, submit, lalu mengoreksi essay.
+
+```sh
+make seed-quiz
+```
+
+Target ini menjalankan seeder dari host dengan `POSTGRES_HOST=localhost` (lihat `SEED_POSTGRES_HOST`). Bila dijalankan dari dalam jaringan Docker, override dengan `make seed-quiz SEED_POSTGRES_HOST=postgres`.
+
+Yang dibuat (idempoten untuk pengguna dan subject):
+
+- Pengguna `guru.quiz@limen.test` (peran `guru_mapel`) dan `siswa.quiz@limen.test` (peran `siswa`), sandi `GuruQuiz123` / `SiswaQuiz123`.
+- Subject `QZTEST`, satu bank soal `ujian`, dan lima soal (satu per tipe).
+- Satu quiz baru berisi kelima soal tersebut.
+- Satu attempt siswa yang diisi semua jawaban, di-submit, lalu essay-nya dinilai.
+
+Setiap kali dijalankan akan membuat bank, soal, dan quiz baru; jalankan pada database pengujian.
+
 ## Menjalankan aplikasi
 
 ### Lokal
@@ -141,6 +160,7 @@ Autentikasi memakai sesi berbasis cookie. Endpoint tulis yang sudah masuk membut
 | Laporan | `GET /reports/attendance`; `GET /reports/grades`; `GET /students/:studentId/report-card` |
 | Tugas | `GET`, `POST /assignments`; `GET /assignments/:assignmentId/submissions`; `PUT /assignments/:assignmentId/submissions/:studentUserId` |
 | Bank soal | `GET`, `POST /question-banks`; `GET`, `POST /question-banks/:bankId/questions`; `PUT`, `DELETE /questions/:questionId` |
+| Quiz | `GET`, `POST /quizzes`; `GET /quizzes/:quizId`; `POST /quizzes/:quizId/attempts`; `GET /quiz-attempts`; `GET /quiz-attempts/:attemptId`; `PATCH /quiz-attempts/:attemptId/answers/:questionId`; `POST /quiz-attempts/:attemptId/submit`; `PUT /quiz-attempts/:attemptId/answers/:answerId/grade` |
 
 Spesifikasi API tersedia di `openapi.yaml`, tetapi sebagian endpoint di sana masih berstatus usulan. Gunakan daftar endpoint aktif di atas sebagai acuan operasional.
 

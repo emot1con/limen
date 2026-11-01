@@ -64,6 +64,18 @@ func (r *QuizAttemptRepository) FindByID(ctx context.Context, id string) (quizdo
 	return r.toDomain(model), nil
 }
 
+func (r *QuizAttemptRepository) FindActive(ctx context.Context, quizID, studentUserID string) (quizdomain.QuizAttempt, error) {
+	var model quizAttemptModel
+	err := r.db.WithContext(ctx).Where("quiz_id = ? AND student_user_id = ? AND status = ?", quizID, studentUserID, string(quizdomain.QuizAttemptStatusInProgress)).Order("started_at DESC").First(&model).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return quizdomain.QuizAttempt{}, domain.ErrNotFound
+		}
+		return quizdomain.QuizAttempt{}, err
+	}
+	return r.toDomain(model), nil
+}
+
 func (r *QuizAttemptRepository) ListByQuizAndStudent(ctx context.Context, quizID, studentUserID string) ([]quizdomain.QuizAttempt, error) {
 	var models []quizAttemptModel
 	err := r.db.WithContext(ctx).Where("quiz_id = ? AND student_user_id = ?", quizID, studentUserID).Order("started_at").Find(&models).Error

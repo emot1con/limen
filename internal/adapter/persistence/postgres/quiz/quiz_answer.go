@@ -65,6 +65,18 @@ func (r *QuizAnswerRepository) Upsert(ctx context.Context, answer quizdomain.Qui
 	}).Create(&model).Error
 }
 
+func (r *QuizAnswerRepository) FindByID(ctx context.Context, id string) (quizdomain.QuizAnswer, error) {
+	var model quizAnswerModel
+	err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return quizdomain.QuizAnswer{}, domain.ErrNotFound
+		}
+		return quizdomain.QuizAnswer{}, err
+	}
+	return r.toDomain(model), nil
+}
+
 func (r *QuizAnswerRepository) FindByAttemptAndQuestion(ctx context.Context, attemptID, questionID string) (quizdomain.QuizAnswer, error) {
 	var model quizAnswerModel
 	err := r.db.WithContext(ctx).Where("attempt_id = ? AND question_id = ?", attemptID, questionID).First(&model).Error
@@ -88,6 +100,24 @@ func (r *QuizAnswerRepository) ListByAttemptID(ctx context.Context, attemptID st
 		answers[i] = r.toDomain(model)
 	}
 	return answers, nil
+}
+
+func (r *QuizAnswerRepository) Update(ctx context.Context, answer quizdomain.QuizAnswer) error {
+	result := r.db.WithContext(ctx).Model(&quizAnswerModel{}).Where("id = ?", answer.ID).Updates(map[string]interface{}{
+		"answer":     answer.Answer,
+		"is_correct": answer.IsCorrect,
+		"score":      answer.Score,
+		"feedback":   answer.Feedback,
+		"graded_by":  answer.GradedBy,
+		"graded_at":  answer.GradedAt,
+	})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
 }
 
 func (r *QuizAnswerRepository) toDomain(model quizAnswerModel) quizdomain.QuizAnswer {

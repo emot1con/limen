@@ -981,6 +981,28 @@ paths:
                         items: { $ref: '#/components/schemas/QuizSummary' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-QZ-008
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Quiz]
+      summary: Buat quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuizInput' }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuizDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /quizzes/{quizId}:
     parameters:
       - { name: quizId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -1138,8 +1160,12 @@ paths:
             schema:
               type: object
               properties:
-                isCorrect: { type: boolean }
-                score: { type: number }
+                isCorrect:
+                  type: boolean
+                  description: Soal objektif otoritatif; soal essay opsional (diturunkan dari score bila kosong).
+                score:
+                  type: number
+                  description: Skala 0-100. Soal essay otoritatif (mendukung nilai parsial); soal objektif diturunkan dari isCorrect.
                 feedback: { type: string }
       responses:
         '200':
@@ -2229,6 +2255,19 @@ components:
         startTime: { type: string, example: '07:15' }
         endTime: { type: string, example: '08:45' }
         kind: { $ref: '#/components/schemas/ScheduleKind' }
+    QuizInput:
+      type: object
+      required: [subjectId, title, questionIds]
+      properties:
+        subjectId: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        publishedAt: { type: string, format: date-time, nullable: true }
+        startTime: { type: string, format: date-time, nullable: true }
+        endTime: { type: string, format: date-time, nullable: true }
+        questionIds:
+          type: array
+          items: { type: string, format: uuid }
     QuizSummary:
       type: object
       properties:

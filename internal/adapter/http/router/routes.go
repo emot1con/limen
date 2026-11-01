@@ -26,6 +26,7 @@ import (
 	deviceuc "limen/internal/usecase/device"
 	fingerprintuc "limen/internal/usecase/fingerprint"
 	questionbankuc "limen/internal/usecase/questionbank"
+	quizuc "limen/internal/usecase/quiz"
 	reportsuc "limen/internal/usecase/reports"
 	scheduleuc "limen/internal/usecase/schedule"
 	settingsuc "limen/internal/usecase/settings"
@@ -186,6 +187,26 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 	quizWrite.POST("/question-banks/:bankId/questions", questionBankHandler.CreateQuestion)
 	quizWrite.PUT("/questions/:questionId", questionBankHandler.UpdateQuestion)
 	quizWrite.DELETE("/questions/:questionId", questionBankHandler.DeleteQuestion)
+
+	quizHandler := handler.NewQuizHandler(quizuc.NewUseCase(
+		postgresquiz.NewQuizRepository(postgresDB),
+		postgresquiz.NewQuestionRepository(postgresDB),
+		postgresquiz.NewQuizQuestionRepository(postgresDB),
+		postgresquiz.NewQuizAttemptRepository(postgresDB),
+		postgresquiz.NewQuizAnswerRepository(postgresDB),
+		postgresquiz.NewQueryRepository(postgresDB),
+		postgresacademic.NewSubjectRepository(postgresDB),
+		logger,
+	))
+	quizRead.GET("/quizzes", quizHandler.ListQuizzes)
+	quizWrite.POST("/quizzes", quizHandler.CreateQuiz)
+	quizRead.GET("/quizzes/:quizId", quizHandler.GetQuiz)
+	quizWrite.POST("/quizzes/:quizId/attempts", quizHandler.StartAttempt)
+	quizRead.GET("/quiz-attempts", quizHandler.ListAttempts)
+	quizRead.GET("/quiz-attempts/:attemptId", quizHandler.GetAttempt)
+	quizWrite.PATCH("/quiz-attempts/:attemptId/answers/:questionId", quizHandler.SaveAnswer)
+	quizWrite.POST("/quiz-attempts/:attemptId/submit", quizHandler.SubmitAttempt)
+	quizWrite.PUT("/quiz-attempts/:attemptId/answers/:answerId/grade", quizHandler.GradeAnswer)
 
 	// Legacy Express gateway endpoints, merged into the main API without auth.
 	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(

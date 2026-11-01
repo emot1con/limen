@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs ps clean migrate-up migrate-down migrate-create db-backup db-restore redis-backup redis-restore swag-up swag-down seed-admin
+.PHONY: help build up down restart logs ps clean migrate-up migrate-down migrate-create db-backup db-restore redis-backup redis-restore swag-up swag-down seed-admin seed-quiz
 
 include .env
 export
@@ -15,6 +15,7 @@ SWAG_RUN_FLAGS = --rm -d --name $(SWAG_CONTAINER) -p $(SWAG_PORT):8080 -e SWAGGE
 POSTGRES_CONTAINER ?= postgres
 POSTGRES_USER ?= $(shell grep POSTGRES_USER .env | cut -d '=' -f2)
 POSTGRES_DB ?= $(shell grep POSTGRES_DB .env | cut -d '=' -f2)
+SEED_POSTGRES_HOST ?= localhost
 BACKUP_DIR ?= backups
 TIMESTAMP := $(shell date +%Y%m%d_%H%M%S)
 MAX_RETRIES ?= 5
@@ -178,7 +179,10 @@ seed-admin:
 	@test -n "$(ADMIN_EMAIL)" || (echo "ADMIN_EMAIL required"; exit 1)
 	@test -n "$(ADMIN_FULL_NAME)" || (echo "ADMIN_FULL_NAME required"; exit 1)
 	@test -n "$(ADMIN_PASSWORD)" || (echo "ADMIN_PASSWORD required"; exit 1)
-	POSTGRES_HOST="$(POSTGRES_HOST)" ADMIN_EMAIL="$(ADMIN_EMAIL)" ADMIN_FULL_NAME="$(ADMIN_FULL_NAME)" ADMIN_PASSWORD="$(ADMIN_PASSWORD)" go run ./cmd/seed-admin
+	POSTGRES_HOST="$(SEED_POSTGRES_HOST)" ADMIN_EMAIL="$(ADMIN_EMAIL)" ADMIN_FULL_NAME="$(ADMIN_FULL_NAME)" ADMIN_PASSWORD="$(ADMIN_PASSWORD)" go run ./cmd/seed-admin
+
+seed-quiz:
+	POSTGRES_HOST="$(SEED_POSTGRES_HOST)" go run ./cmd/seed-quiz
 
 redis-restore:
 	@test -n "$(FILE)" || (echo "FILE required. Usage: make redis-restore FILE=backups/redis_20261019_132805.rdb.gz"; exit 1)
