@@ -73,17 +73,32 @@ func (r *CounselingNoteRepository) Update(ctx context.Context, note counselingdo
 	return nil
 }
 
-func (r *CounselingNoteRepository) ListByStudentUserID(ctx context.Context, studentUserID string) ([]counselingdomain.CounselingNote, error) {
+func (r *CounselingNoteRepository) List(ctx context.Context, filter counselingdomain.CounselingNoteFilter, limit, offset int) ([]counselingdomain.CounselingNote, int64, error) {
+	query := r.db.WithContext(ctx).Model(&counselingNoteModel{})
+	if filter.StudentUserID != "" {
+		query = query.Where("student_user_id = ?", filter.StudentUserID)
+	}
+	if filter.ClassID != "" {
+		query = query.Where("student_user_id IN (SELECT user_id FROM students WHERE class_id = ? AND deleted_at IS NULL)", filter.ClassID)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	order := "created_at DESC, id"
+	if filter.Sort == counselingdomain.CounselingNoteSortOldest {
+		order = "created_at, id"
+	}
 	var models []counselingNoteModel
-	err := r.db.WithContext(ctx).Where("student_user_id = ?", studentUserID).Order("created_at, id").Find(&models).Error
+	err := query.Order(order).Limit(limit).Offset(offset).Find(&models).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	notes := make([]counselingdomain.CounselingNote, len(models))
 	for i, model := range models {
 		notes[i] = r.toDomain(model)
 	}
-	return notes, nil
+	return notes, total, nil
 }
 
 func (r *CounselingNoteRepository) toDomain(model counselingNoteModel) counselingdomain.CounselingNote {

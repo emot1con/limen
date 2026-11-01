@@ -18,6 +18,7 @@ import (
 	aptitudeuc "limen/internal/usecase/aptitude"
 	assessmentuc "limen/internal/usecase/assessment"
 	"limen/internal/usecase/auth"
+	counselinguc "limen/internal/usecase/counseling"
 	deviceuc "limen/internal/usecase/device"
 	fingerprintuc "limen/internal/usecase/fingerprint"
 	scheduleuc "limen/internal/usecase/schedule"
@@ -125,6 +126,19 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 	aptitudeWrite.POST("/students/:studentId/target-majors", aptitudeHandler.CreateTargetMajor)
 	aptitudeRead.GET("/passing-grades", aptitudeHandler.ListPassingGrades)
 	aptitudeRead.GET("/passing-grades/:passingGradeId", aptitudeHandler.GetPassingGrade)
+
+	counselingHandler := handler.NewCounselingHandler(counselinguc.NewUseCase(
+		postgrescounseling.NewCounselingNoteRepository(postgresDB),
+		postgrescounseling.NewCounselingFollowupRepository(postgresDB),
+		studentRepo,
+		logger,
+	))
+	counselingRead := v1.Group("", authMiddleware.Authenticate())
+	counselingWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
+	counselingRead.GET("/counseling-notes", counselingHandler.ListNotes)
+	counselingWrite.POST("/counseling-notes", counselingHandler.CreateNote)
+	counselingWrite.PUT("/counseling-notes/:noteId", counselingHandler.UpdateNote)
+	counselingWrite.POST("/counseling-notes/:noteId/followups", counselingHandler.AddFollowup)
 
 	// Legacy Express gateway endpoints, merged into the main API without auth.
 	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(

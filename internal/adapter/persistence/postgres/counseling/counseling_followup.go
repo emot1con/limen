@@ -2,8 +2,10 @@ package counseling
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	domain "limen/internal/domain"
 	counselingdomain "limen/internal/domain/counseling"
 
 	"gorm.io/gorm"
@@ -41,6 +43,18 @@ func (r *CounselingFollowupRepository) Create(ctx context.Context, followup coun
 		return "", err
 	}
 	return model.ID, nil
+}
+
+func (r *CounselingFollowupRepository) FindByID(ctx context.Context, id string) (counselingdomain.CounselingFollowup, error) {
+	var model counselingFollowupModel
+	err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return counselingdomain.CounselingFollowup{}, domain.ErrNotFound
+		}
+		return counselingdomain.CounselingFollowup{}, err
+	}
+	return r.toDomain(model), nil
 }
 
 func (r *CounselingFollowupRepository) ListByNoteID(ctx context.Context, noteID string) ([]counselingdomain.CounselingFollowup, error) {

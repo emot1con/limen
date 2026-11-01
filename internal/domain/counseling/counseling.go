@@ -47,15 +47,29 @@ type PassingGrade struct {
 	UpdatedAt  time.Time
 }
 
+type CounselingNoteSort string
+
+const (
+	CounselingNoteSortNewest CounselingNoteSort = "newest"
+	CounselingNoteSortOldest CounselingNoteSort = "oldest"
+)
+
+type CounselingNoteFilter struct {
+	StudentUserID string
+	ClassID       string
+	Sort          CounselingNoteSort
+}
+
 type CounselingNoteRepository interface {
 	Create(context.Context, CounselingNote) (string, error)
 	FindByID(context.Context, string) (CounselingNote, error)
 	Update(context.Context, CounselingNote) error
-	ListByStudentUserID(context.Context, string) ([]CounselingNote, error)
+	List(context.Context, CounselingNoteFilter, int, int) ([]CounselingNote, int64, error)
 }
 
 type CounselingFollowupRepository interface {
 	Create(context.Context, CounselingFollowup) (string, error)
+	FindByID(context.Context, string) (CounselingFollowup, error)
 	ListByNoteID(context.Context, string) ([]CounselingFollowup, error)
 }
 

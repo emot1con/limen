@@ -26,6 +26,7 @@ func NewPostgresConnection(ctx context.Context, cfg *config.Config) (*gorm.DB, e
 				sqlDB.SetMaxOpenConns(25)
 				sqlDB.SetMaxIdleConns(5)
 				sqlDB.SetConnMaxLifetime(5 * time.Minute)
+				sqlDB.SetConnMaxIdleTime(1 * time.Minute)
 				err = sqlDB.PingContext(ctx)
 			} else {
 				err = dbErr
