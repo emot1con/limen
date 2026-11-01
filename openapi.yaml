@@ -1184,6 +1184,33 @@ paths:
                         items: { $ref: '#/components/schemas/QuestionBank' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: API-BNK-006
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [QuestionBanks]
+      summary: Buat bank soal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subjectId, scope]
+              properties:
+                subjectId: { type: string, format: uuid }
+                scope: { type: string, enum: [latihan, ujian] }
+      responses:
+        '201':
+          description: Dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuestionBank' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /question-banks/{bankId}/questions:
     parameters:
       - { name: bankId, in: path, required: true, schema: { type: string, format: uuid } }

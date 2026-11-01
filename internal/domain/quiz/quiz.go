@@ -36,6 +36,17 @@ type QuestionBank struct {
 	UpdatedAt time.Time
 }
 
+type QuestionBankDetail struct {
+	QuestionBank
+	QuestionCount int64
+}
+
+type QuestionBankFilter struct {
+	Scope     QuestionBankScope
+	SubjectID string
+	OwnerID   string
+}
+
 type Question struct {
 	ID        string
 	BankID    string
@@ -95,7 +106,7 @@ type QuizAnswer struct {
 type QuestionBankRepository interface {
 	Create(context.Context, QuestionBank) (string, error)
 	FindByID(context.Context, string) (QuestionBank, error)
-	ListByOwnerID(context.Context, string) ([]QuestionBank, error)
+	List(context.Context, QuestionBankFilter, int, int) ([]QuestionBankDetail, int64, error)
 	Update(context.Context, QuestionBank) error
 	Delete(context.Context, string) error
 }
@@ -103,7 +114,7 @@ type QuestionBankRepository interface {
 type QuestionRepository interface {
 	Create(context.Context, Question) (string, error)
 	FindByID(context.Context, string) (Question, error)
-	ListByBankID(context.Context, string) ([]Question, error)
+	List(context.Context, string, int, int) ([]Question, int64, error)
 	Update(context.Context, Question) error
 	Delete(context.Context, string) error
 }

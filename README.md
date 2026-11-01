@@ -140,6 +140,7 @@ Autentikasi memakai sesi berbasis cookie. Endpoint tulis yang sudah masuk membut
 | Konseling | `GET`, `POST /counseling-notes`; `PUT /counseling-notes/:noteId`; `POST /counseling-notes/:noteId/followups` |
 | Laporan | `GET /reports/attendance`; `GET /reports/grades`; `GET /students/:studentId/report-card` |
 | Tugas | `GET`, `POST /assignments`; `GET /assignments/:assignmentId/submissions`; `PUT /assignments/:assignmentId/submissions/:studentUserId` |
+| Bank soal | `GET`, `POST /question-banks`; `GET`, `POST /question-banks/:bankId/questions`; `PUT`, `DELETE /questions/:questionId` |
 
 Spesifikasi API tersedia di `openapi.yaml`, tetapi sebagian endpoint di sana masih berstatus usulan. Gunakan daftar endpoint aktif di atas sebagai acuan operasional.
 

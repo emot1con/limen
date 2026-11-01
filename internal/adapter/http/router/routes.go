@@ -13,6 +13,7 @@ import (
 	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
 	postgrescounseling "limen/internal/adapter/persistence/postgres/counseling"
 	postgresfingerprint "limen/internal/adapter/persistence/postgres/fingerprint"
+	postgresquiz "limen/internal/adapter/persistence/postgres/quiz"
 	postgresreports "limen/internal/adapter/persistence/postgres/reports"
 	postgresuser "limen/internal/adapter/persistence/postgres/user"
 	fingerprintdomain "limen/internal/domain/fingerprint"
@@ -24,6 +25,7 @@ import (
 	counselinguc "limen/internal/usecase/counseling"
 	deviceuc "limen/internal/usecase/device"
 	fingerprintuc "limen/internal/usecase/fingerprint"
+	questionbankuc "limen/internal/usecase/questionbank"
 	reportsuc "limen/internal/usecase/reports"
 	scheduleuc "limen/internal/usecase/schedule"
 	settingsuc "limen/internal/usecase/settings"
@@ -169,6 +171,21 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 	assignmentWrite.POST("/assignments", assignmentHandler.Create)
 	assignmentRead.GET("/assignments/:assignmentId/submissions", assignmentHandler.ListSubmissions)
 	assignmentWrite.PUT("/assignments/:assignmentId/submissions/:studentUserId", assignmentHandler.GradeSubmission)
+
+	questionBankHandler := handler.NewQuestionBankHandler(questionbankuc.NewUseCase(
+		postgresquiz.NewQuestionBankRepository(postgresDB),
+		postgresquiz.NewQuestionRepository(postgresDB),
+		postgresacademic.NewSubjectRepository(postgresDB),
+		logger,
+	))
+	quizRead := v1.Group("", authMiddleware.Authenticate())
+	quizWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
+	quizRead.GET("/question-banks", questionBankHandler.ListBanks)
+	quizWrite.POST("/question-banks", questionBankHandler.CreateBank)
+	quizRead.GET("/question-banks/:bankId/questions", questionBankHandler.ListQuestions)
+	quizWrite.POST("/question-banks/:bankId/questions", questionBankHandler.CreateQuestion)
+	quizWrite.PUT("/questions/:questionId", questionBankHandler.UpdateQuestion)
+	quizWrite.DELETE("/questions/:questionId", questionBankHandler.DeleteQuestion)
 
 	// Legacy Express gateway endpoints, merged into the main API without auth.
 	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(

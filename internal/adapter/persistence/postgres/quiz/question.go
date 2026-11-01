@@ -61,17 +61,22 @@ func (r *QuestionRepository) FindByID(ctx context.Context, id string) (quizdomai
 	return r.toDomain(model), nil
 }
 
-func (r *QuestionRepository) ListByBankID(ctx context.Context, bankID string) ([]quizdomain.Question, error) {
+func (r *QuestionRepository) List(ctx context.Context, bankID string, limit, offset int) ([]quizdomain.Question, int64, error) {
+	query := r.db.WithContext(ctx).Model(&questionModel{}).Where("bank_id = ?", bankID)
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var models []questionModel
-	err := r.db.WithContext(ctx).Where("bank_id = ?", bankID).Order("created_at, id").Find(&models).Error
+	err := query.Order("created_at, id").Limit(limit).Offset(offset).Find(&models).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	questions := make([]quizdomain.Question, len(models))
 	for i, model := range models {
 		questions[i] = r.toDomain(model)
 	}
-	return questions, nil
+	return questions, total, nil
 }
 
 func (r *QuestionRepository) Update(ctx context.Context, question quizdomain.Question) error {

@@ -359,7 +359,7 @@ func validPassword(password string) bool {
 }
 
 func writeMappedError(c *gin.Context, err error, duplicateField ...string) {
-	if !errors.Is(err, domain.ErrNotFound) && !errors.Is(err, domain.ErrAlreadyExists) && !errors.Is(err, domain.ErrInvalid) && !isUniqueViolation(err) {
+	if !errors.Is(err, domain.ErrNotFound) && !errors.Is(err, domain.ErrAlreadyExists) && !errors.Is(err, domain.ErrInvalid) && !errors.Is(err, domain.ErrConflict) && !isUniqueViolation(err) {
 		response.TraceError(c, "handler.use_case", err)
 	}
 	if errors.Is(err, domain.ErrNotFound) {
@@ -372,6 +372,10 @@ func writeMappedError(c *gin.Context, err error, duplicateField ...string) {
 			field = duplicateField[0]
 		}
 		response.WriteError(c, http.StatusConflict, "CONFLICT", "resource already exists", response.FieldError{Field: field, Message: "already exists"})
+		return
+	}
+	if errors.Is(err, domain.ErrConflict) {
+		response.WriteError(c, http.StatusConflict, "CONFLICT", "resource is in use")
 		return
 	}
 	if errors.Is(err, domain.ErrInvalid) {
