@@ -9,6 +9,7 @@ import (
 	"limen/internal/adapter/http/middleware"
 	postgresacademic "limen/internal/adapter/persistence/postgres/academic"
 	postgresassessment "limen/internal/adapter/persistence/postgres/assessment"
+	postgresassignment "limen/internal/adapter/persistence/postgres/assignment"
 	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
 	postgrescounseling "limen/internal/adapter/persistence/postgres/counseling"
 	postgresfingerprint "limen/internal/adapter/persistence/postgres/fingerprint"
@@ -18,6 +19,7 @@ import (
 	academicuc "limen/internal/usecase/academic"
 	aptitudeuc "limen/internal/usecase/aptitude"
 	assessmentuc "limen/internal/usecase/assessment"
+	assignmentuc "limen/internal/usecase/assignment"
 	"limen/internal/usecase/auth"
 	counselinguc "limen/internal/usecase/counseling"
 	deviceuc "limen/internal/usecase/device"
@@ -151,6 +153,22 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 	reportRead.GET("/reports/attendance", reportHandler.Attendance)
 	reportRead.GET("/reports/grades", reportHandler.Grades)
 	reportRead.GET("/students/:studentId/report-card", reportHandler.ReportCard)
+
+	assignmentHandler := handler.NewAssignmentHandler(assignmentuc.NewUseCase(
+		postgresassignment.NewAssignmentRepository(postgresDB),
+		postgresassignment.NewAssignmentSubmissionRepository(postgresDB),
+		postgresacademic.NewClassRepository(postgresDB),
+		postgresacademic.NewSubjectRepository(postgresDB),
+		studentRepo,
+		userRepo,
+		logger,
+	))
+	assignmentRead := v1.Group("", authMiddleware.Authenticate())
+	assignmentWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
+	assignmentRead.GET("/assignments", assignmentHandler.List)
+	assignmentWrite.POST("/assignments", assignmentHandler.Create)
+	assignmentRead.GET("/assignments/:assignmentId/submissions", assignmentHandler.ListSubmissions)
+	assignmentWrite.PUT("/assignments/:assignmentId/submissions/:studentUserId", assignmentHandler.GradeSubmission)
 
 	// Legacy Express gateway endpoints, merged into the main API without auth.
 	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(

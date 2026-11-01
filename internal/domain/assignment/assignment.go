@@ -30,11 +30,32 @@ type AssignmentSubmission struct {
 	UpdatedAt     time.Time
 }
 
+type SubmissionDetail struct {
+	AssignmentSubmission
+	StudentName string
+}
+
+type AssignmentSort string
+
+const (
+	AssignmentSortNewest  AssignmentSort = "newest"
+	AssignmentSortOldest  AssignmentSort = "oldest"
+	AssignmentSortDueAsc  AssignmentSort = "due_asc"
+	AssignmentSortDueDesc AssignmentSort = "due_desc"
+)
+
+type AssignmentFilter struct {
+	ClassID       string
+	SubjectID     string
+	TeacherUserID string
+	Sort          AssignmentSort
+}
+
 type AssignmentRepository interface {
 	Create(context.Context, Assignment) (string, error)
 	FindByID(context.Context, string) (Assignment, error)
 	Update(context.Context, Assignment) error
-	ListByClassSubject(context.Context, string, string) ([]Assignment, error)
+	List(context.Context, AssignmentFilter, int, int) ([]Assignment, int64, error)
 	Delete(context.Context, string) error
 }
 
@@ -42,7 +63,9 @@ type AssignmentSubmissionRepository interface {
 	Create(context.Context, AssignmentSubmission) (string, error)
 	FindByID(context.Context, string) (AssignmentSubmission, error)
 	FindByAssignmentAndStudent(context.Context, string, string) (AssignmentSubmission, error)
+	Upsert(context.Context, AssignmentSubmission) error
 	Update(context.Context, AssignmentSubmission) error
-	ListByAssignmentID(context.Context, string) ([]AssignmentSubmission, error)
+	List(context.Context, string, int, int) ([]SubmissionDetail, int64, error)
+	FindDetail(context.Context, string, string) (SubmissionDetail, error)
 	ListByStudentUserID(context.Context, string) ([]AssignmentSubmission, error)
 }

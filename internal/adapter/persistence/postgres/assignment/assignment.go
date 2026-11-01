@@ -82,17 +82,40 @@ func (r *AssignmentRepository) Update(ctx context.Context, assignment assignment
 	return nil
 }
 
-func (r *AssignmentRepository) ListByClassSubject(ctx context.Context, classID, subjectID string) ([]assignmentdomain.Assignment, error) {
+func (r *AssignmentRepository) List(ctx context.Context, filter assignmentdomain.AssignmentFilter, limit, offset int) ([]assignmentdomain.Assignment, int64, error) {
+	query := r.db.WithContext(ctx).Model(&assignmentModel{})
+	if filter.ClassID != "" {
+		query = query.Where("class_id = ?", filter.ClassID)
+	}
+	if filter.SubjectID != "" {
+		query = query.Where("subject_id = ?", filter.SubjectID)
+	}
+	if filter.TeacherUserID != "" {
+		query = query.Where("teacher_user_id = ?", filter.TeacherUserID)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	order := "created_at DESC, id"
+	switch filter.Sort {
+	case assignmentdomain.AssignmentSortOldest:
+		order = "created_at, id"
+	case assignmentdomain.AssignmentSortDueAsc:
+		order = "due_at, id"
+	case assignmentdomain.AssignmentSortDueDesc:
+		order = "due_at DESC, id"
+	}
 	var models []assignmentModel
-	err := r.db.WithContext(ctx).Where("class_id = ? AND subject_id = ?", classID, subjectID).Order("due_at, id").Find(&models).Error
+	err := query.Order(order).Limit(limit).Offset(offset).Find(&models).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	assignments := make([]assignmentdomain.Assignment, len(models))
 	for i, m := range models {
 		assignments[i] = r.toDomain(m)
 	}
-	return assignments, nil
+	return assignments, total, nil
 }
 
 func (r *AssignmentRepository) Delete(ctx context.Context, id string) error {
