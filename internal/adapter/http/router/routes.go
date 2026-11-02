@@ -12,6 +12,7 @@ import (
 	postgresassignment "limen/internal/adapter/persistence/postgres/assignment"
 	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
 	postgrescounseling "limen/internal/adapter/persistence/postgres/counseling"
+	postgresaudit "limen/internal/adapter/persistence/postgres/audit"
 	postgresfingerprint "limen/internal/adapter/persistence/postgres/fingerprint"
 	postgresquiz "limen/internal/adapter/persistence/postgres/quiz"
 	postgresreports "limen/internal/adapter/persistence/postgres/reports"
@@ -25,6 +26,7 @@ import (
 	counselinguc "limen/internal/usecase/counseling"
 	deviceuc "limen/internal/usecase/device"
 	fingerprintuc "limen/internal/usecase/fingerprint"
+	notificationuc "limen/internal/usecase/notification"
 	questionbankuc "limen/internal/usecase/questionbank"
 	quizuc "limen/internal/usecase/quiz"
 	reportsuc "limen/internal/usecase/reports"
@@ -207,7 +209,16 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 	quizWrite.POST("/quiz-attempts/:attemptId/submit", quizHandler.SubmitAttempt)
 	quizWrite.PUT("/quiz-attempts/:attemptId/answers/:answerId/grade", quizHandler.GradeAnswer)
 
-	// Legacy Express gateway endpoints, merged into the main API without auth.
+	notificationHandler := handler.NewNotificationHandler(notificationuc.NewUseCase(
+		postgresaudit.NewNotificationRepository(postgresDB),
+		logger,
+	))
+	notificationRead := v1.Group("", authMiddleware.Authenticate())
+	notificationWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
+	notificationRead.GET("/notifications", notificationHandler.List)
+	notificationWrite.POST("/notifications", notificationHandler.Create)
+	notificationWrite.POST("/notifications/:notificationId/read", notificationHandler.MarkRead)
+
 	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(
 		fingerprintGateway,
 		postgresfingerprint.NewIdentificationRepository(postgresDB),

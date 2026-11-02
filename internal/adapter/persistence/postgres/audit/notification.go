@@ -36,7 +36,6 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 
 func (r *NotificationRepository) Create(ctx context.Context, notification auditdomain.Notification) (string, error) {
 	model := notificationModel{
-		ID:      notification.ID,
 		UserID:  notification.UserID,
 		Type:    notification.Type,
 		Payload: notification.Payload,
@@ -60,17 +59,25 @@ func (r *NotificationRepository) FindByID(ctx context.Context, id string) (audit
 	return r.toDomain(model), nil
 }
 
-func (r *NotificationRepository) ListByUserID(ctx context.Context, userID string, limit, offset int) ([]auditdomain.Notification, error) {
+func (r *NotificationRepository) ListByUserID(ctx context.Context, userID string, unreadOnly bool, limit, offset int) ([]auditdomain.Notification, int64, error) {
+	base := r.db.WithContext(ctx).Model(&notificationModel{}).Where("user_id = ?", userID)
+	if unreadOnly {
+		base = base.Where("read_at IS NULL")
+	}
+	var total int64
+	if err := base.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	var models []notificationModel
-	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("created_at DESC, id DESC").Limit(limit).Offset(offset).Find(&models).Error
+	err := base.Session(&gorm.Session{}).Order("created_at DESC, id DESC").Limit(limit).Offset(offset).Find(&models).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	notifications := make([]auditdomain.Notification, len(models))
 	for i, m := range models {
 		notifications[i] = r.toDomain(m)
 	}
-	return notifications, nil
+	return notifications, total, nil
 }
 
 func (r *NotificationRepository) MarkRead(ctx context.Context, id, userID string, readAt time.Time) error {

@@ -1836,6 +1836,32 @@ paths:
                         type: array
                         items: { $ref: '#/components/schemas/Notification' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      operationId: API-NTF-003
+      security:
+        - sessionCookie: []
+          csrfToken: []
+      tags: [Notifications]
+      summary: Buat notifikasi baru
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type: { type: string }
+                payload: { type: object, nullable: true }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /notifications/{notificationId}/read:
     post:
       operationId: API-NTF-002

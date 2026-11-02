@@ -35,6 +35,6 @@ type AuditLogRepository interface {
 type NotificationRepository interface {
 	Create(context.Context, Notification) (string, error)
 	FindByID(context.Context, string) (Notification, error)
-	ListByUserID(context.Context, string, int, int) ([]Notification, error)
+	ListByUserID(context.Context, string, bool, int, int) ([]Notification, int64, error)
 	MarkRead(context.Context, string, string, time.Time) error
 }
