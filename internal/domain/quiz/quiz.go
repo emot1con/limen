@@ -192,6 +192,7 @@ type QuestionBankRepository interface {
 type QuestionRepository interface {
 	Create(context.Context, Question) (string, error)
 	FindByID(context.Context, string) (Question, error)
+	ListByIDs(context.Context, []string) ([]Question, error)
 	List(context.Context, string, int, int) ([]Question, int64, error)
 	Update(context.Context, Question) error
 	Delete(context.Context, string) error
@@ -210,6 +211,7 @@ type QuizQuestionRepository interface {
 	Remove(context.Context, string, string) error
 	ListByQuizID(context.Context, string) ([]QuizQuestion, error)
 	FindByNumber(context.Context, string, int) (QuizQuestion, error)
+	CountByQuizID(context.Context, string) (int64, error)
 }
 
 type QuizAttemptRepository interface {
@@ -225,5 +227,6 @@ type QuizAnswerRepository interface {
 	FindByID(context.Context, string) (QuizAnswer, error)
 	FindByAttemptAndQuestion(context.Context, string, string) (QuizAnswer, error)
 	ListByAttemptID(context.Context, string) ([]QuizAnswer, error)
+	CountByAttemptID(context.Context, string) (int64, error)
 	Update(context.Context, QuizAnswer) error
 }

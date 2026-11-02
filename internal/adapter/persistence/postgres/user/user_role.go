@@ -78,6 +78,21 @@ func (r *UserRoleRepository) ListByUserID(ctx context.Context, userID string) ([
 	return userRoles, nil
 }
 
+func (r *UserRoleRepository) ListByUserIDs(ctx context.Context, userIDs []string) (map[string][]userdomain.UserRole, error) {
+	out := make(map[string][]userdomain.UserRole, len(userIDs))
+	if len(userIDs) == 0 {
+		return out, nil
+	}
+	var models []userRoleModel
+	if err := r.db.WithContext(ctx).Where("user_id IN ?", userIDs).Order("user_id, role_code").Find(&models).Error; err != nil {
+		return nil, err
+	}
+	for _, model := range models {
+		out[model.UserID] = append(out[model.UserID], r.toDomain(model))
+	}
+	return out, nil
+}
+
 func (r *UserRoleRepository) toDomain(model userRoleModel) userdomain.UserRole {
 	return userdomain.UserRole{
 		UserID:    model.UserID,

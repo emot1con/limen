@@ -23,18 +23,17 @@ var roleNames = map[string]string{
 
 type UseCase struct {
 	users    userdomain.UserRepository
-	roles    userdomain.RoleRepository
 	userRole userdomain.UserRoleRepository
 	sessions userdomain.SessionRepository
 	now      func() time.Time
 	logger   *logrus.Logger
 }
 
-func NewUseCase(users userdomain.UserRepository, roles userdomain.RoleRepository, userRole userdomain.UserRoleRepository, sessions userdomain.SessionRepository, logger *logrus.Logger) *UseCase {
+func NewUseCase(users userdomain.UserRepository, userRole userdomain.UserRoleRepository, sessions userdomain.SessionRepository, logger *logrus.Logger) *UseCase {
 	if logger == nil {
 		logger = logrus.StandardLogger()
 	}
-	return &UseCase{users: users, roles: roles, userRole: userRole, sessions: sessions, now: time.Now, logger: logger}
+	return &UseCase{users: users, userRole: userRole, sessions: sessions, now: time.Now, logger: logger}
 }
 
 type User struct {
@@ -84,10 +83,6 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (User, error) 
 		uc.logError(err, "user_normalize_roles", nil)
 		return User{}, err
 	}
-	if err := uc.seedRoles(ctx); err != nil {
-		uc.logError(err, "user_seed_roles", nil)
-		return User{}, err
-	}
 	hash, err := auth.HashArgon2idPassword(input.Password)
 	if err != nil {
 		uc.logError(err, "user_hash_password", nil)
@@ -129,13 +124,17 @@ func (uc *UseCase) List(ctx context.Context, q string, page, pageSize int) (Page
 		return Page{}, err
 	}
 	out := make([]User, len(items))
+	ids := make([]string, len(items))
 	for i, item := range items {
-		roles, err := uc.userRole.ListByUserID(ctx, item.ID)
-		if err != nil {
-			uc.logError(err, "user_list_roles", logrus.Fields{"user_id": item.ID})
-			return Page{}, err
-		}
-		out[i] = toUser(item, roleCodes(roles))
+		ids[i] = item.ID
+	}
+	rolesByUser, err := uc.userRole.ListByUserIDs(ctx, ids)
+	if err != nil {
+		uc.logError(err, "user_list_roles", nil)
+		return Page{}, err
+	}
+	for i, item := range items {
+		out[i] = toUser(item, roleCodes(rolesByUser[item.ID]))
 	}
 	return Page{Items: out, Total: total, Page: page, PageSize: pageSize}, nil
 }
@@ -190,10 +189,6 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) 
 		if err != nil {
 			return User{}, err
 		}
-		if err := uc.seedRoles(ctx); err != nil {
-			uc.logError(err, "user_seed_roles", nil)
-			return User{}, err
-		}
 		granted := make([]userdomain.UserRole, len(roles))
 		now := uc.now()
 		for i, role := range roles {
@@ -211,25 +206,6 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) 
 		}
 	}
 	return uc.Get(ctx, input.ID)
-}
-
-func (uc *UseCase) seedRoles(ctx context.Context) error {
-	for code, name := range roleNames {
-		_, err := uc.roles.FindByCode(ctx, code)
-		if err == nil {
-			continue
-		}
-		if !errors.Is(err, domain.ErrNotFound) {
-			return err
-		}
-		if _, err := uc.roles.Create(ctx, userdomain.Role{Code: code, Name: name}); err != nil {
-			if _, findErr := uc.roles.FindByCode(ctx, code); findErr == nil {
-				continue
-			}
-			return err
-		}
-	}
-	return nil
 }
 
 func normalizeRoles(roles []string) ([]string, error) {

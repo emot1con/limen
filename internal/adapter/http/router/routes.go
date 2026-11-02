@@ -59,8 +59,7 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 
 	settingsRepo := postgresattendance.NewSchoolSettingsRepository(postgresDB)
 	deviceRepo := postgresattendance.NewDeviceRepository(postgresDB)
-	roleRepo := postgresuser.NewRoleRepository(postgresDB)
-	adminHandler := handler.NewAdminHandler(settingsuc.NewUseCase(settingsRepo, logger), deviceuc.NewUseCase(deviceRepo, logger), useruc.NewUseCase(userRepo, roleRepo, userRoleRepo, sessionRepo, logger))
+	adminHandler := handler.NewAdminHandler(settingsuc.NewUseCase(settingsRepo, logger), deviceuc.NewUseCase(deviceRepo, logger), useruc.NewUseCase(userRepo, userRoleRepo, sessionRepo, logger))
 	adminRead := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireRole("admin"))
 	adminWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authMiddleware.RequireRole("admin"))
 	adminRead.GET("/settings/school", adminHandler.GetSettings)

@@ -223,6 +223,11 @@ func (uc *UseCase) SubmitAttempt(ctx context.Context, attemptID string) (quizdom
 		uc.logError(err, "quiz_submit_list_questions", logrus.Fields{"quiz_id": attempt.QuizID})
 		return quizdomain.AttemptResult{}, err
 	}
+	questionsByID, err := uc.loadQuestions(ctx, qqList)
+	if err != nil {
+		uc.logError(err, "quiz_submit_load_questions", logrus.Fields{"quiz_id": attempt.QuizID})
+		return quizdomain.AttemptResult{}, err
+	}
 	existing, err := uc.answers.ListByAttemptID(ctx, attemptID)
 	if err != nil {
 		uc.logError(err, "quiz_submit_list_answers", logrus.Fields{"attempt_id": attemptID})
@@ -235,10 +240,9 @@ func (uc *UseCase) SubmitAttempt(ctx context.Context, attemptID string) (quizdom
 	var sum float64
 	essayPending := false
 	for _, qq := range qqList {
-		question, err := uc.questions.FindByID(ctx, qq.QuestionID)
-		if err != nil {
-			uc.logError(err, "quiz_submit_get_question", logrus.Fields{"question_id": qq.QuestionID})
-			return quizdomain.AttemptResult{}, err
+		question, ok := questionsByID[qq.QuestionID]
+		if !ok {
+			return quizdomain.AttemptResult{}, domain.ErrNotFound
 		}
 		answer, ok := byQuestion[qq.QuestionID]
 		if !ok {
@@ -276,7 +280,17 @@ func (uc *UseCase) SubmitAttempt(ctx context.Context, attemptID string) (quizdom
 		uc.logError(err, "quiz_submit_update_attempt", logrus.Fields{"attempt_id": attemptID})
 		return quizdomain.AttemptResult{}, err
 	}
-	return uc.buildResult(ctx, attempt)
+	quiz, err := uc.quizzes.FindByID(ctx, attempt.QuizID)
+	if err != nil {
+		uc.logError(err, "quiz_submit_get_quiz", logrus.Fields{"quiz_id": attempt.QuizID})
+		return quizdomain.AttemptResult{}, err
+	}
+	answerList, err := uc.answers.ListByAttemptID(ctx, attemptID)
+	if err != nil {
+		uc.logError(err, "quiz_submit_reload_answers", logrus.Fields{"attempt_id": attemptID})
+		return quizdomain.AttemptResult{}, err
+	}
+	return assembleResult(attemptView(attempt, quiz.Title), qqList, questionsByID, answerList), nil
 }
 
 func (uc *UseCase) ListAttempts(ctx context.Context, filter quizdomain.AttemptFilter, page, pageSize int) ([]quizdomain.Attempt, int64, error) {
@@ -347,21 +361,41 @@ func (uc *UseCase) buildResult(ctx context.Context, attempt quizdomain.QuizAttem
 		uc.logError(err, "quiz_result_list_questions", logrus.Fields{"quiz_id": attempt.QuizID})
 		return quizdomain.AttemptResult{}, err
 	}
-	numberByQuestion := make(map[string]int, len(qqList))
-	typeByQuestion := make(map[string]quizdomain.QuestionType, len(qqList))
-	for _, qq := range qqList {
-		numberByQuestion[qq.QuestionID] = qq.QuestionNumber
-		question, err := uc.questions.FindByID(ctx, qq.QuestionID)
-		if err != nil {
-			uc.logError(err, "quiz_result_get_question", logrus.Fields{"question_id": qq.QuestionID})
-			return quizdomain.AttemptResult{}, err
-		}
-		typeByQuestion[qq.QuestionID] = question.Type
+	questionsByID, err := uc.loadQuestions(ctx, qqList)
+	if err != nil {
+		uc.logError(err, "quiz_result_load_questions", logrus.Fields{"quiz_id": attempt.QuizID})
+		return quizdomain.AttemptResult{}, err
 	}
 	answerList, err := uc.answers.ListByAttemptID(ctx, attempt.ID)
 	if err != nil {
 		uc.logError(err, "quiz_result_list_answers", logrus.Fields{"attempt_id": attempt.ID})
 		return quizdomain.AttemptResult{}, err
+	}
+	return assembleResult(attemptView(attempt, quiz.Title), qqList, questionsByID, answerList), nil
+}
+
+func (uc *UseCase) loadQuestions(ctx context.Context, qqList []quizdomain.QuizQuestion) (map[string]quizdomain.Question, error) {
+	ids := make([]string, len(qqList))
+	for i, qq := range qqList {
+		ids[i] = qq.QuestionID
+	}
+	questions, err := uc.questions.ListByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]quizdomain.Question, len(questions))
+	for _, question := range questions {
+		out[question.ID] = question
+	}
+	return out, nil
+}
+
+func assembleResult(attempt quizdomain.Attempt, qqList []quizdomain.QuizQuestion, questionsByID map[string]quizdomain.Question, answerList []quizdomain.QuizAnswer) quizdomain.AttemptResult {
+	numberByQuestion := make(map[string]int, len(qqList))
+	typeByQuestion := make(map[string]quizdomain.QuestionType, len(qqList))
+	for _, qq := range qqList {
+		numberByQuestion[qq.QuestionID] = qq.QuestionNumber
+		typeByQuestion[qq.QuestionID] = questionsByID[qq.QuestionID].Type
 	}
 	answers := make([]quizdomain.AttemptAnswer, 0, len(answerList))
 	essayPending := false
@@ -377,11 +411,11 @@ func (uc *UseCase) buildResult(ctx context.Context, attempt quizdomain.QuizAttem
 		})
 	}
 	sort.Slice(answers, func(i, j int) bool { return answers[i].QuestionID < answers[j].QuestionID })
-	return quizdomain.AttemptResult{Attempt: attemptView(attempt, quiz.Title), EssayPending: essayPending, Answers: answers}, nil
+	return quizdomain.AttemptResult{Attempt: attempt, EssayPending: essayPending, Answers: answers}
 }
 
 func (uc *UseCase) recompute(ctx context.Context, attempt quizdomain.QuizAttempt) error {
-	qqList, err := uc.quizQs.ListByQuizID(ctx, attempt.QuizID)
+	total, err := uc.quizQs.CountByQuizID(ctx, attempt.QuizID)
 	if err != nil {
 		return err
 	}
@@ -398,7 +432,7 @@ func (uc *UseCase) recompute(ctx context.Context, attempt quizdomain.QuizAttempt
 			essayPending = true
 		}
 	}
-	score := percentage(sum, len(qqList))
+	score := percentage(sum, int(total))
 	attempt.Score = &score
 	if essayPending || attempt.SubmittedAt == nil {
 		attempt.Status = quizdomain.QuizAttemptStatusSubmitted
@@ -409,15 +443,15 @@ func (uc *UseCase) recompute(ctx context.Context, attempt quizdomain.QuizAttempt
 }
 
 func (uc *UseCase) progress(ctx context.Context, quizID, attemptID string) (int, int, error) {
-	qqList, err := uc.quizQs.ListByQuizID(ctx, quizID)
+	total, err := uc.quizQs.CountByQuizID(ctx, quizID)
 	if err != nil {
 		return 0, 0, err
 	}
-	answerList, err := uc.answers.ListByAttemptID(ctx, attemptID)
+	answered, err := uc.answers.CountByAttemptID(ctx, attemptID)
 	if err != nil {
 		return 0, 0, err
 	}
-	return len(qqList), len(answerList), nil
+	return int(total), int(answered), nil
 }
 
 func attemptView(attempt quizdomain.QuizAttempt, quizTitle string) quizdomain.Attempt {

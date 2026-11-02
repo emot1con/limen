@@ -102,6 +102,14 @@ func (r *QuizAnswerRepository) ListByAttemptID(ctx context.Context, attemptID st
 	return answers, nil
 }
 
+func (r *QuizAnswerRepository) CountByAttemptID(ctx context.Context, attemptID string) (int64, error) {
+	var total int64
+	if err := r.db.WithContext(ctx).Model(&quizAnswerModel{}).Where("attempt_id = ?", attemptID).Count(&total).Error; err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
 func (r *QuizAnswerRepository) Update(ctx context.Context, answer quizdomain.QuizAnswer) error {
 	result := r.db.WithContext(ctx).Model(&quizAnswerModel{}).Where("id = ?", answer.ID).Updates(map[string]interface{}{
 		"answer":     answer.Answer,

@@ -61,6 +61,21 @@ func (r *QuestionRepository) FindByID(ctx context.Context, id string) (quizdomai
 	return r.toDomain(model), nil
 }
 
+func (r *QuestionRepository) ListByIDs(ctx context.Context, ids []string) ([]quizdomain.Question, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var models []questionModel
+	if err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&models).Error; err != nil {
+		return nil, err
+	}
+	questions := make([]quizdomain.Question, len(models))
+	for i, model := range models {
+		questions[i] = r.toDomain(model)
+	}
+	return questions, nil
+}
+
 func (r *QuestionRepository) List(ctx context.Context, bankID string, limit, offset int) ([]quizdomain.Question, int64, error) {
 	query := r.db.WithContext(ctx).Model(&questionModel{}).Where("bank_id = ?", bankID)
 	var total int64

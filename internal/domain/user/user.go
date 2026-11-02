@@ -70,6 +70,7 @@ type UserRoleRepository interface {
 	Revoke(context.Context, string, string) error
 	Replace(context.Context, string, []UserRole) error
 	ListByUserID(context.Context, string) ([]UserRole, error)
+	ListByUserIDs(context.Context, []string) (map[string][]UserRole, error)
 }
 
 type SessionRepository interface {

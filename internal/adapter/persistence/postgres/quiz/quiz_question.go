@@ -73,6 +73,14 @@ func (r *QuizQuestionRepository) FindByNumber(ctx context.Context, quizID string
 	return r.toDomain(model), nil
 }
 
+func (r *QuizQuestionRepository) CountByQuizID(ctx context.Context, quizID string) (int64, error) {
+	var total int64
+	if err := r.db.WithContext(ctx).Model(&quizQuestionModel{}).Where("quiz_id = ?", quizID).Count(&total).Error; err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
 func (r *QuizQuestionRepository) toDomain(model quizQuestionModel) quizdomain.QuizQuestion {
 	return quizdomain.QuizQuestion{
 		QuizID:         model.QuizID,
