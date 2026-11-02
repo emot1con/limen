@@ -18,6 +18,8 @@ import (
 	postgresreports "limen/internal/adapter/persistence/postgres/reports"
 	postgresuser "limen/internal/adapter/persistence/postgres/user"
 	fingerprintdomain "limen/internal/domain/fingerprint"
+	"limen/internal/platform/cache"
+	"limen/internal/platform/config"
 	academicuc "limen/internal/usecase/academic"
 	aptitudeuc "limen/internal/usecase/aptitude"
 	assessmentuc "limen/internal/usecase/assessment"
@@ -27,7 +29,7 @@ import (
 	deviceuc "limen/internal/usecase/device"
 	fingerprintuc "limen/internal/usecase/fingerprint"
 	notificationuc "limen/internal/usecase/notification"
-	questionbankuc "limen/internal/usecase/questionbank"
+	questionbankuc "limen/internal/usecase/question_bank"
 	quizuc "limen/internal/usecase/quiz"
 	reportsuc "limen/internal/usecase/reports"
 	scheduleuc "limen/internal/usecase/schedule"
@@ -35,7 +37,7 @@ import (
 	useruc "limen/internal/usecase/user"
 )
 
-func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, fingerprintGateway fingerprintdomain.Gateway) *gin.Engine {
+func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache, cfg *config.Config, logger *logrus.Logger, fingerprintGateway fingerprintdomain.Gateway) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery(), middleware.RequestLogger(logger))
 
@@ -61,7 +63,7 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 
 	settingsRepo := postgresattendance.NewSchoolSettingsRepository(postgresDB)
 	deviceRepo := postgresattendance.NewDeviceRepository(postgresDB)
-	adminHandler := handler.NewAdminHandler(settingsuc.NewUseCase(settingsRepo, logger), deviceuc.NewUseCase(deviceRepo, logger), useruc.NewUseCase(userRepo, userRoleRepo, sessionRepo, logger))
+	adminHandler := handler.NewAdminHandler(settingsuc.NewUseCase(settingsRepo, cacheClient, cfg.CacheTTLSchoolSettings, logger), deviceuc.NewUseCase(deviceRepo, cacheClient, cfg.CacheTTLAcademic, logger), useruc.NewUseCase(userRepo, userRoleRepo, sessionRepo, logger))
 	adminRead := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireRole("admin"))
 	adminWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authMiddleware.RequireRole("admin"))
 	adminRead.GET("/settings/school", adminHandler.GetSettings)
@@ -81,6 +83,8 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 		userRepo,
 		studentRepo,
 		postgresacademic.NewQueryRepository(postgresDB),
+		cacheClient,
+		cfg.CacheTTLAcademic,
 		logger,
 	))
 	adminRead.GET("/classes", academicHandler.ListClasses)
@@ -97,6 +101,8 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 		postgresacademic.NewClassRepository(postgresDB),
 		postgresacademic.NewSubjectRepository(postgresDB),
 		userRepo,
+		cacheClient,
+		cfg.CacheTTLSchedules,
 		logger,
 	))
 	adminRead.GET("/schedules", scheduleHandler.ListSchedules)
@@ -126,6 +132,8 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 		postgrescounseling.NewTargetMajorRepository(postgresDB),
 		postgrescounseling.NewPassingGradeRepository(postgresDB),
 		studentRepo,
+		cacheClient,
+		cfg.CacheTTLPassingGrades,
 		logger,
 	))
 	aptitudeRead := v1.Group("", authMiddleware.Authenticate())
@@ -197,6 +205,8 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, logger *logrus.Logger, 
 		postgresquiz.NewQuizAnswerRepository(postgresDB),
 		postgresquiz.NewQueryRepository(postgresDB),
 		postgresacademic.NewSubjectRepository(postgresDB),
+		cacheClient,
+		cfg.CacheTTLQuiz,
 		logger,
 	))
 	quizRead.GET("/quizzes", quizHandler.ListQuizzes)

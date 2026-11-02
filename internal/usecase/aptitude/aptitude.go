@@ -2,11 +2,14 @@ package aptitude
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"limen/internal/domain"
 	academicdomain "limen/internal/domain/academic"
 	counselingdomain "limen/internal/domain/counseling"
+	"limen/internal/platform/cache"
 
 	"github.com/sirupsen/logrus"
 )
@@ -16,14 +19,16 @@ type UseCase struct {
 	targetMajors  counselingdomain.TargetMajorRepository
 	passingGrades counselingdomain.PassingGradeRepository
 	students      academicdomain.StudentRepository
+	cache         cache.Cache
+	ttl           time.Duration
 	logger        *logrus.Logger
 }
 
-func NewUseCase(aptitudes counselingdomain.AptitudeResultRepository, targetMajors counselingdomain.TargetMajorRepository, passingGrades counselingdomain.PassingGradeRepository, students academicdomain.StudentRepository, logger *logrus.Logger) *UseCase {
+func NewUseCase(aptitudes counselingdomain.AptitudeResultRepository, targetMajors counselingdomain.TargetMajorRepository, passingGrades counselingdomain.PassingGradeRepository, students academicdomain.StudentRepository, c cache.Cache, ttl time.Duration, logger *logrus.Logger) *UseCase {
 	if logger == nil {
 		logger = logrus.StandardLogger()
 	}
-	return &UseCase{aptitudes: aptitudes, targetMajors: targetMajors, passingGrades: passingGrades, students: students, logger: logger}
+	return &UseCase{aptitudes: aptitudes, targetMajors: targetMajors, passingGrades: passingGrades, students: students, cache: c, ttl: ttl, logger: logger}
 }
 
 func (uc *UseCase) ListAptitudeResults(ctx context.Context, studentUserID string) ([]counselingdomain.AptitudeResult, error) {
@@ -57,22 +62,69 @@ func (uc *UseCase) AddTargetMajor(ctx context.Context, studentUserID, major stri
 	return item, err
 }
 
+const groupPassingGrades = "passing-grades"
+
 func (uc *UseCase) ListPassingGrades(ctx context.Context, filter counselingdomain.PassingGradeFilter, page, pageSize int) ([]counselingdomain.PassingGrade, int64, error) {
 	filter.University = strings.TrimSpace(filter.University)
 	filter.Major = strings.TrimSpace(filter.Major)
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupPassingGrades)
+		params := fmt.Sprintf("uni=%s&major=%s&page=%d&pageSize=%d", filter.University, filter.Major, page, pageSize)
+		key := cache.KeyWithHash(groupPassingGrades, ver, params)
+
+		var cached struct {
+			Items []counselingdomain.PassingGrade
+			Total int64
+		}
+		if hit, err := uc.cache.Get(ctx, key, &cached); err == nil && hit {
+			return cached.Items, cached.Total, nil
+		}
+	}
+
 	items, total, err := uc.passingGrades.List(ctx, filter, pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "aptitude_list_passing_grades", nil)
+		return items, total, err
 	}
-	return items, total, err
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupPassingGrades)
+		params := fmt.Sprintf("uni=%s&major=%s&page=%d&pageSize=%d", filter.University, filter.Major, page, pageSize)
+		key := cache.KeyWithHash(groupPassingGrades, ver, params)
+		_ = uc.cache.Set(ctx, key, struct {
+			Items []counselingdomain.PassingGrade
+			Total int64
+		}{items, total}, uc.ttl)
+	}
+
+	return items, total, nil
 }
 
 func (uc *UseCase) GetPassingGrade(ctx context.Context, id string) (counselingdomain.PassingGrade, error) {
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupPassingGrades)
+		key := cache.Key(groupPassingGrades, ver, "id:"+id)
+
+		var cached counselingdomain.PassingGrade
+		if hit, err := uc.cache.Get(ctx, key, &cached); err == nil && hit {
+			return cached, nil
+		}
+	}
+
 	item, err := uc.passingGrades.FindByID(ctx, id)
 	if err != nil {
 		uc.logError(err, "aptitude_get_passing_grade", logrus.Fields{"passing_grade_id": id})
+		return item, err
 	}
-	return item, err
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupPassingGrades)
+		key := cache.Key(groupPassingGrades, ver, "id:"+id)
+		_ = uc.cache.Set(ctx, key, item, uc.ttl)
+	}
+
+	return item, nil
 }
 
 func (uc *UseCase) ensureStudent(ctx context.Context, studentUserID string) error {

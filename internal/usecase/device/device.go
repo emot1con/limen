@@ -6,25 +6,29 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"limen/internal/domain"
 	attendancedomain "limen/internal/domain/attendance"
+	"limen/internal/platform/cache"
 )
 
 type UseCase struct {
 	repo   attendancedomain.DeviceRepository
+	cache  cache.Cache
+	ttl    time.Duration
 	now    func() time.Time
 	logger *logrus.Logger
 }
 
-func NewUseCase(repo attendancedomain.DeviceRepository, logger *logrus.Logger) *UseCase {
+func NewUseCase(repo attendancedomain.DeviceRepository, c cache.Cache, ttl time.Duration, logger *logrus.Logger) *UseCase {
 	if logger == nil {
 		logger = logrus.StandardLogger()
 	}
-	return &UseCase{repo: repo, now: time.Now, logger: logger}
+	return &UseCase{repo: repo, cache: c, ttl: ttl, now: time.Now, logger: logger}
 }
 
 type Device struct {
@@ -65,6 +69,8 @@ type Page struct {
 	PageSize int
 }
 
+const groupDevices = "devices"
+
 func (uc *UseCase) Create(ctx context.Context, input CreateInput) (CreateOutput, error) {
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
@@ -98,6 +104,13 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (CreateOutput,
 		uc.logError(err, "device_get_created", logrus.Fields{"device_id": id})
 		return CreateOutput{}, err
 	}
+
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupDevices); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
+	}
+
 	return CreateOutput{Device: toDevice(saved), DeviceKey: plaintext}, nil
 }
 
@@ -112,6 +125,18 @@ func (uc *UseCase) Get(ctx context.Context, id string) (Device, error) {
 
 func (uc *UseCase) List(ctx context.Context, page, pageSize int) (Page, error) {
 	page, pageSize = normalizePage(page, pageSize)
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupDevices)
+		params := fmt.Sprintf("page=%d&pageSize=%d", page, pageSize)
+		key := cache.KeyWithHash(groupDevices, ver, params)
+
+		var cached Page
+		if hit, err := uc.cache.Get(ctx, key, &cached); err == nil && hit {
+			return cached, nil
+		}
+	}
+
 	items, total, err := uc.repo.List(ctx, pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "device_list", nil)
@@ -121,7 +146,17 @@ func (uc *UseCase) List(ctx context.Context, page, pageSize int) (Page, error) {
 	for i, item := range items {
 		out[i] = toDevice(item)
 	}
-	return Page{Items: out, Total: total, Page: page, PageSize: pageSize}, nil
+
+	result := Page{Items: out, Total: total, Page: page, PageSize: pageSize}
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupDevices)
+		params := fmt.Sprintf("page=%d&pageSize=%d", page, pageSize)
+		key := cache.KeyWithHash(groupDevices, ver, params)
+		_ = uc.cache.Set(ctx, key, result, uc.ttl)
+	}
+
+	return result, nil
 }
 
 func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (Device, error) {
@@ -151,6 +186,13 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (Device, error
 		uc.logError(err, "device_update", logrus.Fields{"device_id": input.ID})
 		return Device{}, err
 	}
+
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupDevices); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
+	}
+
 	updated, err := uc.repo.FindByID(ctx, input.ID)
 	if err != nil {
 		uc.logError(err, "device_get_updated", logrus.Fields{"device_id": input.ID})

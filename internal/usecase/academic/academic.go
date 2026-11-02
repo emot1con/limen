@@ -2,11 +2,14 @@ package academic
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"limen/internal/domain"
 	academicdomain "limen/internal/domain/academic"
 	userdomain "limen/internal/domain/user"
+	"limen/internal/platform/cache"
 
 	"github.com/sirupsen/logrus"
 )
@@ -18,29 +21,89 @@ type UseCase struct {
 	users       userdomain.UserRepository
 	repo        academicdomain.QueryRepository
 	students    academicdomain.StudentRepository
+	cache       cache.Cache
+	ttl         time.Duration
 	logger      *logrus.Logger
 }
 
-func NewUseCase(classes academicdomain.ClassRepository, subjects academicdomain.SubjectRepository, assignments academicdomain.TeachingAssignmentRepository, users userdomain.UserRepository, students academicdomain.StudentRepository, repo academicdomain.QueryRepository, logger *logrus.Logger) *UseCase {
+func NewUseCase(classes academicdomain.ClassRepository, subjects academicdomain.SubjectRepository, assignments academicdomain.TeachingAssignmentRepository, users userdomain.UserRepository, students academicdomain.StudentRepository, repo academicdomain.QueryRepository, c cache.Cache, ttl time.Duration, logger *logrus.Logger) *UseCase {
 	if logger == nil {
 		logger = logrus.StandardLogger()
 	}
-	return &UseCase{classes: classes, subjects: subjects, assignments: assignments, users: users, students: students, repo: repo, logger: logger}
+	return &UseCase{classes: classes, subjects: subjects, assignments: assignments, users: users, students: students, repo: repo, cache: c, ttl: ttl, logger: logger}
 }
 
+const (
+	groupClasses            = "classes"
+	groupSubjects           = "subjects"
+	groupTeachingAssignment = "teaching-assignments"
+)
+
 func (uc *UseCase) ListClasses(ctx context.Context, level, q string, page, pageSize int) ([]academicdomain.ClassDetail, int64, error) {
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupClasses)
+		params := fmt.Sprintf("level=%s&q=%s&page=%d&pageSize=%d", level, q, page, pageSize)
+		key := cache.KeyWithHash(groupClasses, ver, params)
+
+		var cached struct {
+			Items []academicdomain.ClassDetail
+			Total int64
+		}
+		if hit, err := uc.cache.Get(ctx, key, &cached); err == nil && hit {
+			return cached.Items, cached.Total, nil
+		}
+	}
+
 	items, total, err := uc.repo.ListClasses(ctx, level, q, pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "academic_list_classes", nil)
+		return items, total, err
 	}
-	return items, total, err
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupClasses)
+		params := fmt.Sprintf("level=%s&q=%s&page=%d&pageSize=%d", level, q, page, pageSize)
+		key := cache.KeyWithHash(groupClasses, ver, params)
+		_ = uc.cache.Set(ctx, key, struct {
+			Items []academicdomain.ClassDetail
+			Total int64
+		}{items, total}, uc.ttl)
+	}
+
+	return items, total, nil
 }
 func (uc *UseCase) ListSubjects(ctx context.Context, q string, page, pageSize int) ([]academicdomain.Subject, int64, error) {
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupSubjects)
+		params := fmt.Sprintf("q=%s&page=%d&pageSize=%d", q, page, pageSize)
+		key := cache.KeyWithHash(groupSubjects, ver, params)
+
+		var cached struct {
+			Items []academicdomain.Subject
+			Total int64
+		}
+		if hit, err := uc.cache.Get(ctx, key, &cached); err == nil && hit {
+			return cached.Items, cached.Total, nil
+		}
+	}
+
 	items, total, err := uc.repo.ListSubjects(ctx, q, pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "academic_list_subjects", nil)
+		return items, total, err
 	}
-	return items, total, err
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupSubjects)
+		params := fmt.Sprintf("q=%s&page=%d&pageSize=%d", q, page, pageSize)
+		key := cache.KeyWithHash(groupSubjects, ver, params)
+		_ = uc.cache.Set(ctx, key, struct {
+			Items []academicdomain.Subject
+			Total int64
+		}{items, total}, uc.ttl)
+	}
+
+	return items, total, nil
 }
 func (uc *UseCase) ListStudents(ctx context.Context, classID, q, sort string, page, pageSize int) ([]academicdomain.StudentDetail, int64, error) {
 	items, total, err := uc.repo.ListStudents(ctx, classID, q, sort, pageSize, (page-1)*pageSize)
@@ -90,11 +153,37 @@ func (uc *UseCase) UpdateStudent(ctx context.Context, id string, nis *string, cl
 }
 
 func (uc *UseCase) ListAssignments(ctx context.Context, teacherID, classID, subjectID string, page, pageSize int) ([]academicdomain.TeachingAssignment, int64, error) {
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupTeachingAssignment)
+		params := fmt.Sprintf("teacher=%s&class=%s&subject=%s&page=%d&pageSize=%d", teacherID, classID, subjectID, page, pageSize)
+		key := cache.KeyWithHash(groupTeachingAssignment, ver, params)
+
+		var cached struct {
+			Items []academicdomain.TeachingAssignment
+			Total int64
+		}
+		if hit, err := uc.cache.Get(ctx, key, &cached); err == nil && hit {
+			return cached.Items, cached.Total, nil
+		}
+	}
+
 	items, total, err := uc.repo.ListAssignments(ctx, teacherID, classID, subjectID, pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "academic_list_assignments", nil)
+		return items, total, err
 	}
-	return items, total, err
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupTeachingAssignment)
+		params := fmt.Sprintf("teacher=%s&class=%s&subject=%s&page=%d&pageSize=%d", teacherID, classID, subjectID, page, pageSize)
+		key := cache.KeyWithHash(groupTeachingAssignment, ver, params)
+		_ = uc.cache.Set(ctx, key, struct {
+			Items []academicdomain.TeachingAssignment
+			Total int64
+		}{items, total}, uc.ttl)
+	}
+
+	return items, total, nil
 }
 
 func (uc *UseCase) CreateClass(ctx context.Context, name string, level, teacherID *string) (academicdomain.Class, error) {
@@ -112,6 +201,12 @@ func (uc *UseCase) CreateClass(ctx context.Context, name string, level, teacherI
 	if err != nil {
 		uc.logError(err, "academic_create_class", nil)
 		return academicdomain.Class{}, err
+	}
+
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupClasses); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
 	}
 
 	item, err := uc.classes.FindByID(ctx, id)
@@ -149,6 +244,13 @@ func (uc *UseCase) UpdateClass(ctx context.Context, id string, name, level *stri
 		uc.logError(err, "academic_update_class", logrus.Fields{"class_id": id})
 		return item, err
 	}
+
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupClasses); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
+	}
+
 	item, err = uc.classes.FindByID(ctx, id)
 	if err != nil {
 		uc.logError(err, "academic_get_updated_class", logrus.Fields{"class_id": id})
@@ -166,6 +268,13 @@ func (uc *UseCase) CreateSubject(ctx context.Context, code, name string) (academ
 		uc.logError(err, "academic_create_subject", nil)
 		return academicdomain.Subject{}, err
 	}
+
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupSubjects); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
+	}
+
 	item, err := uc.subjects.FindByID(ctx, id)
 	if err != nil {
 		uc.logError(err, "academic_get_created_subject", logrus.Fields{"subject_id": id})
@@ -198,6 +307,13 @@ func (uc *UseCase) CreateAssignment(ctx context.Context, teacherID, subjectID, c
 		uc.logError(err, "academic_create_assignment", nil)
 		return academicdomain.TeachingAssignment{}, err
 	}
+
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupTeachingAssignment); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
+	}
+
 	item, err := uc.assignments.FindByID(ctx, id)
 	if err != nil {
 		uc.logError(err, "academic_get_created_assignment", logrus.Fields{"assignment_id": id})

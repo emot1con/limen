@@ -8,7 +8,7 @@ import (
 	"limen/internal/adapter/http/middleware"
 	"limen/internal/adapter/http/response"
 	quizdomain "limen/internal/domain/quiz"
-	questionbankuc "limen/internal/usecase/questionbank"
+	questionbankuc "limen/internal/usecase/question_bank"
 
 	"github.com/gin-gonic/gin"
 )

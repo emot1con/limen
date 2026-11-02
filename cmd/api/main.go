@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	fingerprintadapter "limen/internal/adapter/fingerprint"
 	"limen/internal/adapter/http/router"
+	"limen/internal/platform/cache"
 	"limen/internal/platform/config"
 	"limen/internal/platform/database"
 )
@@ -54,11 +55,21 @@ func run() error {
 	}
 	defer redisClient.Close()
 
+	var cacheClient cache.Cache
+	if cfg.CacheEnabled {
+		prefix := fmt.Sprintf("%s:%s:", cfg.CacheKeyPrefix, cfg.AppEnv)
+		cacheClient = cache.NewRedis(redisClient, prefix)
+		logger.Info("cache enabled")
+	} else {
+		cacheClient = cache.NewNoop()
+		logger.Info("cache disabled")
+	}
+
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	appRouter := router.New(postgresDB, redisClient, logger, fingerprintadapter.NewClient(cfg.FingerprintServiceURL, cfg.FingerprintAPIKey))
+	appRouter := router.New(postgresDB, redisClient, cacheClient, cfg, logger, fingerprintadapter.NewClient(cfg.FingerprintServiceURL, cfg.FingerprintAPIKey))
 
 	appRouter.GET("/health", func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)

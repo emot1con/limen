@@ -8,13 +8,14 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"limen/internal/adapter/persistence/postgres/academic"
 	"limen/internal/adapter/persistence/postgres/quiz"
 	"limen/internal/platform/config"
 	"limen/internal/platform/database"
 	"limen/internal/usecase/auth"
-	questionbankuc "limen/internal/usecase/questionbank"
+	questionbankuc "limen/internal/usecase/question_bank"
 	quizuc "limen/internal/usecase/quiz"
 
 	"limen/internal/domain"
@@ -61,7 +62,7 @@ func run() error {
 	queryRepo := quiz.NewQueryRepository(db)
 
 	bankUC := questionbankuc.NewUseCase(bankRepo, questionRepo, subjectRepo, logger)
-	quizUC := quizuc.NewUseCase(quizRepo, questionRepo, quizQuestionRepo, attemptRepo, answerRepo, queryRepo, subjectRepo, logger)
+	quizUC := quizuc.NewUseCase(quizRepo, questionRepo, quizQuestionRepo, attemptRepo, answerRepo, queryRepo, subjectRepo, nil, time.Second, logger)
 
 	teacherID, err := seedUser(ctx, sqlDB, "guru.quiz@limen.test", "Guru Quiz", "GuruQuiz123", "guru_mapel")
 	if err != nil {

@@ -4,3 +4,4 @@ api
 *.md
 !README.md
 !QUIZ_API.md
+!cache.md

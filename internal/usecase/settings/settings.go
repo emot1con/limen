@@ -7,19 +7,22 @@ import (
 	"github.com/sirupsen/logrus"
 	"limen/internal/domain"
 	attendancedomain "limen/internal/domain/attendance"
+	"limen/internal/platform/cache"
 )
 
 type UseCase struct {
 	repo   attendancedomain.SchoolSettingsRepository
+	cache  cache.Cache
+	ttl    time.Duration
 	now    func() time.Time
 	logger *logrus.Logger
 }
 
-func NewUseCase(repo attendancedomain.SchoolSettingsRepository, logger *logrus.Logger) *UseCase {
+func NewUseCase(repo attendancedomain.SchoolSettingsRepository, c cache.Cache, ttl time.Duration, logger *logrus.Logger) *UseCase {
 	if logger == nil {
 		logger = logrus.StandardLogger()
 	}
-	return &UseCase{repo: repo, now: time.Now, logger: logger}
+	return &UseCase{repo: repo, cache: c, ttl: ttl, now: time.Now, logger: logger}
 }
 
 type Output struct {
@@ -37,13 +40,33 @@ type UpdateInput struct {
 	UpdatedBy            string
 }
 
+const groupSchoolSettings = "school-settings"
+
 func (uc *UseCase) Get(ctx context.Context) (Output, error) {
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupSchoolSettings)
+		key := cache.Key(groupSchoolSettings, ver, "singleton")
+
+		var cached Output
+		if hit, err := uc.cache.Get(ctx, key, &cached); err == nil && hit {
+			return cached, nil
+		}
+	}
+
 	settings, err := uc.ensure(ctx)
 	if err != nil {
 		uc.logError(err, "settings_get")
 		return Output{}, err
 	}
-	return toOutput(settings), nil
+
+	out := toOutput(settings)
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupSchoolSettings)
+		key := cache.Key(groupSchoolSettings, ver, "singleton")
+		_ = uc.cache.Set(ctx, key, out, uc.ttl)
+	}
+
+	return out, nil
 }
 
 func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (Output, error) {
@@ -69,6 +92,13 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (Output, error
 		uc.logError(err, "settings_update")
 		return Output{}, err
 	}
+
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupSchoolSettings); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
+	}
+
 	updated, err := uc.repo.Get(ctx)
 	if err != nil {
 		uc.logError(err, "settings_get_updated")

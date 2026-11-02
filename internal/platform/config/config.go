@@ -30,6 +30,13 @@ type Config struct {
 	RedisMaxBackoff        time.Duration
 	FingerprintServiceURL  string
 	FingerprintAPIKey      string
+	CacheEnabled           bool
+	CacheKeyPrefix         string
+	CacheTTLSchoolSettings time.Duration
+	CacheTTLPassingGrades  time.Duration
+	CacheTTLAcademic       time.Duration
+	CacheTTLSchedules      time.Duration
+	CacheTTLQuiz           time.Duration
 }
 
 func LoadConfig() (*Config, error) {
@@ -49,6 +56,13 @@ func LoadConfig() (*Config, error) {
 		RedisMaxBackoff:        getEnvDuration("REDIS_RETRY_MAX_BACKOFF", 10*time.Second),
 		FingerprintServiceURL:  getEnv("FINGERPRINT_SERVICE_URL", "http://localhost:5001"),
 		FingerprintAPIKey:      firstNonEmpty(getEnv("FINGERPRINT_API_KEY", ""), getEnv("ApiKey__Value", "")),
+		CacheEnabled:           getEnvBool("CACHE_ENABLED", true),
+		CacheKeyPrefix:         getEnv("CACHE_KEY_PREFIX", "limen:cache"),
+		CacheTTLSchoolSettings: getEnvDuration("CACHE_TTL_SCHOOL_SETTINGS", time.Hour),
+		CacheTTLPassingGrades:  getEnvDuration("CACHE_TTL_PASSING_GRADES", 12*time.Hour),
+		CacheTTLAcademic:       getEnvDuration("CACHE_TTL_ACADEMIC", 20*time.Minute),
+		CacheTTLSchedules:      getEnvDuration("CACHE_TTL_SCHEDULES", 20*time.Minute),
+		CacheTTLQuiz:           getEnvDuration("CACHE_TTL_QUIZ", 10*time.Minute),
 	}
 
 	var err error
@@ -135,4 +149,16 @@ func getEnvDuration(key string, fallback time.Duration) time.Duration {
 
 func quoteDSN(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", "\\'") + "'"
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

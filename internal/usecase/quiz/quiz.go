@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -12,11 +13,15 @@ import (
 	"limen/internal/domain"
 	academicdomain "limen/internal/domain/academic"
 	quizdomain "limen/internal/domain/quiz"
+	"limen/internal/platform/cache"
 
 	"github.com/sirupsen/logrus"
 )
 
-const fullScore = 100.0
+const (
+	fullScore    = 100.0
+	groupQuizzes = "quizzes"
+)
 
 type UseCase struct {
 	quizzes   quizdomain.QuizRepository
@@ -26,6 +31,8 @@ type UseCase struct {
 	answers   quizdomain.QuizAnswerRepository
 	query     quizdomain.QueryRepository
 	subjects  academicdomain.SubjectRepository
+	cache     cache.Cache
+	ttl       time.Duration
 	logger    *logrus.Logger
 }
 
@@ -37,12 +44,14 @@ func NewUseCase(
 	answers quizdomain.QuizAnswerRepository,
 	query quizdomain.QueryRepository,
 	subjects academicdomain.SubjectRepository,
+	c cache.Cache,
+	ttl time.Duration,
 	logger *logrus.Logger,
 ) *UseCase {
 	if logger == nil {
 		logger = logrus.StandardLogger()
 	}
-	return &UseCase{quizzes: quizzes, questions: questions, quizQs: quizQs, attempts: attempts, answers: answers, query: query, subjects: subjects, logger: logger}
+	return &UseCase{quizzes: quizzes, questions: questions, quizQs: quizQs, attempts: attempts, answers: answers, query: query, subjects: subjects, cache: c, ttl: ttl, logger: logger}
 }
 
 type CreateQuizInput struct {
@@ -113,6 +122,13 @@ func (uc *UseCase) CreateQuiz(ctx context.Context, input CreateQuizInput) (quizd
 			return quizdomain.QuizDetail{}, err
 		}
 	}
+
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupQuizzes); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
+	}
+
 	detail, err := uc.query.GetQuizDetail(ctx, id)
 	if err != nil {
 		uc.logError(err, "quiz_create_get_detail", logrus.Fields{"quiz_id": id})
@@ -121,11 +137,37 @@ func (uc *UseCase) CreateQuiz(ctx context.Context, input CreateQuizInput) (quizd
 }
 
 func (uc *UseCase) ListQuizzes(ctx context.Context, filter quizdomain.QuizFilter, page, pageSize int) ([]quizdomain.QuizSummary, int64, error) {
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupQuizzes)
+		params := fmt.Sprintf("subject=%s&class=%s&status=%s&page=%d&pageSize=%d", filter.SubjectID, filter.ClassID, filter.Status, page, pageSize)
+		key := cache.KeyWithHash(groupQuizzes, ver, params)
+
+		var cached struct {
+			Items []quizdomain.QuizSummary
+			Total int64
+		}
+		if hit, err := uc.cache.Get(ctx, key, &cached); err == nil && hit {
+			return cached.Items, cached.Total, nil
+		}
+	}
+
 	items, total, err := uc.query.ListQuizzes(ctx, filter, pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "quiz_list", nil)
+		return items, total, err
 	}
-	return items, total, err
+
+	if uc.cache != nil {
+		ver, _ := uc.cache.GetVersion(ctx, groupQuizzes)
+		params := fmt.Sprintf("subject=%s&class=%s&status=%s&page=%d&pageSize=%d", filter.SubjectID, filter.ClassID, filter.Status, page, pageSize)
+		key := cache.KeyWithHash(groupQuizzes, ver, params)
+		_ = uc.cache.Set(ctx, key, struct {
+			Items []quizdomain.QuizSummary
+			Total int64
+		}{items, total}, uc.ttl)
+	}
+
+	return items, total, nil
 }
 
 func (uc *UseCase) GetQuizDetail(ctx context.Context, quizID, attemptID string) (quizdomain.QuizDetail, error) {
