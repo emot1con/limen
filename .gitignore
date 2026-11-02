@@ -3,3 +3,4 @@ bin/
 api
 *.md
 !README.md
+!QUIZ_API.md
