@@ -53,28 +53,41 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 
 	authHandler := handler.NewAuthHandler(loginUseCase, logoutUseCase, meUseCase, resetPasswordUseCase)
 	authMiddleware := middleware.NewAuthMiddleware(sessionRepo, userRoleRepo)
-	loginRateLimiter := middleware.EmailRateLimiterMiddleware(redisClient, middleware.LoginEmailRateLimiter())
 
 	v1 := router.Group("/api/v1")
-	v1.POST("/auth/login", loginRateLimiter, authHandler.Login)
+	v1.Use(middleware.RateLimiterMiddleware(redisClient, middleware.CustomRateLimiter(300, 100)))
+
+	loginIPLimiter := middleware.ScopedIPRateLimiterMiddleware(redisClient, middleware.CustomRateLimiter(60, 1), "login")
+	loginAccountLimiter := middleware.IdentifierRateLimiterMiddleware(redisClient, middleware.LoginEmailRateLimiter().WithFailClosed())
+	v1.POST("/auth/login", loginIPLimiter, loginAccountLimiter, authHandler.Login)
 	v1.POST("/auth/logout", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authHandler.Logout)
 	v1.GET("/auth/me", authMiddleware.Authenticate(), authHandler.Me)
-	v1.POST("/users/:userId/password-reset", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authMiddleware.RequireRole("admin"), authHandler.ResetPassword)
+
+	passwordResetLimiter := middleware.UserOperationRateLimiterMiddleware(redisClient, middleware.StrictRateLimiter().WithFailClosed(), "password_reset")
+	v1.POST("/users/:userId/password-reset", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authMiddleware.RequireRole("admin"), passwordResetLimiter, authHandler.ResetPassword)
 
 	settingsRepo := postgresattendance.NewSchoolSettingsRepository(postgresDB)
 	deviceRepo := postgresattendance.NewDeviceRepository(postgresDB)
 	adminHandler := handler.NewAdminHandler(settingsuc.NewUseCase(settingsRepo, cacheClient, cfg.CacheTTLSchoolSettings, logger), deviceuc.NewUseCase(deviceRepo, cacheClient, cfg.CacheTTLAcademic, logger), useruc.NewUseCase(userRepo, userRoleRepo, sessionRepo, logger))
+
+	writeLimiter := middleware.UserOperationRateLimiterMiddleware(redisClient, middleware.ConservativeRateLimiter(), "write")
+	sensitiveReadLimiter := middleware.UserOperationRateLimiterMiddleware(redisClient, middleware.ModerateRateLimiter(), "read_sensitive")
+	masterReadLimiter := middleware.UserOperationRateLimiterMiddleware(redisClient, middleware.GenerousRateLimiter(), "read_master")
+
 	adminRead := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireRole("admin"))
 	adminWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF(), authMiddleware.RequireRole("admin"))
-	adminRead.GET("/settings/school", adminHandler.GetSettings)
-	adminWrite.PUT("/settings/school", adminHandler.UpdateSettings)
-	adminRead.GET("/devices", adminHandler.ListDevices)
-	adminWrite.POST("/devices", adminHandler.CreateDevice)
-	adminWrite.PUT("/devices/:deviceId", adminHandler.UpdateDevice)
-	adminRead.GET("/users", adminHandler.ListUsers)
-	adminWrite.POST("/users", adminHandler.CreateUser)
-	adminRead.GET("/users/:userId", adminHandler.GetUser)
-	adminWrite.PUT("/users/:userId", adminHandler.UpdateUser)
+
+	adminRead.GET("/settings/school", masterReadLimiter, adminHandler.GetSettings)
+	adminWrite.PUT("/settings/school", writeLimiter, adminHandler.UpdateSettings)
+
+	adminRead.GET("/devices", masterReadLimiter, adminHandler.ListDevices)
+	adminWrite.POST("/devices", writeLimiter, adminHandler.CreateDevice)
+	adminWrite.PUT("/devices/:deviceId", writeLimiter, adminHandler.UpdateDevice)
+
+	adminRead.GET("/users", sensitiveReadLimiter, adminHandler.ListUsers)
+	adminWrite.POST("/users", writeLimiter, adminHandler.CreateUser)
+	adminRead.GET("/users/:userId", sensitiveReadLimiter, adminHandler.GetUser)
+	adminWrite.PUT("/users/:userId", writeLimiter, adminHandler.UpdateUser)
 
 	academicHandler := handler.NewAcademicHandler(academicuc.NewUseCase(
 		postgresacademic.NewClassRepository(postgresDB),
@@ -87,14 +100,17 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 		cfg.CacheTTLAcademic,
 		logger,
 	))
-	adminRead.GET("/classes", academicHandler.ListClasses)
-	adminWrite.POST("/classes", academicHandler.CreateClass)
-	adminWrite.PUT("/classes/:classId", academicHandler.UpdateClass)
-	adminRead.GET("/subjects", academicHandler.ListSubjects)
-	adminWrite.POST("/subjects", academicHandler.CreateSubject)
-	adminRead.GET("/students", academicHandler.ListStudents)
-	adminRead.GET("/students/:studentId", academicHandler.GetStudent)
-	adminWrite.PATCH("/students/:studentId", academicHandler.UpdateStudent)
+
+	adminRead.GET("/classes", masterReadLimiter, academicHandler.ListClasses)
+	adminWrite.POST("/classes", writeLimiter, academicHandler.CreateClass)
+	adminWrite.PUT("/classes/:classId", writeLimiter, academicHandler.UpdateClass)
+
+	adminRead.GET("/subjects", masterReadLimiter, academicHandler.ListSubjects)
+	adminWrite.POST("/subjects", writeLimiter, academicHandler.CreateSubject)
+
+	adminRead.GET("/students", sensitiveReadLimiter, academicHandler.ListStudents)
+	adminRead.GET("/students/:studentId", sensitiveReadLimiter, academicHandler.GetStudent)
+	adminWrite.PATCH("/students/:studentId", writeLimiter, academicHandler.UpdateStudent)
 
 	scheduleHandler := handler.NewScheduleHandler(scheduleuc.NewUseCase(
 		postgresacademic.NewScheduleRepository(postgresDB),
@@ -105,13 +121,14 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 		cfg.CacheTTLSchedules,
 		logger,
 	))
-	adminRead.GET("/schedules", scheduleHandler.ListSchedules)
-	adminWrite.POST("/schedules", scheduleHandler.CreateSchedule)
-	adminWrite.PUT("/schedules/:scheduleId", scheduleHandler.UpdateSchedule)
-	adminWrite.DELETE("/schedules/:scheduleId", scheduleHandler.DeleteSchedule)
 
-	adminRead.GET("/teaching-assignments", academicHandler.ListAssignments)
-	adminWrite.POST("/teaching-assignments", academicHandler.CreateAssignment)
+	adminRead.GET("/schedules", masterReadLimiter, scheduleHandler.ListSchedules)
+	adminWrite.POST("/schedules", writeLimiter, scheduleHandler.CreateSchedule)
+	adminWrite.PUT("/schedules/:scheduleId", writeLimiter, scheduleHandler.UpdateSchedule)
+	adminWrite.DELETE("/schedules/:scheduleId", writeLimiter, scheduleHandler.DeleteSchedule)
+
+	adminRead.GET("/teaching-assignments", masterReadLimiter, academicHandler.ListAssignments)
+	adminWrite.POST("/teaching-assignments", writeLimiter, academicHandler.CreateAssignment)
 
 	assessmentHandler := handler.NewAssessmentHandler(assessmentuc.NewUseCase(
 		postgresassessment.NewAssessmentRepository(postgresDB),
@@ -122,10 +139,14 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 		userRepo,
 		logger,
 	))
-	adminRead.GET("/assessments", assessmentHandler.List)
-	adminWrite.POST("/assessments", assessmentHandler.Create)
-	adminRead.GET("/assessments/:assessmentId/scores", assessmentHandler.ListScores)
-	adminWrite.PUT("/assessments/:assessmentId/scores/:studentUserId", assessmentHandler.UpsertScore)
+
+	adminRead.GET("/assessments", masterReadLimiter, assessmentHandler.List)
+	adminWrite.POST("/assessments", writeLimiter, assessmentHandler.Create)
+	adminRead.GET("/assessments/:assessmentId/scores", sensitiveReadLimiter, assessmentHandler.ListScores)
+	adminWrite.PUT("/assessments/:assessmentId/scores/:studentUserId", writeLimiter, assessmentHandler.UpsertScore)
+
+	authRead := v1.Group("", authMiddleware.Authenticate())
+	authWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
 
 	aptitudeHandler := handler.NewAptitudeHandler(aptitudeuc.NewUseCase(
 		postgrescounseling.NewAptitudeResultRepository(postgresDB),
@@ -136,12 +157,11 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 		cfg.CacheTTLPassingGrades,
 		logger,
 	))
-	aptitudeRead := v1.Group("", authMiddleware.Authenticate())
-	aptitudeWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
-	aptitudeRead.GET("/students/:studentId/aptitude-results", aptitudeHandler.ListAptitudeResults)
-	aptitudeWrite.POST("/students/:studentId/target-majors", aptitudeHandler.CreateTargetMajor)
-	aptitudeRead.GET("/passing-grades", aptitudeHandler.ListPassingGrades)
-	aptitudeRead.GET("/passing-grades/:passingGradeId", aptitudeHandler.GetPassingGrade)
+
+	authRead.GET("/students/:studentId/aptitude-results", sensitiveReadLimiter, aptitudeHandler.ListAptitudeResults)
+	authWrite.POST("/students/:studentId/target-majors", writeLimiter, aptitudeHandler.CreateTargetMajor)
+	authRead.GET("/passing-grades", masterReadLimiter, aptitudeHandler.ListPassingGrades)
+	authRead.GET("/passing-grades/:passingGradeId", masterReadLimiter, aptitudeHandler.GetPassingGrade)
 
 	counselingHandler := handler.NewCounselingHandler(counselinguc.NewUseCase(
 		postgrescounseling.NewCounselingNoteRepository(postgresDB),
@@ -149,22 +169,21 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 		studentRepo,
 		logger,
 	))
-	counselingRead := v1.Group("", authMiddleware.Authenticate())
-	counselingWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
-	counselingRead.GET("/counseling-notes", counselingHandler.ListNotes)
-	counselingWrite.POST("/counseling-notes", counselingHandler.CreateNote)
-	counselingWrite.PUT("/counseling-notes/:noteId", counselingHandler.UpdateNote)
-	counselingWrite.POST("/counseling-notes/:noteId/followups", counselingHandler.AddFollowup)
+
+	authRead.GET("/counseling-notes", sensitiveReadLimiter, counselingHandler.ListNotes)
+	authWrite.POST("/counseling-notes", writeLimiter, counselingHandler.CreateNote)
+	authWrite.PUT("/counseling-notes/:noteId", writeLimiter, counselingHandler.UpdateNote)
+	authWrite.POST("/counseling-notes/:noteId/followups", writeLimiter, counselingHandler.AddFollowup)
 
 	reportHandler := handler.NewReportsHandler(reportsuc.NewUseCase(
 		postgresreports.NewQueryRepository(postgresDB),
 		studentRepo,
 		logger,
 	))
-	reportRead := v1.Group("", authMiddleware.Authenticate())
-	reportRead.GET("/reports/attendance", reportHandler.Attendance)
-	reportRead.GET("/reports/grades", reportHandler.Grades)
-	reportRead.GET("/students/:studentId/report-card", reportHandler.ReportCard)
+
+	authRead.GET("/reports/attendance", sensitiveReadLimiter, reportHandler.Attendance)
+	authRead.GET("/reports/grades", sensitiveReadLimiter, reportHandler.Grades)
+	authRead.GET("/students/:studentId/report-card", sensitiveReadLimiter, reportHandler.ReportCard)
 
 	assignmentHandler := handler.NewAssignmentHandler(assignmentuc.NewUseCase(
 		postgresassignment.NewAssignmentRepository(postgresDB),
@@ -175,12 +194,11 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 		userRepo,
 		logger,
 	))
-	assignmentRead := v1.Group("", authMiddleware.Authenticate())
-	assignmentWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
-	assignmentRead.GET("/assignments", assignmentHandler.List)
-	assignmentWrite.POST("/assignments", assignmentHandler.Create)
-	assignmentRead.GET("/assignments/:assignmentId/submissions", assignmentHandler.ListSubmissions)
-	assignmentWrite.PUT("/assignments/:assignmentId/submissions/:studentUserId", assignmentHandler.GradeSubmission)
+
+	authRead.GET("/assignments", sensitiveReadLimiter, assignmentHandler.List)
+	authWrite.POST("/assignments", writeLimiter, assignmentHandler.Create)
+	authRead.GET("/assignments/:assignmentId/submissions", sensitiveReadLimiter, assignmentHandler.ListSubmissions)
+	authWrite.PUT("/assignments/:assignmentId/submissions/:studentUserId", writeLimiter, assignmentHandler.GradeSubmission)
 
 	questionBankHandler := handler.NewQuestionBankHandler(questionbankuc.NewUseCase(
 		postgresquiz.NewQuestionBankRepository(postgresDB),
@@ -188,14 +206,13 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 		postgresacademic.NewSubjectRepository(postgresDB),
 		logger,
 	))
-	quizRead := v1.Group("", authMiddleware.Authenticate())
-	quizWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
-	quizRead.GET("/question-banks", questionBankHandler.ListBanks)
-	quizWrite.POST("/question-banks", questionBankHandler.CreateBank)
-	quizRead.GET("/question-banks/:bankId/questions", questionBankHandler.ListQuestions)
-	quizWrite.POST("/question-banks/:bankId/questions", questionBankHandler.CreateQuestion)
-	quizWrite.PUT("/questions/:questionId", questionBankHandler.UpdateQuestion)
-	quizWrite.DELETE("/questions/:questionId", questionBankHandler.DeleteQuestion)
+
+	authRead.GET("/question-banks", sensitiveReadLimiter, questionBankHandler.ListBanks)
+	authWrite.POST("/question-banks", writeLimiter, questionBankHandler.CreateBank)
+	authRead.GET("/question-banks/:bankId/questions", sensitiveReadLimiter, questionBankHandler.ListQuestions)
+	authWrite.POST("/question-banks/:bankId/questions", writeLimiter, questionBankHandler.CreateQuestion)
+	authWrite.PUT("/questions/:questionId", writeLimiter, questionBankHandler.UpdateQuestion)
+	authWrite.DELETE("/questions/:questionId", writeLimiter, questionBankHandler.DeleteQuestion)
 
 	quizHandler := handler.NewQuizHandler(quizuc.NewUseCase(
 		postgresquiz.NewQuizRepository(postgresDB),
@@ -209,25 +226,25 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 		cfg.CacheTTLQuiz,
 		logger,
 	))
-	quizRead.GET("/quizzes", quizHandler.ListQuizzes)
-	quizWrite.POST("/quizzes", quizHandler.CreateQuiz)
-	quizRead.GET("/quizzes/:quizId", quizHandler.GetQuiz)
-	quizWrite.POST("/quizzes/:quizId/attempts", quizHandler.StartAttempt)
-	quizRead.GET("/quiz-attempts", quizHandler.ListAttempts)
-	quizRead.GET("/quiz-attempts/:attemptId", quizHandler.GetAttempt)
-	quizWrite.PATCH("/quiz-attempts/:attemptId/answers/:questionId", quizHandler.SaveAnswer)
-	quizWrite.POST("/quiz-attempts/:attemptId/submit", quizHandler.SubmitAttempt)
-	quizWrite.PUT("/quiz-attempts/:attemptId/answers/:answerId/grade", quizHandler.GradeAnswer)
+
+	authRead.GET("/quizzes", sensitiveReadLimiter, quizHandler.ListQuizzes)
+	authWrite.POST("/quizzes", writeLimiter, quizHandler.CreateQuiz)
+	authRead.GET("/quizzes/:quizId", sensitiveReadLimiter, quizHandler.GetQuiz)
+	authWrite.POST("/quizzes/:quizId/attempts", writeLimiter, quizHandler.StartAttempt)
+	authRead.GET("/quiz-attempts", sensitiveReadLimiter, quizHandler.ListAttempts)
+	authRead.GET("/quiz-attempts/:attemptId", sensitiveReadLimiter, quizHandler.GetAttempt)
+	authWrite.PATCH("/quiz-attempts/:attemptId/answers/:questionId", writeLimiter, quizHandler.SaveAnswer)
+	authWrite.POST("/quiz-attempts/:attemptId/submit", writeLimiter, quizHandler.SubmitAttempt)
+	authWrite.PUT("/quiz-attempts/:attemptId/answers/:answerId/grade", writeLimiter, quizHandler.GradeAnswer)
 
 	notificationHandler := handler.NewNotificationHandler(notificationuc.NewUseCase(
 		postgresaudit.NewNotificationRepository(postgresDB),
 		logger,
 	))
-	notificationRead := v1.Group("", authMiddleware.Authenticate())
-	notificationWrite := v1.Group("", authMiddleware.Authenticate(), authMiddleware.RequireCSRF())
-	notificationRead.GET("/notifications", notificationHandler.List)
-	notificationWrite.POST("/notifications", notificationHandler.Create)
-	notificationWrite.POST("/notifications/:notificationId/read", notificationHandler.MarkRead)
+
+	authRead.GET("/notifications", masterReadLimiter, notificationHandler.List)
+	authWrite.POST("/notifications", writeLimiter, notificationHandler.Create)
+	authWrite.POST("/notifications/:notificationId/read", writeLimiter, notificationHandler.MarkRead)
 
 	fingerprintHandler := handler.NewFingerprintHandler(fingerprintuc.NewUseCase(
 		fingerprintGateway,
