@@ -92,8 +92,11 @@ func (r *DeviceRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *DeviceRepository) List(ctx context.Context, limit, offset int) ([]attendancedomain.Device, int64, error) {
+func (r *DeviceRepository) List(ctx context.Context, limit, offset int, isActive *bool) ([]attendancedomain.Device, int64, error) {
 	query := r.db.WithContext(ctx).Model(&deviceModel{})
+	if isActive != nil {
+		query = query.Where("is_active = ?", *isActive)
+	}
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err

@@ -106,10 +106,16 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (userdom
 	return r.toDomain(model), nil
 }
 
-func (r *UserRepository) List(ctx context.Context, q string, limit, offset int) ([]userdomain.User, int64, error) {
+func (r *UserRepository) List(ctx context.Context, q, role, status string, limit, offset int) ([]userdomain.User, int64, error) {
 	query := r.db.WithContext(ctx).Model(&userModel{})
 	if q != "" {
 		query = query.Where("full_name ILIKE ? OR email ILIKE ?", "%"+q+"%", "%"+q+"%")
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if role != "" {
+		query = query.Where("id IN (SELECT user_id FROM user_roles WHERE role_code = ?)", role)
 	}
 	var total int64
 	if err := query.Count(&total).Error; err != nil {

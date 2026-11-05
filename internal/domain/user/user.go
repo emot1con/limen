@@ -54,7 +54,7 @@ type UserRepository interface {
 	CreateWithRoles(context.Context, User, []UserRole, bool) (string, error)
 	FindByID(context.Context, string) (User, error)
 	FindByEmail(context.Context, string) (User, error)
-	List(context.Context, string, int, int) ([]User, int64, error)
+	List(context.Context, string, string, string, int, int) ([]User, int64, error)
 	Update(context.Context, User) error
 	Delete(context.Context, string) error
 }

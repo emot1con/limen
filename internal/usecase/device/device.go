@@ -123,12 +123,12 @@ func (uc *UseCase) Get(ctx context.Context, id string) (Device, error) {
 	return toDevice(item), nil
 }
 
-func (uc *UseCase) List(ctx context.Context, page, pageSize int) (Page, error) {
+func (uc *UseCase) List(ctx context.Context, page, pageSize int, isActive *bool) (Page, error) {
 	page, pageSize = normalizePage(page, pageSize)
 
 	if uc.cache != nil {
 		ver, _ := uc.cache.GetVersion(ctx, groupDevices)
-		params := fmt.Sprintf("page=%d&pageSize=%d", page, pageSize)
+		params := fmt.Sprintf("page=%d&pageSize=%d&isActive=%v", page, pageSize, isActive)
 		key := cache.KeyWithHash(groupDevices, ver, params)
 
 		var cached Page
@@ -137,7 +137,7 @@ func (uc *UseCase) List(ctx context.Context, page, pageSize int) (Page, error) {
 		}
 	}
 
-	items, total, err := uc.repo.List(ctx, pageSize, (page-1)*pageSize)
+	items, total, err := uc.repo.List(ctx, pageSize, (page-1)*pageSize, isActive)
 	if err != nil {
 		uc.logError(err, "device_list", nil)
 		return Page{}, err
@@ -151,7 +151,7 @@ func (uc *UseCase) List(ctx context.Context, page, pageSize int) (Page, error) {
 
 	if uc.cache != nil {
 		ver, _ := uc.cache.GetVersion(ctx, groupDevices)
-		params := fmt.Sprintf("page=%d&pageSize=%d", page, pageSize)
+		params := fmt.Sprintf("page=%d&pageSize=%d&isActive=%v", page, pageSize, isActive)
 		key := cache.KeyWithHash(groupDevices, ver, params)
 		_ = uc.cache.Set(ctx, key, result, uc.ttl)
 	}

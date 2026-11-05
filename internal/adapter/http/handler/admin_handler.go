@@ -74,7 +74,19 @@ func (h *AdminHandler) ListDevices(c *gin.Context) {
 	if !ok {
 		return
 	}
-	out, err := h.devices.List(c.Request.Context(), page, pageSize)
+	
+	var isActive *bool
+	if isActiveStr := c.Query("isActive"); isActiveStr != "" {
+		if isActiveStr == "true" {
+			val := true
+			isActive = &val
+		} else if isActiveStr == "false" {
+			val := false
+			isActive = &val
+		}
+	}
+	
+	out, err := h.devices.List(c.Request.Context(), page, pageSize, isActive)
 	if err != nil {
 		writeMappedError(c, err)
 		return
@@ -168,7 +180,20 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	if !ok {
 		return
 	}
-	out, err := h.users.List(c.Request.Context(), c.Query("q"), page, pageSize)
+	role := c.Query("role")
+	if role != "" {
+		known := map[string]struct{}{"siswa": {}, "guru_mapel": {}, "guru_wali": {}, "guru_bk": {}, "admin": {}}
+		if _, ok := known[role]; !ok {
+			response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "role", Message: "invalid role"})
+			return
+		}
+	}
+	status := c.Query("status")
+	if status != "" && status != "active" && status != "inactive" {
+		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "status", Message: "invalid status"})
+		return
+	}
+	out, err := h.users.List(c.Request.Context(), c.Query("q"), role, status, page, pageSize)
 	if err != nil {
 		writeMappedError(c, err)
 		return

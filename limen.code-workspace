@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../limen-dotnet/fingerprint-service-rewrite"
+		}
+	]
+}

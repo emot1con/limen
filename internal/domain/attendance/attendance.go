@@ -124,7 +124,7 @@ type DeviceRepository interface {
 	FindByID(context.Context, string) (Device, error)
 	Update(context.Context, Device) error
 	Delete(context.Context, string) error
-	List(context.Context, int, int) ([]Device, int64, error)
+	List(context.Context, int, int, *bool) ([]Device, int64, error)
 }
 
 type BiometricIdentityRepository interface {

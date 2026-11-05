@@ -116,9 +116,9 @@ func (uc *UseCase) Get(ctx context.Context, id string) (User, error) {
 	return toUser(item, roleCodes(roles)), nil
 }
 
-func (uc *UseCase) List(ctx context.Context, q string, page, pageSize int) (Page, error) {
+func (uc *UseCase) List(ctx context.Context, q, role, status string, page, pageSize int) (Page, error) {
 	page, pageSize = normalizePage(page, pageSize)
-	items, total, err := uc.users.List(ctx, strings.TrimSpace(q), pageSize, (page-1)*pageSize)
+	items, total, err := uc.users.List(ctx, strings.TrimSpace(q), strings.TrimSpace(role), strings.TrimSpace(status), pageSize, (page-1)*pageSize)
 	if err != nil {
 		uc.logError(err, "user_list", nil)
 		return Page{}, err
