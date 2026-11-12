@@ -39,7 +39,7 @@ import (
 
 func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache, cfg *config.Config, logger *logrus.Logger, fingerprintGateway fingerprintdomain.Gateway) *gin.Engine {
 	router := gin.New()
-	router.Use(gin.Recovery(), middleware.RequestLogger(logger))
+	router.Use(gin.Recovery(), middleware.RequestLogger(logger), middleware.CORS(cfg.CorsAllowedOrigins))
 
 	userRepo := postgresuser.NewUserRepository(postgresDB)
 	userRoleRepo := postgresuser.NewUserRoleRepository(postgresDB)

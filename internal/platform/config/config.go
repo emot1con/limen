@@ -30,6 +30,7 @@ type Config struct {
 	RedisMaxBackoff        time.Duration
 	FingerprintServiceURL  string
 	FingerprintAPIKey      string
+	CorsAllowedOrigins     []string
 	CacheEnabled           bool
 	CacheKeyPrefix         string
 	CacheTTLSchoolSettings time.Duration
@@ -56,6 +57,7 @@ func LoadConfig() (*Config, error) {
 		RedisMaxBackoff:        getEnvDuration("REDIS_RETRY_MAX_BACKOFF", 10*time.Second),
 		FingerprintServiceURL:  getEnv("FINGERPRINT_SERVICE_URL", "http://localhost:5001"),
 		FingerprintAPIKey:      firstNonEmpty(getEnv("FINGERPRINT_API_KEY", ""), getEnv("ApiKey__Value", "")),
+		CorsAllowedOrigins:     getEnvList("CORS_ALLOWED_ORIGINS", []string{"http://localhost:3000"}),
 		CacheEnabled:           getEnvBool("CACHE_ENABLED", true),
 		CacheKeyPrefix:         getEnv("CACHE_KEY_PREFIX", "limen:cache"),
 		CacheTTLSchoolSettings: getEnvDuration("CACHE_TTL_SCHOOL_SETTINGS", time.Hour),
@@ -121,6 +123,24 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func getEnvList(key string, fallback []string) []string {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
+	}
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	if len(result) == 0 {
+		return fallback
+	}
+	return result
 }
 
 func getEnvInt(key string, fallback int) (int, error) {
