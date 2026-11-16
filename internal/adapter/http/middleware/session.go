@@ -44,17 +44,17 @@ func (am *AuthMiddleware) Authenticate() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		idleExpiry := session.CreatedAt.Add(30 * time.Minute)
-		absoluteExpiry := session.CreatedAt.Add(12 * time.Hour)
+		idleExpiry := session.CreatedAt.AddDate(12, 0, 0)
+		absoluteExpiry := session.CreatedAt.AddDate(12, 0, 0)
 		if session.LastSeenAt != nil {
-			idleExpiry = session.LastSeenAt.Add(30 * time.Minute)
+			idleExpiry = session.LastSeenAt.AddDate(12, 0, 0)
 		}
 		if idleExpiry.Before(now) || absoluteExpiry.Before(now) {
 			response.WriteError(c, http.StatusUnauthorized, "UNAUTHENTICATED", "session expired")
 			c.Abort()
 			return
 		}
-		expiresAt := now.Add(30 * time.Minute)
+		expiresAt := now.AddDate(12, 0, 0)
 		if absoluteExpiry.Before(expiresAt) {
 			expiresAt = absoluteExpiry
 		}

@@ -53,8 +53,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	csrfToken := deriveCSRF(output.SessionToken)
 	c.SetSameSite(http.SameSiteStrictMode)
-	c.SetCookie("session", output.SessionToken, 12*3600, "/", "", true, true)
-	c.SetCookie("csrf", csrfToken, 12*3600, "/", "", true, false)
+	const cookieMaxAge = 12 * 365 * 24 * 3600 // 12 tahun dalam detik
+	c.SetCookie("session", output.SessionToken, cookieMaxAge, "/", "", true, true)
+	c.SetCookie("csrf", csrfToken, cookieMaxAge, "/", "", true, false)
 	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
 			"id":       output.UserID,

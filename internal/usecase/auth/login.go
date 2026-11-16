@@ -71,8 +71,8 @@ func (uc *LoginUseCase) Execute(ctx context.Context, input LoginInput) (LoginOut
 	sessionToken := generateRandomToken(32)
 	tokenHash := hashToken(sessionToken)
 	now := time.Now()
-	idleExpiry := now.Add(30 * time.Minute)
-	absoluteExpiry := now.Add(12 * time.Hour)
+	idleExpiry := now.AddDate(12, 0, 0)
+	absoluteExpiry := now.AddDate(12, 0, 0)
 	expiresAt := idleExpiry
 	if absoluteExpiry.Before(expiresAt) {
 		expiresAt = absoluteExpiry
