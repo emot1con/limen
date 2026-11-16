@@ -54,15 +54,21 @@ func (am *AuthMiddleware) Authenticate() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		expiresAt := now.AddDate(12, 0, 0)
-		if absoluteExpiry.Before(expiresAt) {
-			expiresAt = absoluteExpiry
+		lastActivity := session.CreatedAt
+		if session.LastSeenAt != nil {
+			lastActivity = *session.LastSeenAt
 		}
-		if err := am.sessionRepo.Touch(c.Request.Context(), session.ID, now, expiresAt); err != nil {
-			response.TraceError(c, "auth.session.touch", err)
-			response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
-			c.Abort()
-			return
+		if now.Sub(lastActivity) >= 180*24*time.Hour {
+			expiresAt := now.AddDate(12, 0, 0)
+			if absoluteExpiry.Before(expiresAt) {
+				expiresAt = absoluteExpiry
+			}
+			if err := am.sessionRepo.Touch(c.Request.Context(), session.ID, now, expiresAt); err != nil {
+				response.TraceError(c, "auth.session.touch", err)
+				response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
+				c.Abort()
+				return
+			}
 		}
 		userRoles, err := am.userRoleRepo.ListByUserID(c.Request.Context(), session.UserID)
 		if err != nil {
