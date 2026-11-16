@@ -47,7 +47,7 @@ func (h *QuestionBankHandler) ListBanks(c *gin.Context) {
 	for i, item := range items {
 		out[i] = questionBankJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *QuestionBankHandler) CreateBank(c *gin.Context) {
@@ -81,7 +81,7 @@ func (h *QuestionBankHandler) CreateBank(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, questionBankJSON(item))
+	response.WriteCreated(c, questionBankJSON(item))
 }
 
 func (h *QuestionBankHandler) ListQuestions(c *gin.Context) {
@@ -103,7 +103,7 @@ func (h *QuestionBankHandler) ListQuestions(c *gin.Context) {
 	for i, item := range items {
 		out[i] = questionJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *QuestionBankHandler) CreateQuestion(c *gin.Context) {
@@ -121,7 +121,7 @@ func (h *QuestionBankHandler) CreateQuestion(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, questionJSON(item))
+	response.WriteCreated(c, questionJSON(item))
 }
 
 func (h *QuestionBankHandler) UpdateQuestion(c *gin.Context) {
@@ -139,7 +139,7 @@ func (h *QuestionBankHandler) UpdateQuestion(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, questionJSON(item))
+	response.WriteOK(c, questionJSON(item))
 }
 
 func (h *QuestionBankHandler) DeleteQuestion(c *gin.Context) {
@@ -152,7 +152,7 @@ func (h *QuestionBankHandler) DeleteQuestion(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.Status(http.StatusNoContent)
+	response.WriteNoContent(c)
 }
 
 func bindQuestionInput(c *gin.Context) (questionbankuc.QuestionInput, bool) {

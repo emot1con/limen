@@ -1,6 +1,44 @@
 #!/usr/bin/env python3
 import json
+import math
 import os
+
+SAMPLE_REQUEST_ID = "req-example-abc123"
+
+
+def wrap_success_body(body):
+    """Bungkus body sukses ke dalam format {data, meta} sesuai response.go."""
+    if body == "" or body is None:
+        return ""
+    # List response: {items, total, page, pageSize}
+    if isinstance(body, dict) and "items" in body and "total" in body and "page" in body and "pageSize" in body:
+        total = body.get("total", 0)
+        page_size = body.get("pageSize", 20)
+        total_pages = math.ceil(total / page_size) if page_size > 0 and total > 0 else 0
+        return {
+            "data": body.get("items", []),
+            "meta": {
+                "requestId": SAMPLE_REQUEST_ID,
+                "page": body.get("page", 1),
+                "pageSize": page_size,
+                "total": total,
+                "totalPages": total_pages,
+            },
+        }
+    # Objek atau list biasa
+    return {"data": body, "meta": {"requestId": SAMPLE_REQUEST_ID}}
+
+
+def wrap_error_body(body):
+    """Bungkus body error ke dalam format {error, meta} sesuai error.go."""
+    if body == "" or body is None:
+        return ""
+    if isinstance(body, dict) and "code" in body and "message" in body:
+        err = {"code": body["code"], "message": body["message"]}
+        if "details" in body:
+            err["details"] = body["details"]
+        return {"error": err, "meta": {"requestId": SAMPLE_REQUEST_ID}}
+    return body
 
 def make_url(path, query=None, variables=None):
     segments = [p for p in path.strip("/").split("/") if p]
@@ -106,10 +144,17 @@ def make_request(name, method, path, description="", body=None, query=None, vari
             ex_name = ex.get("name", f"{ex_status_code} {ex_status_text}")
             ex_body = ex.get("body", "")
             ex_ct = ex.get("contentType", content_type or "application/json")
-            
+
+            # Auto-wrap body ke format baru sesuai response.go / error.go
+            if ex_body != "" and ex_body is not None:
+                if ex_status_code >= 400:
+                    ex_body = wrap_error_body(ex_body)
+                elif ex_status_code != 204:
+                    ex_body = wrap_success_body(ex_body)
+
             resp_body_str = ""
             if isinstance(ex_body, (dict, list)):
-                resp_body_str = json.dumps(ex_body, indent=2)
+                resp_body_str = json.dumps(ex_body, indent=2, ensure_ascii=False)
             elif isinstance(ex_body, str):
                 resp_body_str = ex_body
                 

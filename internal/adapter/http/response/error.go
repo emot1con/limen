@@ -17,9 +17,14 @@ type ErrorDetails struct {
 }
 
 type Error struct {
-	Code    string       `json:"code"`
-	Message string       `json:"message"`
-	Details ErrorDetails `json:"details"`
+	Code    string        `json:"code"`
+	Message string        `json:"message"`
+	Details *ErrorDetails `json:"details,omitempty"`
+}
+
+type errorBody struct {
+	Error *Error `json:"error"`
+	Meta  Meta   `json:"meta"`
 }
 
 func TraceError(c *gin.Context, operation string, err error) {
@@ -31,26 +36,23 @@ func TraceError(c *gin.Context, operation string, err error) {
 }
 
 func AbortError(c *gin.Context, status int, code, message string, fields ...FieldError) {
-	if fields == nil {
-		fields = []FieldError{}
-	}
-	c.AbortWithStatusJSON(status, Error{
-		Code:    code,
-		Message: message,
-		Details: ErrorDetails{Fields: fields},
-	})
+	c.AbortWithStatusJSON(status, errorPayload(c, status, code, message, fields))
 }
 
 func WriteError(c *gin.Context, status int, code, message string, fields ...FieldError) {
+	c.JSON(status, errorPayload(c, status, code, message, fields))
+}
+
+func errorPayload(c *gin.Context, status int, code, message string, fields []FieldError) errorBody {
 	if status >= http.StatusInternalServerError {
 		c.Set("internal_error_code", code)
 	}
-	if fields == nil {
-		fields = []FieldError{}
+	body := errorBody{
+		Error: &Error{Code: code, Message: message},
+		Meta:  meta(c),
 	}
-	c.JSON(status, Error{
-		Code:    code,
-		Message: message,
-		Details: ErrorDetails{Fields: fields},
-	})
+	if len(fields) > 0 {
+		body.Error.Details = &ErrorDetails{Fields: fields}
+	}
+	return body
 }

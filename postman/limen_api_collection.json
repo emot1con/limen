@@ -199,7 +199,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"user\": {\n    \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"email\": \"admin@sekolah.sch.id\",\n    \"fullName\": \"Administrator Sekolah\",\n    \"roles\": [\n      \"admin\"\n    ],\n    \"status\": \"active\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"email\": \"admin@sekolah.sch.id\",\n      \"fullName\": \"Administrator Sekolah\",\n      \"roles\": [\n        \"admin\"\n      ],\n      \"status\": \"active\"\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             },
             {
               "name": "401 Unauthorized - Invalid Credentials",
@@ -250,7 +250,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"code\": \"INVALID_CREDENTIALS\",\n  \"message\": \"invalid email or password\",\n  \"details\": {\n    \"fields\": []\n  }\n}"
+              "body": "{\n  \"error\": {\n    \"code\": \"INVALID_CREDENTIALS\",\n    \"message\": \"invalid email or password\",\n    \"details\": {\n      \"fields\": []\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             },
             {
               "name": "422 Unprocessable Entity - Validation Error",
@@ -301,7 +301,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"code\": \"VALIDATION_ERROR\",\n  \"message\": \"validation failed\",\n  \"details\": {\n    \"fields\": [\n      {\n        \"field\": \"email\",\n        \"message\": \"must be a valid email\"\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"validation failed\",\n    \"details\": {\n      \"fields\": [\n        {\n          \"field\": \"email\",\n          \"message\": \"must be a valid email\"\n        }\n      ]\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ],
           "event": [
@@ -396,7 +396,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"email\": \"admin@sekolah.sch.id\",\n  \"fullName\": \"Administrator Sekolah\",\n  \"status\": \"active\",\n  \"roles\": [\n    \"admin\"\n  ]\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"email\": \"admin@sekolah.sch.id\",\n    \"fullName\": \"Administrator Sekolah\",\n    \"status\": \"active\",\n    \"roles\": [\n      \"admin\"\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             },
             {
               "name": "401 Unauthorized - No Session",
@@ -438,7 +438,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"code\": \"UNAUTHENTICATED\",\n  \"message\": \"session token required\",\n  \"details\": {\n    \"fields\": []\n  }\n}"
+              "body": "{\n  \"error\": {\n    \"code\": \"UNAUTHENTICATED\",\n    \"message\": \"session token required\",\n    \"details\": {\n      \"fields\": []\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -719,7 +719,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"code\": \"NOT_FOUND\",\n  \"message\": \"user not found\",\n  \"details\": {\n    \"fields\": []\n  }\n}"
+              "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"user not found\",\n    \"details\": {\n      \"fields\": []\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -800,7 +800,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"s1e2t3t4-i5n6-7g8s-9c0d-1e2f3a4b5c6d\",\n  \"firstEntryTime\": \"07:00\",\n  \"timezone\": \"Asia/Jakarta\",\n  \"lateToleranceMinutes\": 15,\n  \"updatedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"updatedAt\": \"2026-11-15T08:00:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"s1e2t3t4-i5n6-7g8s-9c0d-1e2f3a4b5c6d\",\n    \"firstEntryTime\": \"07:00\",\n    \"timezone\": \"Asia/Jakarta\",\n    \"lateToleranceMinutes\": 15,\n    \"updatedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"updatedAt\": \"2026-11-15T08:00:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -905,7 +905,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"s1e2t3t4-i5n6-7g8s-9c0d-1e2f3a4b5c6d\",\n  \"firstEntryTime\": \"07:00\",\n  \"timezone\": \"Asia/Jakarta\",\n  \"lateToleranceMinutes\": 15,\n  \"updatedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"updatedAt\": \"2026-11-15T08:30:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"s1e2t3t4-i5n6-7g8s-9c0d-1e2f3a4b5c6d\",\n    \"firstEntryTime\": \"07:00\",\n    \"timezone\": \"Asia/Jakarta\",\n    \"lateToleranceMinutes\": 15,\n    \"updatedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"updatedAt\": \"2026-11-15T08:30:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -1024,7 +1024,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\n      \"name\": \"Mesin Fingerprint Gerbang Depan\",\n      \"location\": \"Lobi Gedung Utama\",\n      \"serial\": \"FP-GATE-01\",\n      \"isActive\": true,\n      \"lastSeenAt\": \"2026-11-15T07:15:20Z\",\n      \"createdAt\": \"2026-10-01T08:00:00Z\",\n      \"updatedAt\": \"2026-11-15T07:15:20Z\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\n      \"name\": \"Mesin Fingerprint Gerbang Depan\",\n      \"location\": \"Lobi Gedung Utama\",\n      \"serial\": \"FP-GATE-01\",\n      \"isActive\": true,\n      \"lastSeenAt\": \"2026-11-15T07:15:20Z\",\n      \"createdAt\": \"2026-10-01T08:00:00Z\",\n      \"updatedAt\": \"2026-11-15T07:15:20Z\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -1127,7 +1127,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\n  \"name\": \"Mesin Fingerprint Gerbang Depan\",\n  \"location\": \"Lobi Gedung Utama\",\n  \"serial\": \"FP-GATE-01\",\n  \"isActive\": true,\n  \"lastSeenAt\": null,\n  \"createdAt\": \"2026-11-15T08:00:00Z\",\n  \"updatedAt\": \"2026-11-15T08:00:00Z\",\n  \"deviceKey\": \"dev_key_sec_994a3bc76d1e4e5\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\n    \"name\": \"Mesin Fingerprint Gerbang Depan\",\n    \"location\": \"Lobi Gedung Utama\",\n    \"serial\": \"FP-GATE-01\",\n    \"isActive\": true,\n    \"lastSeenAt\": null,\n    \"createdAt\": \"2026-11-15T08:00:00Z\",\n    \"updatedAt\": \"2026-11-15T08:00:00Z\",\n    \"deviceKey\": \"dev_key_sec_994a3bc76d1e4e5\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -1246,7 +1246,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\n  \"name\": \"Mesin Fingerprint Gerbang Timur\",\n  \"location\": \"Pintu Gerbang Timur\",\n  \"serial\": \"FP-GATE-01-REV\",\n  \"isActive\": true,\n  \"lastSeenAt\": \"2026-11-15T07:15:20Z\",\n  \"createdAt\": \"2026-10-01T08:00:00Z\",\n  \"updatedAt\": \"2026-11-15T08:30:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\n    \"name\": \"Mesin Fingerprint Gerbang Timur\",\n    \"location\": \"Pintu Gerbang Timur\",\n    \"serial\": \"FP-GATE-01-REV\",\n    \"isActive\": true,\n    \"lastSeenAt\": \"2026-11-15T07:15:20Z\",\n    \"createdAt\": \"2026-10-01T08:00:00Z\",\n    \"updatedAt\": \"2026-11-15T08:30:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -1389,7 +1389,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"email\": \"guru.matematika@sekolah.sch.id\",\n      \"fullName\": \"Drs. Ahmad Fauzi, M.Pd\",\n      \"status\": \"active\",\n      \"roles\": [\n        \"guru_mapel\",\n        \"guru_wali\"\n      ],\n      \"profile\": null,\n      \"lastLoginAt\": \"2026-11-15T06:55:00Z\",\n      \"createdAt\": \"2026-10-01T00:00:00Z\",\n      \"updatedAt\": \"2026-11-15T06:55:00Z\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"email\": \"guru.matematika@sekolah.sch.id\",\n      \"fullName\": \"Drs. Ahmad Fauzi, M.Pd\",\n      \"status\": \"active\",\n      \"roles\": [\n        \"guru_mapel\",\n        \"guru_wali\"\n      ],\n      \"profile\": null,\n      \"lastLoginAt\": \"2026-11-15T06:55:00Z\",\n      \"createdAt\": \"2026-10-01T00:00:00Z\",\n      \"updatedAt\": \"2026-11-15T06:55:00Z\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -1492,7 +1492,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"email\": \"guru.matematika@sekolah.sch.id\",\n  \"fullName\": \"Drs. Ahmad Fauzi, M.Pd\",\n  \"status\": \"active\",\n  \"roles\": [\n    \"guru_mapel\",\n    \"guru_wali\"\n  ],\n  \"profile\": null,\n  \"lastLoginAt\": null,\n  \"createdAt\": \"2026-11-15T08:00:00Z\",\n  \"updatedAt\": \"2026-11-15T08:00:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"email\": \"guru.matematika@sekolah.sch.id\",\n    \"fullName\": \"Drs. Ahmad Fauzi, M.Pd\",\n    \"status\": \"active\",\n    \"roles\": [\n      \"guru_mapel\",\n      \"guru_wali\"\n    ],\n    \"profile\": null,\n    \"lastLoginAt\": null,\n    \"createdAt\": \"2026-11-15T08:00:00Z\",\n    \"updatedAt\": \"2026-11-15T08:00:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -1581,7 +1581,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"email\": \"guru.matematika@sekolah.sch.id\",\n  \"fullName\": \"Drs. Ahmad Fauzi, M.Pd\",\n  \"status\": \"active\",\n  \"roles\": [\n    \"guru_mapel\",\n    \"guru_wali\"\n  ],\n  \"profile\": null,\n  \"lastLoginAt\": \"2026-11-15T06:55:00Z\",\n  \"createdAt\": \"2026-10-01T00:00:00Z\",\n  \"updatedAt\": \"2026-11-15T06:55:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"email\": \"guru.matematika@sekolah.sch.id\",\n    \"fullName\": \"Drs. Ahmad Fauzi, M.Pd\",\n    \"status\": \"active\",\n    \"roles\": [\n      \"guru_mapel\",\n      \"guru_wali\"\n    ],\n    \"profile\": null,\n    \"lastLoginAt\": \"2026-11-15T06:55:00Z\",\n    \"createdAt\": \"2026-10-01T00:00:00Z\",\n    \"updatedAt\": \"2026-11-15T06:55:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -1700,7 +1700,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"email\": \"guru.matematika@sekolah.sch.id\",\n  \"fullName\": \"Dr. Ahmad Fauzi, M.Pd\",\n  \"status\": \"active\",\n  \"roles\": [\n    \"guru_mapel\",\n    \"guru_wali\"\n  ],\n  \"profile\": null,\n  \"lastLoginAt\": \"2026-11-15T06:55:00Z\",\n  \"createdAt\": \"2026-10-01T00:00:00Z\",\n  \"updatedAt\": \"2026-11-15T08:30:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"email\": \"guru.matematika@sekolah.sch.id\",\n    \"fullName\": \"Dr. Ahmad Fauzi, M.Pd\",\n    \"status\": \"active\",\n    \"roles\": [\n      \"guru_mapel\",\n      \"guru_wali\"\n    ],\n    \"profile\": null,\n    \"lastLoginAt\": \"2026-11-15T06:55:00Z\",\n    \"createdAt\": \"2026-10-01T00:00:00Z\",\n    \"updatedAt\": \"2026-11-15T08:30:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -1831,7 +1831,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"name\": \"X MIPA 1\",\n      \"level\": \"10\",\n      \"homeroomTeacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentCount\": 36\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"name\": \"X MIPA 1\",\n      \"level\": \"10\",\n      \"homeroomTeacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentCount\": 36\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -1934,7 +1934,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"name\": \"X MIPA 1\",\n  \"level\": \"10\",\n  \"homeroomTeacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"studentCount\": 0\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"name\": \"X MIPA 1\",\n    \"level\": \"10\",\n    \"homeroomTeacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"studentCount\": 0\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -2053,7 +2053,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"name\": \"X MIPA 1 Unggulan\",\n  \"level\": \"10\",\n  \"homeroomTeacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"studentCount\": 36\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"name\": \"X MIPA 1 Unggulan\",\n    \"level\": \"10\",\n    \"homeroomTeacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"studentCount\": 36\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -2166,7 +2166,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"code\": \"BIO-10\",\n      \"name\": \"Biologi Peminatan Kelas X\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"code\": \"BIO-10\",\n      \"name\": \"Biologi Peminatan Kelas X\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -2269,7 +2269,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n  \"code\": \"BIO-10\",\n  \"name\": \"Biologi Peminatan Kelas X\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n    \"code\": \"BIO-10\",\n    \"name\": \"Biologi Peminatan Kelas X\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -2406,7 +2406,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"fullName\": \"Muhammad Rizky Pratama\",\n      \"nis\": \"2024101001\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"className\": \"X MIPA 1\",\n      \"status\": \"active\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"fullName\": \"Muhammad Rizky Pratama\",\n      \"nis\": \"2024101001\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"className\": \"X MIPA 1\",\n      \"status\": \"active\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -2495,7 +2495,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"fullName\": \"Muhammad Rizky Pratama\",\n  \"nis\": \"2024101001\",\n  \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"className\": \"X MIPA 1\",\n  \"status\": \"active\"\n}"
+              "body": "{\n  \"data\": {\n    \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"fullName\": \"Muhammad Rizky Pratama\",\n    \"nis\": \"2024101001\",\n    \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"className\": \"X MIPA 1\",\n    \"status\": \"active\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -2614,7 +2614,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"fullName\": \"Muhammad Rizky Pratama\",\n  \"nis\": \"2024101001\",\n  \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"className\": \"X MIPA 1\",\n  \"status\": \"active\"\n}"
+              "body": "{\n  \"data\": {\n    \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"fullName\": \"Muhammad Rizky Pratama\",\n    \"nis\": \"2024101001\",\n    \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"className\": \"X MIPA 1\",\n    \"status\": \"active\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -2751,7 +2751,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n      \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n      \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -2854,7 +2854,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n  \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n  \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n    \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n    \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -3033,7 +3033,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"dayOfWeek\": 1,\n      \"startTime\": \"07:30\",\n      \"endTime\": \"09:00\",\n      \"kind\": \"lesson\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"dayOfWeek\": 1,\n      \"startTime\": \"07:30\",\n      \"endTime\": \"09:00\",\n      \"kind\": \"lesson\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -3136,7 +3136,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n  \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n  \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"dayOfWeek\": 1,\n  \"startTime\": \"07:30\",\n  \"endTime\": \"09:00\",\n  \"kind\": \"lesson\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n    \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n    \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"dayOfWeek\": 1,\n    \"startTime\": \"07:30\",\n    \"endTime\": \"09:00\",\n    \"kind\": \"lesson\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -3255,7 +3255,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n  \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n  \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"dayOfWeek\": 1,\n  \"startTime\": \"08:00\",\n  \"endTime\": \"09:30\",\n  \"kind\": \"lesson\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n    \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n    \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"dayOfWeek\": 1,\n    \"startTime\": \"08:00\",\n    \"endTime\": \"09:30\",\n    \"kind\": \"lesson\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -3511,7 +3511,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"f6a7b89c-0d1e-2f3a-4b5c-6d7e8f901a2b\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"kind\": \"UH1\",\n      \"kkm\": 75.0,\n      \"period\": \"2024/2025 Genap\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"f6a7b89c-0d1e-2f3a-4b5c-6d7e8f901a2b\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"kind\": \"UH1\",\n      \"kkm\": 75.0,\n      \"period\": \"2024/2025 Genap\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -3614,7 +3614,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"f6a7b89c-0d1e-2f3a-4b5c-6d7e8f901a2b\",\n  \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n  \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"kind\": \"UH1\",\n  \"kkm\": 75.0,\n  \"period\": \"2024/2025 Genap\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"f6a7b89c-0d1e-2f3a-4b5c-6d7e8f901a2b\",\n    \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n    \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"kind\": \"UH1\",\n    \"kkm\": 75.0,\n    \"period\": \"2024/2025 Genap\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -3733,7 +3733,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"assessmentId\": \"f6a7b89c-0d1e-2f3a-4b5c-6d7e8f901a2b\",\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentName\": \"Muhammad Rizky Pratama\",\n      \"score\": 88.5,\n      \"updatedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"updatedAt\": \"2026-11-15T09:00:00Z\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 50\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"assessmentId\": \"f6a7b89c-0d1e-2f3a-4b5c-6d7e8f901a2b\",\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentName\": \"Muhammad Rizky Pratama\",\n      \"score\": 88.5,\n      \"updatedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"updatedAt\": \"2026-11-15T09:00:00Z\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 50,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -3866,7 +3866,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"assessmentId\": \"f6a7b89c-0d1e-2f3a-4b5c-6d7e8f901a2b\",\n  \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"studentName\": \"Muhammad Rizky Pratama\",\n  \"score\": 88.5,\n  \"updatedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"updatedAt\": \"2026-11-15T09:15:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"assessmentId\": \"f6a7b89c-0d1e-2f3a-4b5c-6d7e8f901a2b\",\n    \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"studentName\": \"Muhammad Rizky Pratama\",\n    \"score\": 88.5,\n    \"updatedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"updatedAt\": \"2026-11-15T09:15:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -3963,7 +3963,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"results\": [\n    {\n      \"id\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n      \"result\": \"Dominan Minat Realistik & Investigatif (Sains & Teknik Komputer)\",\n      \"assessedAt\": \"2026-10-15T10:00:00Z\"\n    }\n  ]\n}"
+              "body": "{\n  \"data\": {\n    \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"results\": [\n      {\n        \"id\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n        \"result\": \"Dominan Minat Realistik & Investigatif (Sains & Teknik Komputer)\",\n        \"assessedAt\": \"2026-10-15T10:00:00Z\"\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -4084,7 +4084,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n  \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"major\": \"Teknik Informatika - Institut Teknologi Bandung\",\n  \"createdAt\": \"2026-11-15T09:30:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n    \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"major\": \"Teknik Informatika - Institut Teknologi Bandung\",\n    \"createdAt\": \"2026-11-15T09:30:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -4221,7 +4221,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n      \"university\": \"Institut Teknologi Bandung\",\n      \"major\": \"Teknik Informatika\",\n      \"score\": 675.5,\n      \"year\": 2025\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n      \"university\": \"Institut Teknologi Bandung\",\n      \"major\": \"Teknik Informatika\",\n      \"score\": 675.5,\n      \"year\": 2025\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -4310,7 +4310,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n  \"university\": \"Institut Teknologi Bandung\",\n  \"major\": \"Teknik Informatika\",\n  \"score\": 675.5,\n  \"year\": 2025\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n    \"university\": \"Institut Teknologi Bandung\",\n    \"major\": \"Teknik Informatika\",\n    \"score\": 675.5,\n    \"year\": 2025\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -4453,7 +4453,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"f23a4b5c-6d7e-8f90-1a2b-3c4d5e6f7081\",\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"authorId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n      \"note\": \"Siswa berkonsultasi mengenai strategi pemilihan jurusan SNBP.\",\n      \"createdAt\": \"2026-11-15T10:00:00Z\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"f23a4b5c-6d7e-8f90-1a2b-3c4d5e6f7081\",\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"authorId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n      \"note\": \"Siswa berkonsultasi mengenai strategi pemilihan jurusan SNBP.\",\n      \"createdAt\": \"2026-11-15T10:00:00Z\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -4556,7 +4556,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"f23a4b5c-6d7e-8f90-1a2b-3c4d5e6f7081\",\n  \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"authorId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"note\": \"Siswa berkonsultasi mengenai persiapan ujian masuk perguruan tinggi dan kendala fokus belajar di rumah.\",\n  \"createdAt\": \"2026-11-15T10:15:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"f23a4b5c-6d7e-8f90-1a2b-3c4d5e6f7081\",\n    \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"authorId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"note\": \"Siswa berkonsultasi mengenai persiapan ujian masuk perguruan tinggi dan kendala fokus belajar di rumah.\",\n    \"createdAt\": \"2026-11-15T10:15:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -4675,7 +4675,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"f23a4b5c-6d7e-8f90-1a2b-3c4d5e6f7081\",\n  \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"authorId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"note\": \"Catatan konseling diperbarui: Siswa diberikan rekomendasi rencana belajar harian dan modul pendampingan.\",\n  \"createdAt\": \"2026-11-15T10:15:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"f23a4b5c-6d7e-8f90-1a2b-3c4d5e6f7081\",\n    \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"authorId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"note\": \"Catatan konseling diperbarui: Siswa diberikan rekomendasi rencana belajar harian dan modul pendampingan.\",\n    \"createdAt\": \"2026-11-15T10:15:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -4796,7 +4796,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n  \"noteId\": \"f23a4b5c-6d7e-8f90-1a2b-3c4d5e6f7081\",\n  \"note\": \"Telah dilakukan koordinasi dengan orang tua siswa untuk memantau jam belajar malam.\",\n  \"createdBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"createdAt\": \"2026-11-15T11:00:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n    \"noteId\": \"f23a4b5c-6d7e-8f90-1a2b-3c4d5e6f7081\",\n    \"note\": \"Telah dilakukan koordinasi dengan orang tua siswa untuk memantau jam belajar malam.\",\n    \"createdBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"createdAt\": \"2026-11-15T11:00:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -4953,7 +4953,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"groupBy\": \"student\",\n  \"items\": [\n    {\n      \"present\": 20,\n      \"late\": 2,\n      \"excused\": 1,\n      \"sick\": 1,\n      \"absent\": 0,\n      \"total\": 24,\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentName\": \"Muhammad Rizky Pratama\"\n    }\n  ]\n}"
+              "body": "{\n  \"data\": {\n    \"groupBy\": \"student\",\n    \"items\": [\n      {\n        \"present\": 20,\n        \"late\": 2,\n        \"excused\": 1,\n        \"sick\": 1,\n        \"absent\": 0,\n        \"total\": 24,\n        \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n        \"studentName\": \"Muhammad Rizky Pratama\"\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -5092,7 +5092,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentName\": \"Muhammad Rizky Pratama\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"subjectName\": \"Biologi Peminatan Kelas X\",\n      \"averageScore\": 87.5\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 50\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentName\": \"Muhammad Rizky Pratama\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"subjectName\": \"Biologi Peminatan Kelas X\",\n      \"averageScore\": 87.5\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 50,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -5199,7 +5199,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"period\": \"2024/2025 Genap\",\n  \"subjects\": [\n    {\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"subjectName\": \"Biologi Peminatan Kelas X\",\n      \"score\": 88.0,\n      \"kkm\": 75.0\n    },\n    {\n      \"subjectId\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n      \"subjectName\": \"Matematika Wajib Kelas X\",\n      \"score\": 90.0,\n      \"kkm\": 75.0\n    }\n  ]\n}"
+              "body": "{\n  \"data\": {\n    \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"period\": \"2024/2025 Genap\",\n    \"subjects\": [\n      {\n        \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n        \"subjectName\": \"Biologi Peminatan Kelas X\",\n        \"score\": 88.0,\n        \"kkm\": 75.0\n      },\n      {\n        \"subjectId\": \"e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f901a\",\n        \"subjectName\": \"Matematika Wajib Kelas X\",\n        \"score\": 90.0,\n        \"kkm\": 75.0\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -5354,7 +5354,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"title\": \"Tugas Bab 3: Hukum Gerak Newton\",\n      \"description\": \"Kerjakan soal evaluasi halaman 45-47 pada buku paket.\",\n      \"dueAt\": \"2026-11-25T23:59:59Z\",\n      \"createdAt\": \"2026-11-15T08:00:00Z\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n      \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"title\": \"Tugas Bab 3: Hukum Gerak Newton\",\n      \"description\": \"Kerjakan soal evaluasi halaman 45-47 pada buku paket.\",\n      \"dueAt\": \"2026-11-25T23:59:59Z\",\n      \"createdAt\": \"2026-11-15T08:00:00Z\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -5457,7 +5457,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n  \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n  \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n  \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"title\": \"Tugas Bab 3: Hukum Gerak Newton\",\n  \"description\": \"Kerjakan soal evaluasi halaman 45-47 pada buku pegangan dan kumpulkan rangkuman langkahnya.\",\n  \"dueAt\": \"2026-11-25T23:59:59Z\",\n  \"createdAt\": \"2026-11-15T08:00:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n    \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n    \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"title\": \"Tugas Bab 3: Hukum Gerak Newton\",\n    \"description\": \"Kerjakan soal evaluasi halaman 45-47 pada buku pegangan dan kumpulkan rangkuman langkahnya.\",\n    \"dueAt\": \"2026-11-25T23:59:59Z\",\n    \"createdAt\": \"2026-11-15T08:00:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -5576,7 +5576,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"assignmentId\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentName\": \"Muhammad Rizky Pratama\",\n      \"score\": 92.5,\n      \"note\": \"Analisis konsep fisika sangat lengkap dan sistematis.\",\n      \"submittedAt\": \"2026-11-20T14:30:00Z\",\n      \"gradedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 50\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"assignmentId\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n      \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"studentName\": \"Muhammad Rizky Pratama\",\n      \"score\": 92.5,\n      \"note\": \"Analisis konsep fisika sangat lengkap dan sistematis.\",\n      \"submittedAt\": \"2026-11-20T14:30:00Z\",\n      \"gradedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 50,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -5709,7 +5709,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"assignmentId\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n  \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"studentName\": \"Muhammad Rizky Pratama\",\n  \"score\": 92.5,\n  \"note\": \"Analisis konsep fisika sangat lengkap dan sistematis.\",\n  \"submittedAt\": \"2026-11-20T14:30:00Z\",\n  \"gradedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\"\n}"
+              "body": "{\n  \"data\": {\n    \"assignmentId\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n    \"studentUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"studentName\": \"Muhammad Rizky Pratama\",\n    \"score\": 92.5,\n    \"note\": \"Analisis konsep fisika sangat lengkap dan sistematis.\",\n    \"submittedAt\": \"2026-11-20T14:30:00Z\",\n    \"gradedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -5852,7 +5852,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"scope\": \"latihan\",\n      \"ownerId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"questionCount\": 25\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"scope\": \"latihan\",\n      \"ownerId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"questionCount\": 25\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -5955,7 +5955,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n  \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n  \"scope\": \"latihan\",\n  \"ownerId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"questionCount\": 0\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n    \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n    \"scope\": \"latihan\",\n    \"ownerId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"questionCount\": 0\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -6074,7 +6074,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n      \"bankId\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n      \"type\": \"pilihan_ganda\",\n      \"body\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2. Berapakah gaya yang bekerja pada benda tersebut?\",\n      \"options\": [\n        {\n          \"id\": \"A\",\n          \"label\": \"5 N\"\n        },\n        {\n          \"id\": \"B\",\n          \"label\": \"6 N\"\n        },\n        {\n          \"id\": \"C\",\n          \"label\": \"8 N\"\n        },\n        {\n          \"id\": \"D\",\n          \"label\": \"10 N\"\n        }\n      ],\n      \"answerKey\": {\n        \"correctOption\": \"B\"\n      }\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 50\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n      \"bankId\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n      \"type\": \"pilihan_ganda\",\n      \"body\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2. Berapakah gaya yang bekerja pada benda tersebut?\",\n      \"options\": [\n        {\n          \"id\": \"A\",\n          \"label\": \"5 N\"\n        },\n        {\n          \"id\": \"B\",\n          \"label\": \"6 N\"\n        },\n        {\n          \"id\": \"C\",\n          \"label\": \"8 N\"\n        },\n        {\n          \"id\": \"D\",\n          \"label\": \"10 N\"\n        }\n      ],\n      \"answerKey\": {\n        \"correctOption\": \"B\"\n      }\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 50,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -6195,7 +6195,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n  \"bankId\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n  \"type\": \"pilihan_ganda\",\n  \"body\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2. Berapakah gaya yang bekerja pada benda tersebut?\",\n  \"options\": [\n    {\n      \"id\": \"A\",\n      \"label\": \"5 N\"\n    },\n    {\n      \"id\": \"B\",\n      \"label\": \"6 N\"\n    },\n    {\n      \"id\": \"C\",\n      \"label\": \"8 N\"\n    },\n    {\n      \"id\": \"D\",\n      \"label\": \"10 N\"\n    }\n  ],\n  \"answerKey\": {\n    \"correctOption\": \"B\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n    \"bankId\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n    \"type\": \"pilihan_ganda\",\n    \"body\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2. Berapakah gaya yang bekerja pada benda tersebut?\",\n    \"options\": [\n      {\n        \"id\": \"A\",\n        \"label\": \"5 N\"\n      },\n      {\n        \"id\": \"B\",\n        \"label\": \"6 N\"\n      },\n      {\n        \"id\": \"C\",\n        \"label\": \"8 N\"\n      },\n      {\n        \"id\": \"D\",\n        \"label\": \"10 N\"\n      }\n    ],\n    \"answerKey\": {\n      \"correctOption\": \"B\"\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -6314,7 +6314,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n  \"bankId\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n  \"type\": \"pilihan_ganda\",\n  \"body\": \"Sebuah benda bermassa 4 kg bergerak dengan percepatan 2 m/s2. Berapakah gaya yang bekerja pada benda tersebut?\",\n  \"options\": [\n    {\n      \"id\": \"A\",\n      \"label\": \"6 N\"\n    },\n    {\n      \"id\": \"B\",\n      \"label\": \"8 N\"\n    },\n    {\n      \"id\": \"C\",\n      \"label\": \"12 N\"\n    },\n    {\n      \"id\": \"D\",\n      \"label\": \"16 N\"\n    }\n  ],\n  \"answerKey\": {\n    \"correctOption\": \"B\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n    \"bankId\": \"b89c0d1e-2f3a-4b5c-6d7e-8f901a2b3c4d\",\n    \"type\": \"pilihan_ganda\",\n    \"body\": \"Sebuah benda bermassa 4 kg bergerak dengan percepatan 2 m/s2. Berapakah gaya yang bekerja pada benda tersebut?\",\n    \"options\": [\n      {\n        \"id\": \"A\",\n        \"label\": \"6 N\"\n      },\n      {\n        \"id\": \"B\",\n        \"label\": \"8 N\"\n      },\n      {\n        \"id\": \"C\",\n        \"label\": \"12 N\"\n      },\n      {\n        \"id\": \"D\",\n        \"label\": \"16 N\"\n      }\n    ],\n    \"answerKey\": {\n      \"correctOption\": \"B\"\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -6558,7 +6558,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n      \"title\": \"Kuis Fisika Bab 2 & 3\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"description\": \"Durasi pengerjaan 60 menit. Dilarang bekerja sama.\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n      \"title\": \"Kuis Fisika Bab 2 & 3\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"description\": \"Durasi pengerjaan 60 menit. Dilarang bekerja sama.\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -6661,7 +6661,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n  \"title\": \"Kuis Fisika Bab 2 & 3\",\n  \"startTime\": \"2026-11-20T08:00:00Z\",\n  \"endTime\": \"2026-11-20T09:30:00Z\",\n  \"questions\": [\n    {\n      \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n      \"questionNumber\": 1,\n      \"type\": \"pilihan_ganda\",\n      \"question\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2...\",\n      \"options\": [\n        {\n          \"id\": \"A\",\n          \"label\": \"5 N\"\n        },\n        {\n          \"id\": \"B\",\n          \"label\": \"6 N\"\n        }\n      ]\n    }\n  ]\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n    \"title\": \"Kuis Fisika Bab 2 & 3\",\n    \"startTime\": \"2026-11-20T08:00:00Z\",\n    \"endTime\": \"2026-11-20T09:30:00Z\",\n    \"questions\": [\n      {\n        \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n        \"questionNumber\": 1,\n        \"type\": \"pilihan_ganda\",\n        \"question\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2...\",\n        \"options\": [\n          {\n            \"id\": \"A\",\n            \"label\": \"5 N\"\n          },\n          {\n            \"id\": \"B\",\n            \"label\": \"6 N\"\n          }\n        ]\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -6766,7 +6766,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n  \"title\": \"Kuis Fisika Bab 2 & 3\",\n  \"startTime\": \"2026-11-20T08:00:00Z\",\n  \"endTime\": \"2026-11-20T09:30:00Z\",\n  \"questions\": [\n    {\n      \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n      \"questionNumber\": 1,\n      \"type\": \"pilihan_ganda\",\n      \"question\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2...\",\n      \"options\": [\n        {\n          \"id\": \"A\",\n          \"label\": \"5 N\"\n        },\n        {\n          \"id\": \"B\",\n          \"label\": \"6 N\"\n        }\n      ]\n    }\n  ]\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n    \"title\": \"Kuis Fisika Bab 2 & 3\",\n    \"startTime\": \"2026-11-20T08:00:00Z\",\n    \"endTime\": \"2026-11-20T09:30:00Z\",\n    \"questions\": [\n      {\n        \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n        \"questionNumber\": 1,\n        \"type\": \"pilihan_ganda\",\n        \"question\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2...\",\n        \"options\": [\n          {\n            \"id\": \"A\",\n            \"label\": \"5 N\"\n          },\n          {\n            \"id\": \"B\",\n            \"label\": \"6 N\"\n          }\n        ]\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -6869,7 +6869,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"attemptId\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n  \"quizId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n  \"quizTitle\": \"Kuis Fisika Bab 2 & 3\",\n  \"startedAt\": \"2026-11-20T08:05:00Z\",\n  \"submittedAt\": null,\n  \"status\": \"in_progress\",\n  \"score\": null\n}"
+              "body": "{\n  \"data\": {\n    \"attemptId\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n    \"quizId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n    \"quizTitle\": \"Kuis Fisika Bab 2 & 3\",\n    \"startedAt\": \"2026-11-20T08:05:00Z\",\n    \"submittedAt\": null,\n    \"status\": \"in_progress\",\n    \"score\": null\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -7006,7 +7006,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"attemptId\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n      \"quizId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n      \"quizTitle\": \"Kuis Fisika Bab 2 & 3\",\n      \"startedAt\": \"2026-11-20T08:05:00Z\",\n      \"submittedAt\": \"2026-11-20T08:45:00Z\",\n      \"status\": \"submitted\",\n      \"score\": 90.0\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"attemptId\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n      \"quizId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n      \"quizTitle\": \"Kuis Fisika Bab 2 & 3\",\n      \"startedAt\": \"2026-11-20T08:05:00Z\",\n      \"submittedAt\": \"2026-11-20T08:45:00Z\",\n      \"status\": \"submitted\",\n      \"score\": 90.0\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -7095,7 +7095,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"attemptId\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n  \"quizId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n  \"quizTitle\": \"Kuis Fisika Bab 2 & 3\",\n  \"startedAt\": \"2026-11-20T08:05:00Z\",\n  \"submittedAt\": \"2026-11-20T08:45:00Z\",\n  \"status\": \"submitted\",\n  \"score\": 90.0,\n  \"essayPending\": false,\n  \"answers\": [\n    {\n      \"answerId\": \"11223344-5566-7788-99aa-bbccddeeff00\",\n      \"questionId\": 1,\n      \"userAnswer\": \"B\",\n      \"isCorrect\": true\n    }\n  ]\n}"
+              "body": "{\n  \"data\": {\n    \"attemptId\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n    \"quizId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n    \"quizTitle\": \"Kuis Fisika Bab 2 & 3\",\n    \"startedAt\": \"2026-11-20T08:05:00Z\",\n    \"submittedAt\": \"2026-11-20T08:45:00Z\",\n    \"status\": \"submitted\",\n    \"score\": 90.0,\n    \"essayPending\": false,\n    \"answers\": [\n      {\n        \"answerId\": \"11223344-5566-7788-99aa-bbccddeeff00\",\n        \"questionId\": 1,\n        \"userAnswer\": \"B\",\n        \"isCorrect\": true\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -7228,7 +7228,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"questionId\": 1,\n  \"userAnswer\": \"B\",\n  \"isCompleted\": true,\n  \"updatedAt\": \"2026-11-20T08:15:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"questionId\": 1,\n    \"userAnswer\": \"B\",\n    \"isCompleted\": true,\n    \"updatedAt\": \"2026-11-20T08:15:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -7331,7 +7331,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"attemptId\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n  \"quizId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n  \"quizTitle\": \"Kuis Fisika Bab 2 & 3\",\n  \"startedAt\": \"2026-11-20T08:05:00Z\",\n  \"submittedAt\": \"2026-11-20T08:45:00Z\",\n  \"status\": \"submitted\",\n  \"score\": 90.0,\n  \"essayPending\": false,\n  \"answers\": [\n    {\n      \"answerId\": \"11223344-5566-7788-99aa-bbccddeeff00\",\n      \"questionId\": 1,\n      \"userAnswer\": \"B\",\n      \"isCorrect\": true\n    }\n  ]\n}"
+              "body": "{\n  \"data\": {\n    \"attemptId\": \"e12f3a4b-5c6d-7e8f-901a-2b3c4d5e6f70\",\n    \"quizId\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n    \"quizTitle\": \"Kuis Fisika Bab 2 & 3\",\n    \"startedAt\": \"2026-11-20T08:05:00Z\",\n    \"submittedAt\": \"2026-11-20T08:45:00Z\",\n    \"status\": \"submitted\",\n    \"score\": 90.0,\n    \"essayPending\": false,\n    \"answers\": [\n      {\n        \"answerId\": \"11223344-5566-7788-99aa-bbccddeeff00\",\n        \"questionId\": 1,\n        \"userAnswer\": \"B\",\n        \"isCorrect\": true\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -7466,7 +7466,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"answerId\": \"11223344-5566-7788-99aa-bbccddeeff00\",\n  \"isCorrect\": true,\n  \"score\": 10.0,\n  \"gradedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"gradedAt\": \"2026-11-20T10:00:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"answerId\": \"11223344-5566-7788-99aa-bbccddeeff00\",\n    \"isCorrect\": true,\n    \"score\": 10.0,\n    \"gradedBy\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"gradedAt\": \"2026-11-20T10:00:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -7585,7 +7585,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"a34b5c6d-7e8f-901a-2b3c-4d5e6f708192\",\n      \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"type\": \"announcement\",\n      \"payload\": {\n        \"title\": \"Jadwal Ujian Tengah Semester\",\n        \"message\": \"Jadwal UTS telah diunggah ke portal akademik. Harap persiapkan diri dengan baik.\"\n      },\n      \"isRead\": false,\n      \"createdAt\": \"2026-11-15T08:00:00Z\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"pageSize\": 20\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"a34b5c6d-7e8f-901a-2b3c-4d5e6f708192\",\n      \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"type\": \"announcement\",\n      \"payload\": {\n        \"title\": \"Jadwal Ujian Tengah Semester\",\n        \"message\": \"Jadwal UTS telah diunggah ke portal akademik. Harap persiapkan diri dengan baik.\"\n      },\n      \"isRead\": false,\n      \"createdAt\": \"2026-11-15T08:00:00Z\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -7688,7 +7688,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"a34b5c6d-7e8f-901a-2b3c-4d5e6f708192\",\n  \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"type\": \"announcement\",\n  \"payload\": {\n    \"title\": \"Jadwal Ujian Tengah Semester\",\n    \"message\": \"Jadwal UTS telah diunggah ke portal akademik. Harap persiapkan diri dengan baik.\"\n  },\n  \"isRead\": false,\n  \"createdAt\": \"2026-11-15T08:00:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"a34b5c6d-7e8f-901a-2b3c-4d5e6f708192\",\n    \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"type\": \"announcement\",\n    \"payload\": {\n      \"title\": \"Jadwal Ujian Tengah Semester\",\n      \"message\": \"Jadwal UTS telah diunggah ke portal akademik. Harap persiapkan diri dengan baik.\"\n    },\n    \"isRead\": false,\n    \"createdAt\": \"2026-11-15T08:00:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -7791,7 +7791,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"a34b5c6d-7e8f-901a-2b3c-4d5e6f708192\",\n  \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n  \"type\": \"announcement\",\n  \"payload\": {\n    \"title\": \"Jadwal Ujian Tengah Semester\",\n    \"message\": \"Jadwal UTS telah diunggah ke portal akademik. Harap persiapkan diri dengan baik.\"\n  },\n  \"isRead\": true,\n  \"createdAt\": \"2026-11-15T08:00:00Z\"\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"a34b5c6d-7e8f-901a-2b3c-4d5e6f708192\",\n    \"userId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"type\": \"announcement\",\n    \"payload\": {\n      \"title\": \"Jadwal Ujian Tengah Semester\",\n      \"message\": \"Jadwal UTS telah diunggah ke portal akademik. Harap persiapkan diri dengan baik.\"\n    },\n    \"isRead\": true,\n    \"createdAt\": \"2026-11-15T08:00:00Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }
@@ -7872,7 +7872,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"matched\": true,\n  \"score\": 98.4,\n  \"externalUserId\": \"siswa-2024101001\",\n  \"message\": \"Identifikasi berhasil\"\n}"
+              "body": "{\n  \"data\": {\n    \"success\": true,\n    \"matched\": true,\n    \"score\": 98.4,\n    \"externalUserId\": \"siswa-2024101001\",\n    \"message\": \"Identifikasi berhasil\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             },
             {
               "name": "200 OK - No Match",
@@ -7914,7 +7914,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"matched\": false,\n  \"score\": 42.1,\n  \"externalUserId\": \"\",\n  \"message\": \"Sidik jari tidak dikenali\"\n}"
+              "body": "{\n  \"data\": {\n    \"success\": true,\n    \"matched\": false,\n    \"score\": 42.1,\n    \"externalUserId\": \"\",\n    \"message\": \"Sidik jari tidak dikenali\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -8007,7 +8007,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Pendaftaran sidik jari berhasil\",\n  \"externalUserId\": \"siswa-2024101001\"\n}"
+              "body": "{\n  \"data\": {\n    \"success\": true,\n    \"message\": \"Pendaftaran sidik jari berhasil\",\n    \"externalUserId\": \"siswa-2024101001\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -8100,7 +8100,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Pendaftaran sidik jari binary berhasil\",\n  \"externalUserId\": \"siswa-2024101001\"\n}"
+              "body": "{\n  \"data\": {\n    \"success\": true,\n    \"message\": \"Pendaftaran sidik jari binary berhasil\",\n    \"externalUserId\": \"siswa-2024101001\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -8175,7 +8175,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"externalUserId\": \"siswa-2024101001\",\n    \"score\": 95.2,\n    \"timestamp\": \"2026-11-15T07:05:12Z\"\n  }\n}"
+              "body": "{\n  \"data\": {\n    \"success\": true,\n    \"data\": {\n      \"externalUserId\": \"siswa-2024101001\",\n      \"score\": 95.2,\n      \"timestamp\": \"2026-11-15T07:05:12Z\"\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },
@@ -8250,7 +8250,7 @@
                 }
               ],
               "cookie": [],
-              "body": ": connected\n\ndata: {\"externalUserId\":\"siswa-2024101001\",\"score\":95.2,\"timestamp\":\"2026-11-15T07:05:12Z\"}\n\n: keepalive\n\n"
+              "body": "{\n  \"data\": \": connected\\n\\ndata: {\\\"externalUserId\\\":\\\"siswa-2024101001\\\",\\\"score\\\":95.2,\\\"timestamp\\\":\\\"2026-11-15T07:05:12Z\\\"}\\n\\n: keepalive\\n\\n\",\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         }

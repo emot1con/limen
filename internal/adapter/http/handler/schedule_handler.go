@@ -53,7 +53,7 @@ func (h *ScheduleHandler) ListSchedules(c *gin.Context) {
 	}
 	if len(days) > 0 {
 		if len(filter.DayOfWeeks) > 0 && !containsDay(days, filter.DayOfWeeks[0]) {
-			c.JSON(http.StatusOK, gin.H{"items": []gin.H{}, "total": 0, "page": page, "pageSize": size})
+			response.WriteList(c, []gin.H{}, page, size, 0)
 			return
 		}
 		if len(filter.DayOfWeeks) == 0 {
@@ -69,7 +69,7 @@ func (h *ScheduleHandler) ListSchedules(c *gin.Context) {
 	for i, item := range items {
 		out[i] = scheduleJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
@@ -110,7 +110,7 @@ func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, scheduleJSON(out))
+	response.WriteCreated(c, scheduleJSON(out))
 }
 
 func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
@@ -218,7 +218,7 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, scheduleJSON(out))
+	response.WriteOK(c, scheduleJSON(out))
 }
 
 func (h *ScheduleHandler) DeleteSchedule(c *gin.Context) {
@@ -230,7 +230,7 @@ func (h *ScheduleHandler) DeleteSchedule(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.Status(http.StatusNoContent)
+	response.WriteNoContent(c)
 }
 
 func scheduleDateDays(c *gin.Context) ([]int16, bool) {

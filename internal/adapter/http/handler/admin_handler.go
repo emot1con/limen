@@ -33,7 +33,7 @@ func (h *AdminHandler) GetSettings(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, settingsJSON(out))
+	response.WriteOK(c, settingsJSON(out))
 }
 
 func (h *AdminHandler) UpdateSettings(c *gin.Context) {
@@ -66,7 +66,7 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, settingsJSON(out))
+	response.WriteOK(c, settingsJSON(out))
 }
 
 func (h *AdminHandler) ListDevices(c *gin.Context) {
@@ -74,7 +74,7 @@ func (h *AdminHandler) ListDevices(c *gin.Context) {
 	if !ok {
 		return
 	}
-	
+
 	var isActive *bool
 	if isActiveStr := c.Query("isActive"); isActiveStr != "" {
 		if isActiveStr == "true" {
@@ -85,7 +85,7 @@ func (h *AdminHandler) ListDevices(c *gin.Context) {
 			isActive = &val
 		}
 	}
-	
+
 	out, err := h.devices.List(c.Request.Context(), page, pageSize, isActive)
 	if err != nil {
 		writeMappedError(c, err)
@@ -95,7 +95,7 @@ func (h *AdminHandler) ListDevices(c *gin.Context) {
 	for i, item := range out.Items {
 		items[i] = deviceJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": items, "total": out.Total, "page": out.Page, "pageSize": out.PageSize})
+	response.WriteList(c, items, out.Page, out.PageSize, out.Total)
 }
 
 func (h *AdminHandler) CreateDevice(c *gin.Context) {
@@ -120,7 +120,7 @@ func (h *AdminHandler) CreateDevice(c *gin.Context) {
 	}
 	body := deviceJSON(out.Device)
 	body["deviceKey"] = out.DeviceKey
-	c.JSON(http.StatusCreated, body)
+	response.WriteCreated(c, body)
 }
 
 func (h *AdminHandler) GetDevice(c *gin.Context) {
@@ -133,7 +133,7 @@ func (h *AdminHandler) GetDevice(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, deviceJSON(out))
+	response.WriteOK(c, deviceJSON(out))
 }
 
 func (h *AdminHandler) UpdateDevice(c *gin.Context) {
@@ -160,7 +160,7 @@ func (h *AdminHandler) UpdateDevice(c *gin.Context) {
 		writeMappedError(c, err, "serial")
 		return
 	}
-	c.JSON(http.StatusOK, deviceJSON(out))
+	response.WriteOK(c, deviceJSON(out))
 }
 
 func (h *AdminHandler) DeleteDevice(c *gin.Context) {
@@ -172,7 +172,7 @@ func (h *AdminHandler) DeleteDevice(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.Status(http.StatusNoContent)
+	response.WriteNoContent(c)
 }
 
 func (h *AdminHandler) ListUsers(c *gin.Context) {
@@ -202,7 +202,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	for i, item := range out.Items {
 		items[i] = userJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": items, "total": out.Total, "page": out.Page, "pageSize": out.PageSize})
+	response.WriteList(c, items, out.Page, out.PageSize, out.Total)
 }
 
 func (h *AdminHandler) CreateUser(c *gin.Context) {
@@ -226,7 +226,7 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		writeMappedError(c, err, "email")
 		return
 	}
-	c.JSON(http.StatusCreated, userJSON(out))
+	response.WriteCreated(c, userJSON(out))
 }
 
 func (h *AdminHandler) GetUser(c *gin.Context) {
@@ -239,7 +239,7 @@ func (h *AdminHandler) GetUser(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, userJSON(out))
+	response.WriteOK(c, userJSON(out))
 }
 
 func (h *AdminHandler) DeleteUser(c *gin.Context) {
@@ -251,7 +251,7 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.Status(http.StatusNoContent)
+	response.WriteNoContent(c)
 }
 
 func (h *AdminHandler) UpdateUser(c *gin.Context) {
@@ -298,7 +298,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		writeMappedError(c, err, "email")
 		return
 	}
-	c.JSON(http.StatusOK, userJSON(out))
+	response.WriteOK(c, userJSON(out))
 }
 
 func settingsJSON(out settingsuc.Output) gin.H {

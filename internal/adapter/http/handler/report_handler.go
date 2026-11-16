@@ -78,7 +78,7 @@ func (h *ReportsHandler) Attendance(c *gin.Context) {
 	for i, item := range items {
 		out[i] = attendanceSummaryJSON(item, groupBy)
 	}
-	c.JSON(http.StatusOK, gin.H{"groupBy": string(groupBy), "items": out})
+	response.WriteOK(c, gin.H{"groupBy": string(groupBy), "items": out})
 }
 
 func (h *ReportsHandler) Grades(c *gin.Context) {
@@ -102,7 +102,7 @@ func (h *ReportsHandler) Grades(c *gin.Context) {
 	for i, item := range items {
 		out[i] = gradeSummaryJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *ReportsHandler) ReportCard(c *gin.Context) {
@@ -121,7 +121,7 @@ func (h *ReportsHandler) ReportCard(c *gin.Context) {
 	for i, item := range items {
 		subjects[i] = gin.H{"subjectId": item.SubjectID, "subjectName": item.SubjectName, "score": item.Score, "kkm": item.KKM}
 	}
-	c.JSON(http.StatusOK, gin.H{"studentUserId": studentID, "period": period, "subjects": subjects})
+	response.WriteOK(c, gin.H{"studentUserId": studentID, "period": period, "subjects": subjects})
 }
 
 func parseAttendanceGroupBy(raw string) (reportsdomain.AttendanceGroupBy, bool) {

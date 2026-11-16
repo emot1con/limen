@@ -48,7 +48,7 @@ func (h *CounselingHandler) ListNotes(c *gin.Context) {
 	for i, item := range items {
 		out[i] = counselingNoteJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *CounselingHandler) CreateNote(c *gin.Context) {
@@ -81,7 +81,7 @@ func (h *CounselingHandler) CreateNote(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, counselingNoteJSON(item))
+	response.WriteCreated(c, counselingNoteJSON(item))
 }
 
 func (h *CounselingHandler) UpdateNote(c *gin.Context) {
@@ -106,7 +106,7 @@ func (h *CounselingHandler) UpdateNote(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, counselingNoteJSON(item))
+	response.WriteOK(c, counselingNoteJSON(item))
 }
 
 func (h *CounselingHandler) AddFollowup(c *gin.Context) {
@@ -136,7 +136,7 @@ func (h *CounselingHandler) AddFollowup(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, followupJSON(item))
+	response.WriteCreated(c, followupJSON(item))
 }
 
 func parseNoteSort(raw string) (counselingdomain.CounselingNoteSort, bool) {

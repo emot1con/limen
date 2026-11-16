@@ -40,7 +40,7 @@ func (h *AssessmentHandler) List(c *gin.Context) {
 	for i, item := range items {
 		out[i] = assessmentJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AssessmentHandler) Create(c *gin.Context) {
@@ -85,7 +85,7 @@ func (h *AssessmentHandler) Create(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, assessmentJSON(item))
+	response.WriteCreated(c, assessmentJSON(item))
 }
 
 func (h *AssessmentHandler) ListScores(c *gin.Context) {
@@ -107,7 +107,7 @@ func (h *AssessmentHandler) ListScores(c *gin.Context) {
 	for i, item := range items {
 		out[i] = scoreJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AssessmentHandler) UpsertScore(c *gin.Context) {
@@ -138,7 +138,7 @@ func (h *AssessmentHandler) UpsertScore(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, scoreJSON(item))
+	response.WriteOK(c, scoreJSON(item))
 }
 
 func assessmentJSON(item assessment.Assessment) gin.H {

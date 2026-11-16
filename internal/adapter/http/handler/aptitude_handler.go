@@ -33,7 +33,7 @@ func (h *AptitudeHandler) ListAptitudeResults(c *gin.Context) {
 	for i, item := range items {
 		out[i] = aptitudeResultJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"studentUserId": studentID, "results": out})
+	response.WriteOK(c, gin.H{"studentUserId": studentID, "results": out})
 }
 
 func (h *AptitudeHandler) CreateTargetMajor(c *gin.Context) {
@@ -58,7 +58,7 @@ func (h *AptitudeHandler) CreateTargetMajor(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, targetMajorJSON(item))
+	response.WriteCreated(c, targetMajorJSON(item))
 }
 
 func (h *AptitudeHandler) ListPassingGrades(c *gin.Context) {
@@ -84,7 +84,7 @@ func (h *AptitudeHandler) ListPassingGrades(c *gin.Context) {
 	for i, item := range items {
 		out[i] = passingGradeJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AptitudeHandler) GetPassingGrade(c *gin.Context) {
@@ -98,7 +98,7 @@ func (h *AptitudeHandler) GetPassingGrade(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, passingGradeJSON(item))
+	response.WriteOK(c, passingGradeJSON(item))
 }
 
 func aptitudeResultJSON(item counselingdomain.AptitudeResult) gin.H {

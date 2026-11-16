@@ -80,7 +80,7 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, quizDetailJSON(detail))
+	response.WriteCreated(c, quizDetailJSON(detail))
 }
 
 func parseTimePtr(raw *string, field string, fields *[]response.FieldError) (*time.Time, bool) {
@@ -128,7 +128,7 @@ func (h *QuizHandler) ListQuizzes(c *gin.Context) {
 	for i, item := range items {
 		out[i] = quizSummaryJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *QuizHandler) GetQuiz(c *gin.Context) {
@@ -147,7 +147,7 @@ func (h *QuizHandler) GetQuiz(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, quizDetailJSON(detail))
+	response.WriteOK(c, quizDetailJSON(detail))
 }
 
 func (h *QuizHandler) StartAttempt(c *gin.Context) {
@@ -166,7 +166,7 @@ func (h *QuizHandler) StartAttempt(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, attemptJSON(attempt))
+	response.WriteCreated(c, attemptJSON(attempt))
 }
 
 func (h *QuizHandler) SaveAnswer(c *gin.Context) {
@@ -195,7 +195,7 @@ func (h *QuizHandler) SaveAnswer(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"questionId": result.QuestionID, "userAnswer": rawJSON(result.UserAnswer), "isCompleted": result.IsCompleted, "updatedAt": result.UpdatedAt})
+	response.WriteOK(c, gin.H{"questionId": result.QuestionID, "userAnswer": rawJSON(result.UserAnswer), "isCompleted": result.IsCompleted, "updatedAt": result.UpdatedAt})
 }
 
 func (h *QuizHandler) SubmitAttempt(c *gin.Context) {
@@ -209,7 +209,7 @@ func (h *QuizHandler) SubmitAttempt(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, attemptResultJSON(result))
+	response.WriteOK(c, attemptResultJSON(result))
 }
 
 func (h *QuizHandler) ListAttempts(c *gin.Context) {
@@ -245,7 +245,7 @@ func (h *QuizHandler) ListAttempts(c *gin.Context) {
 	for i, item := range items {
 		out[i] = attemptJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *QuizHandler) GetAttempt(c *gin.Context) {
@@ -259,7 +259,7 @@ func (h *QuizHandler) GetAttempt(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, attemptResultJSON(result))
+	response.WriteOK(c, attemptResultJSON(result))
 }
 
 func (h *QuizHandler) GradeAnswer(c *gin.Context) {
@@ -292,7 +292,7 @@ func (h *QuizHandler) GradeAnswer(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"answerId": result.AnswerID, "isCorrect": result.IsCorrect, "score": result.Score, "gradedBy": result.GradedBy, "gradedAt": result.GradedAt})
+	response.WriteOK(c, gin.H{"answerId": result.AnswerID, "isCorrect": result.IsCorrect, "score": result.Score, "gradedBy": result.GradedBy, "gradedAt": result.GradedAt})
 }
 
 func validQuizStatus(status quizdomain.QuizStatus) bool {

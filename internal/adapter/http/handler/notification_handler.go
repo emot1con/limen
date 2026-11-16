@@ -45,7 +45,7 @@ func (h *NotificationHandler) Create(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, notificationJSON(out))
+	response.WriteCreated(c, notificationJSON(out))
 }
 
 func (h *NotificationHandler) List(c *gin.Context) {
@@ -73,7 +73,7 @@ func (h *NotificationHandler) List(c *gin.Context) {
 	for i, item := range out.Items {
 		items[i] = notificationJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": items, "total": out.Total, "page": out.Page, "pageSize": out.PageSize})
+	response.WriteList(c, items, out.Page, out.PageSize, out.Total)
 }
 
 func (h *NotificationHandler) MarkRead(c *gin.Context) {
@@ -95,7 +95,7 @@ func (h *NotificationHandler) MarkRead(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, notificationJSON(out))
+	response.WriteOK(c, notificationJSON(out))
 }
 
 func notificationJSON(item notificationuc.Notification) gin.H {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"limen/internal/adapter/http/response"
 	"limen/internal/domain"
 	fingerprintdomain "limen/internal/domain/fingerprint"
 	fingerprintuc "limen/internal/usecase/fingerprint"
@@ -86,7 +87,7 @@ func (h *FingerprintHandler) EnrollRaw(c *gin.Context) {
 
 func (h *FingerprintHandler) Latest(c *gin.Context) {
 	result, _ := h.fingerprints.Latest(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": result})
+	response.WriteOK(c, result)
 }
 
 func (h *FingerprintHandler) Stream(c *gin.Context) {
@@ -160,31 +161,36 @@ func validFingerprintSize(c *gin.Context, size int) bool {
 	return true
 }
 
-func writeGatewayResponse(c *gin.Context, response fingerprintdomain.Response, err error) {
+func writeGatewayResponse(c *gin.Context, upstream fingerprintdomain.Response, err error) {
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalid) {
 			writeGatewayMessage(c, http.StatusBadRequest, "Permintaan tidak valid.")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Tidak dapat terhubung ke fingerprint service.", "error": err.Error()})
+		response.TraceError(c, "fingerprint.gateway", err)
+		response.WriteError(c, http.StatusBadGateway, "UPSTREAM_UNAVAILABLE", "Tidak dapat terhubung ke fingerprint service.")
 		return
 	}
-	if response.Status == 0 {
-		response.Status = http.StatusOK
+	if upstream.Status == 0 {
+		upstream.Status = http.StatusOK
 	}
-	if response.Body == nil {
-		c.Status(response.Status)
+	if upstream.Status >= http.StatusBadRequest {
+		response.WriteError(c, upstream.Status, "UPSTREAM_ERROR", "Fingerprint service menolak permintaan.")
 		return
 	}
-	c.JSON(response.Status, response.Body)
+	if upstream.Body == nil {
+		response.WriteNoContent(c)
+		return
+	}
+	response.WriteOK(c, upstream.Body)
 }
 
 func writeGatewayMessage(c *gin.Context, status int, message string) {
-	c.JSON(status, gin.H{"success": false, "message": message})
+	response.WriteError(c, status, "VALIDATION_ERROR", message)
 }
 
 func writeRequestTooLarge(c *gin.Context) {
-	c.JSON(http.StatusRequestEntityTooLarge, gin.H{"success": false, "error": gin.H{"code": "REQUEST_TOO_LARGE", "message": "Request body is too large."}})
+	response.WriteError(c, http.StatusRequestEntityTooLarge, "REQUEST_TOO_LARGE", "Request body is too large.")
 }
 
 func isBodyTooLarge(err error) bool {

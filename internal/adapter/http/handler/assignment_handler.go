@@ -46,7 +46,7 @@ func (h *AssignmentHandler) List(c *gin.Context) {
 	for i, item := range items {
 		out[i] = assignmentTaskJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AssignmentHandler) Create(c *gin.Context) {
@@ -93,7 +93,7 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, assignmentTaskJSON(item))
+	response.WriteCreated(c, assignmentTaskJSON(item))
 }
 
 func (h *AssignmentHandler) ListSubmissions(c *gin.Context) {
@@ -115,7 +115,7 @@ func (h *AssignmentHandler) ListSubmissions(c *gin.Context) {
 	for i, item := range items {
 		out[i] = submissionJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AssignmentHandler) GradeSubmission(c *gin.Context) {
@@ -146,7 +146,7 @@ func (h *AssignmentHandler) GradeSubmission(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, submissionJSON(item))
+	response.WriteOK(c, submissionJSON(item))
 }
 
 func parseAssignmentSort(raw string) (assignmentdomain.AssignmentSort, bool) {

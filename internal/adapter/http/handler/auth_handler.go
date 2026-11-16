@@ -56,7 +56,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	const cookieMaxAge = 12 * 365 * 24 * 3600 // 12 tahun dalam detik
 	c.SetCookie("session", output.SessionToken, cookieMaxAge, "/", "", true, true)
 	c.SetCookie("csrf", csrfToken, cookieMaxAge, "/", "", true, false)
-	c.JSON(http.StatusOK, gin.H{
+	response.WriteOK(c, gin.H{
 		"user": gin.H{
 			"id":       output.UserID,
 			"email":    output.Email,
@@ -81,7 +81,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie("session", "", -1, "/", "", true, true)
 	c.SetCookie("csrf", "", -1, "/", "", true, false)
-	c.Status(http.StatusNoContent)
+	response.WriteNoContent(c)
 }
 
 func (h *AuthHandler) Me(c *gin.Context) {
@@ -96,7 +96,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
+	response.WriteOK(c, gin.H{
 		"id":       output.UserID,
 		"email":    output.Email,
 		"fullName": output.FullName,
@@ -131,7 +131,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
 	}
-	c.Status(http.StatusNoContent)
+	response.WriteNoContent(c)
 }
 
 func deriveCSRF(sessionToken string) string {

@@ -11,8 +11,8 @@ import (
 	postgresassessment "limen/internal/adapter/persistence/postgres/assessment"
 	postgresassignment "limen/internal/adapter/persistence/postgres/assignment"
 	postgresattendance "limen/internal/adapter/persistence/postgres/attendance"
-	postgrescounseling "limen/internal/adapter/persistence/postgres/counseling"
 	postgresaudit "limen/internal/adapter/persistence/postgres/audit"
+	postgrescounseling "limen/internal/adapter/persistence/postgres/counseling"
 	postgresfingerprint "limen/internal/adapter/persistence/postgres/fingerprint"
 	postgresquiz "limen/internal/adapter/persistence/postgres/quiz"
 	postgresreports "limen/internal/adapter/persistence/postgres/reports"
@@ -39,7 +39,7 @@ import (
 
 func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache, cfg *config.Config, logger *logrus.Logger, fingerprintGateway fingerprintdomain.Gateway) *gin.Engine {
 	router := gin.New()
-	router.Use(gin.Recovery(), middleware.RequestLogger(logger), middleware.CORS(cfg.CorsAllowedOrigins))
+	router.Use(middleware.RequestID(), gin.Recovery(), middleware.RequestLogger(logger), middleware.CORS(cfg.CorsAllowedOrigins))
 
 	userRepo := postgresuser.NewUserRepository(postgresDB)
 	userRoleRepo := postgresuser.NewUserRoleRepository(postgresDB)

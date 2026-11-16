@@ -35,7 +35,7 @@ func (h *AcademicHandler) ListClasses(c *gin.Context) {
 	for i, item := range items {
 		out[i] = classJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AcademicHandler) CreateClass(c *gin.Context) {
@@ -62,7 +62,7 @@ func (h *AcademicHandler) CreateClass(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, classJSON(academicdomain.ClassDetail{Class: out}))
+	response.WriteCreated(c, classJSON(academicdomain.ClassDetail{Class: out}))
 }
 
 func (h *AcademicHandler) UpdateClass(c *gin.Context) {
@@ -94,7 +94,7 @@ func (h *AcademicHandler) UpdateClass(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, classJSON(academicdomain.ClassDetail{Class: out}))
+	response.WriteOK(c, classJSON(academicdomain.ClassDetail{Class: out}))
 }
 
 func (h *AcademicHandler) ListSubjects(c *gin.Context) {
@@ -111,7 +111,7 @@ func (h *AcademicHandler) ListSubjects(c *gin.Context) {
 	for i, item := range items {
 		out[i] = subjectJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AcademicHandler) CreateSubject(c *gin.Context) {
@@ -138,7 +138,7 @@ func (h *AcademicHandler) CreateSubject(c *gin.Context) {
 		writeMappedError(c, err, "code")
 		return
 	}
-	c.JSON(http.StatusCreated, subjectJSON(out))
+	response.WriteCreated(c, subjectJSON(out))
 }
 
 func (h *AcademicHandler) ListStudents(c *gin.Context) {
@@ -165,7 +165,7 @@ func (h *AcademicHandler) ListStudents(c *gin.Context) {
 	for i, item := range items {
 		out[i] = studentJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AcademicHandler) GetStudent(c *gin.Context) {
@@ -178,7 +178,7 @@ func (h *AcademicHandler) GetStudent(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, studentJSON(out))
+	response.WriteOK(c, studentJSON(out))
 }
 
 func (h *AcademicHandler) UpdateStudent(c *gin.Context) {
@@ -218,7 +218,7 @@ func (h *AcademicHandler) UpdateStudent(c *gin.Context) {
 		writeMappedError(c, err, "nis")
 		return
 	}
-	c.JSON(http.StatusOK, studentJSON(out))
+	response.WriteOK(c, studentJSON(out))
 }
 
 func (h *AcademicHandler) ListAssignments(c *gin.Context) {
@@ -241,7 +241,7 @@ func (h *AcademicHandler) ListAssignments(c *gin.Context) {
 	for i, item := range items {
 		out[i] = assignmentJSON(item)
 	}
-	c.JSON(http.StatusOK, gin.H{"items": out, "total": total, "page": page, "pageSize": size})
+	response.WriteList(c, out, page, size, total)
 }
 
 func (h *AcademicHandler) CreateAssignment(c *gin.Context) {
@@ -268,7 +268,7 @@ func (h *AcademicHandler) CreateAssignment(c *gin.Context) {
 		writeMappedError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, assignmentJSON(out))
+	response.WriteCreated(c, assignmentJSON(out))
 }
 
 func bindAcademic(c *gin.Context, target interface{}) bool {
