@@ -1,6 +1,7 @@
-package handler
+package notification
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"encoding/json"
 	"net/http"
 
@@ -42,7 +43,7 @@ func (h *NotificationHandler) Create(c *gin.Context) {
 		Payload: req.Payload,
 	})
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, notificationJSON(out))
@@ -54,7 +55,7 @@ func (h *NotificationHandler) List(c *gin.Context) {
 		response.WriteError(c, http.StatusUnauthorized, "UNAUTHENTICATED", "authentication required")
 		return
 	}
-	page, pageSize, ok := pageQuery(c)
+	page, pageSize, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
@@ -66,7 +67,7 @@ func (h *NotificationHandler) List(c *gin.Context) {
 		PageSize:   pageSize,
 	})
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	items := make([]gin.H, len(out.Items))
@@ -83,7 +84,7 @@ func (h *NotificationHandler) MarkRead(c *gin.Context) {
 		return
 	}
 	notificationID := c.Param("notificationId")
-	if !ValidUUID(notificationID) {
+	if !common.ValidUUID(notificationID) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "notificationId", Message: "must be valid UUID"})
 		return
 	}
@@ -92,7 +93,7 @@ func (h *NotificationHandler) MarkRead(c *gin.Context) {
 		UserID:         userID,
 	})
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, notificationJSON(out))

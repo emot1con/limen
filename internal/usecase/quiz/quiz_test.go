@@ -296,4 +296,105 @@ func TestGradeAnswerRecomputesAttempt(t *testing.T) {
 	}
 }
 
+func TestGradeObjectiveQuestionTypes(t *testing.T) {
+	cases := []struct {
+		name   string
+		typeOf quizdomain.QuestionType
+		key    json.RawMessage
+		answer json.RawMessage
+		want   bool
+	}{
+		{name: "multiple choice correct", typeOf: quizdomain.QuestionTypeMultipleChoice, key: json.RawMessage(`{"correct":"A"}`), answer: json.RawMessage(`"A"`), want: true},
+		{name: "multiple choice incorrect", typeOf: quizdomain.QuestionTypeMultipleChoice, key: json.RawMessage(`{"correct":"A"}`), answer: json.RawMessage(`"B"`)},
+		{name: "multiple select order independent", typeOf: quizdomain.QuestionTypeMultipleSelect, key: json.RawMessage(`{"correct":["A","B"]}`), answer: json.RawMessage(`["B","A"]`), want: true},
+		{name: "multiple select duplicate rejected", typeOf: quizdomain.QuestionTypeMultipleSelect, key: json.RawMessage(`{"correct":["A","B"]}`), answer: json.RawMessage(`["A","A"]`)},
+		{name: "true false correct", typeOf: quizdomain.QuestionTypeTrueFalse, key: json.RawMessage(`{"correct":false}`), answer: json.RawMessage(`false`), want: true},
+		{name: "range inclusive boundaries", typeOf: quizdomain.QuestionTypeRange, key: json.RawMessage(`{"min":2,"max":5}`), answer: json.RawMessage(`5`), want: true},
+		{name: "range outside", typeOf: quizdomain.QuestionTypeRange, key: json.RawMessage(`{"min":2,"max":5}`), answer: json.RawMessage(`6`)},
+		{name: "range one-sided", typeOf: quizdomain.QuestionTypeRange, key: json.RawMessage(`{"min":2}`), answer: json.RawMessage(`3`), want: true},
+		{name: "essay unsupported", typeOf: quizdomain.QuestionTypeEssay, key: json.RawMessage(`{}`), answer: json.RawMessage(`"answer"`)},
+		{name: "empty answer", typeOf: quizdomain.QuestionTypeMultipleChoice, key: json.RawMessage(`{"correct":"A"}`), answer: nil},
+		{name: "null answer", typeOf: quizdomain.QuestionTypeMultipleChoice, key: json.RawMessage(`{"correct":"A"}`), answer: json.RawMessage(`null`)},
+		{name: "malformed JSON", typeOf: quizdomain.QuestionTypeTrueFalse, key: json.RawMessage(`{`), answer: json.RawMessage(`true`)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := gradeObjective(tc.typeOf, tc.key, tc.answer); got != tc.want {
+				t.Fatalf("gradeObjective() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestResolveGrade(t *testing.T) {
+	trueValue, falseValue := true, false
+	zero, partial, over := 0.0, 62.5, 101.0
+	cases := []struct {
+		name        string
+		typeOf      quizdomain.QuestionType
+		input       GradeInput
+		wantCorrect *bool
+		wantScore   *float64
+		wantErr     error
+	}{
+		{name: "objective from correctness", typeOf: quizdomain.QuestionTypeMultipleChoice, input: GradeInput{IsCorrect: &trueValue}, wantCorrect: &trueValue, wantScore: floatPtr(100)},
+		{name: "objective correctness overrides score", typeOf: quizdomain.QuestionTypeTrueFalse, input: GradeInput{IsCorrect: &falseValue, Score: &partial}, wantCorrect: &falseValue, wantScore: floatPtr(0)},
+		{name: "objective derives correctness from positive score", typeOf: quizdomain.QuestionTypeMultipleSelect, input: GradeInput{Score: &partial}, wantCorrect: &trueValue, wantScore: floatPtr(100)},
+		{name: "objective rejects empty grade", typeOf: quizdomain.QuestionTypeMultipleChoice, input: GradeInput{}, wantErr: domain.ErrInvalid},
+		{name: "essay partial score", typeOf: quizdomain.QuestionTypeEssay, input: GradeInput{Score: &partial}, wantCorrect: &trueValue, wantScore: &partial},
+		{name: "essay explicit incorrect and score", typeOf: quizdomain.QuestionTypeEssay, input: GradeInput{IsCorrect: &falseValue, Score: &partial}, wantCorrect: &falseValue, wantScore: &partial},
+		{name: "essay derives score from correctness", typeOf: quizdomain.QuestionTypeEssay, input: GradeInput{IsCorrect: &trueValue}, wantCorrect: &trueValue, wantScore: floatPtr(100)},
+		{name: "essay zero score", typeOf: quizdomain.QuestionTypeEssay, input: GradeInput{Score: &zero}, wantCorrect: &falseValue, wantScore: &zero},
+		{name: "essay rejects missing grade", typeOf: quizdomain.QuestionTypeEssay, input: GradeInput{}, wantErr: domain.ErrInvalid},
+		{name: "essay rejects score above maximum", typeOf: quizdomain.QuestionTypeEssay, input: GradeInput{Score: &over}, wantErr: domain.ErrInvalid},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			correct, score, err := resolveGrade(tc.typeOf, tc.input)
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("resolveGrade() error = %v, want %v", err, tc.wantErr)
+			}
+			if tc.wantErr != nil {
+				return
+			}
+			if correct == nil || *correct != *tc.wantCorrect {
+				t.Fatalf("correct = %v, want %v", correct, *tc.wantCorrect)
+			}
+			if score == nil || *score != *tc.wantScore {
+				t.Fatalf("score = %v, want %v", score, *tc.wantScore)
+			}
+		})
+	}
+}
+
+func floatPtr(value float64) *float64 { return &value }
+
+func TestGetAttemptBuildsSortedResult(t *testing.T) {
+	uc, quizzes, questions, quizQuestions, attempts, answers, _ := newQuizUseCase()
+	quizzes.quizzes["quiz-1"] = quizdomain.Quiz{ID: "quiz-1", Title: "Final Quiz"}
+	questions.questions["q-1"] = quizdomain.Question{ID: "q-1", Type: quizdomain.QuestionTypeMultipleChoice}
+	questions.questions["q-2"] = quizdomain.Question{ID: "q-2", Type: quizdomain.QuestionTypeEssay}
+	quizQuestions.items = []quizdomain.QuizQuestion{
+		{QuizID: "quiz-1", QuestionID: "q-1", QuestionNumber: 1},
+		{QuizID: "quiz-1", QuestionID: "q-2", QuestionNumber: 2},
+	}
+	now := time.Now()
+	score := 50.0
+	correct := true
+	attempts.items["attempt-1"] = quizdomain.QuizAttempt{ID: "attempt-1", QuizID: "quiz-1", StartedAt: now, Status: quizdomain.QuizAttemptStatusSubmitted, Score: &score}
+	answers.items["attempt-1/q-2"] = quizdomain.QuizAnswer{ID: "answer-2", AttemptID: "attempt-1", QuestionID: "q-2", Answer: json.RawMessage(`"essay"`)}
+	answers.items["attempt-1/q-1"] = quizdomain.QuizAnswer{ID: "answer-1", AttemptID: "attempt-1", QuestionID: "q-1", Answer: json.RawMessage(`"A"`), IsCorrect: &correct}
+
+	result, err := uc.GetAttempt(context.Background(), "attempt-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.QuizTitle != "Final Quiz" || result.AttemptID != "attempt-1" || !result.EssayPending || len(result.Answers) != 2 {
+		t.Fatalf("unexpected built result: %#v", result)
+	}
+	if result.Answers[0].QuestionID != 1 || result.Answers[0].AnswerID != "answer-1" || result.Answers[1].QuestionID != 2 || result.Answers[1].AnswerID != "answer-2" {
+		t.Fatalf("answers not ordered by question number: %#v", result.Answers)
+	}
+}
+
 var _ cache.Cache = (*quizCacheMock)(nil)

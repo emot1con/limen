@@ -1,6 +1,7 @@
-package handler
+package assessment
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"math"
 	"net/http"
 	"strings"
@@ -20,20 +21,20 @@ func NewAssessmentHandler(assessments *assessmentuc.UseCase) *AssessmentHandler 
 }
 
 func (h *AssessmentHandler) List(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	filter := assessment.AssessmentFilter{ClassID: c.Query("classId"), SubjectID: c.Query("subjectId"), Kind: strings.TrimSpace(c.Query("kind")), Period: strings.TrimSpace(c.Query("period"))}
 	for key, value := range map[string]string{"classId": filter.ClassID, "subjectId": filter.SubjectID} {
-		if value != "" && !ValidUUID(value) {
-			uuidError(c, key)
+		if value != "" && !common.ValidUUID(value) {
+			common.UUIDError(c, key)
 			return
 		}
 	}
 	items, total, err := h.assessments.List(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -56,10 +57,10 @@ func (h *AssessmentHandler) Create(c *gin.Context) {
 		return
 	}
 	var fields []response.FieldError
-	if !ValidUUID(req.ClassID) {
+	if !common.ValidUUID(req.ClassID) {
 		fields = append(fields, response.FieldError{Field: "classId", Message: "must be a UUID"})
 	}
-	if !ValidUUID(req.SubjectID) {
+	if !common.ValidUUID(req.SubjectID) {
 		fields = append(fields, response.FieldError{Field: "subjectId", Message: "must be a UUID"})
 	}
 	if strings.TrimSpace(req.Kind) == "" {
@@ -77,12 +78,12 @@ func (h *AssessmentHandler) Create(c *gin.Context) {
 	}
 	teacherID, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	item, err := h.assessments.Create(c.Request.Context(), assessmentuc.CreateInput{ClassID: req.ClassID, SubjectID: req.SubjectID, Kind: req.Kind, Period: req.Period, KKM: req.KKM, TeacherUserID: teacherID})
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, assessmentJSON(item))
@@ -90,17 +91,17 @@ func (h *AssessmentHandler) Create(c *gin.Context) {
 
 func (h *AssessmentHandler) ListScores(c *gin.Context) {
 	assessmentID := c.Param("assessmentId")
-	if !ValidUUID(assessmentID) {
-		uuidError(c, "assessmentId")
+	if !common.ValidUUID(assessmentID) {
+		common.UUIDError(c, "assessmentId")
 		return
 	}
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	items, total, err := h.assessments.ListScores(c.Request.Context(), assessmentID, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -112,12 +113,12 @@ func (h *AssessmentHandler) ListScores(c *gin.Context) {
 
 func (h *AssessmentHandler) UpsertScore(c *gin.Context) {
 	assessmentID, studentID := c.Param("assessmentId"), c.Param("studentUserId")
-	if !ValidUUID(assessmentID) {
-		uuidError(c, "assessmentId")
+	if !common.ValidUUID(assessmentID) {
+		common.UUIDError(c, "assessmentId")
 		return
 	}
-	if !ValidUUID(studentID) {
-		uuidError(c, "studentUserId")
+	if !common.ValidUUID(studentID) {
+		common.UUIDError(c, "studentUserId")
 		return
 	}
 	var req struct {
@@ -129,13 +130,13 @@ func (h *AssessmentHandler) UpsertScore(c *gin.Context) {
 	}
 	actor, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 
 	item, err := h.assessments.UpsertScore(c.Request.Context(), assessmentID, studentID, actor, *req.Score)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, scoreJSON(item))

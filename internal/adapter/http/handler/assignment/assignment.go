@@ -1,6 +1,7 @@
-package handler
+package assignment
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"math"
 	"net/http"
 	"strings"
@@ -21,13 +22,13 @@ func NewAssignmentHandler(assignments *assignmentuc.UseCase) *AssignmentHandler 
 }
 
 func (h *AssignmentHandler) List(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	for _, key := range []string{"classId", "subjectId", "teacherUserId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
-			uuidError(c, key)
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
+			common.UUIDError(c, key)
 			return
 		}
 	}
@@ -39,7 +40,7 @@ func (h *AssignmentHandler) List(c *gin.Context) {
 	filter := assignmentdomain.AssignmentFilter{ClassID: c.Query("classId"), SubjectID: c.Query("subjectId"), TeacherUserID: c.Query("teacherUserId"), Sort: sort}
 	items, total, err := h.assignments.List(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -58,14 +59,14 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 		DueAt       string  `json:"dueAt"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	var fields []response.FieldError
-	if !ValidUUID(req.ClassID) {
+	if !common.ValidUUID(req.ClassID) {
 		fields = append(fields, response.FieldError{Field: "classId", Message: "must be a UUID"})
 	}
-	if !ValidUUID(req.SubjectID) {
+	if !common.ValidUUID(req.SubjectID) {
 		fields = append(fields, response.FieldError{Field: "subjectId", Message: "must be a UUID"})
 	}
 	if strings.TrimSpace(req.Title) == "" {
@@ -85,12 +86,12 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 	}
 	teacherID, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	item, err := h.assignments.Create(c.Request.Context(), assignmentuc.CreateInput{ClassID: req.ClassID, SubjectID: req.SubjectID, TeacherUserID: teacherID, Title: req.Title, Description: req.Description, DueAt: dueAt})
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, assignmentTaskJSON(item))
@@ -98,17 +99,17 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 
 func (h *AssignmentHandler) ListSubmissions(c *gin.Context) {
 	assignmentID := c.Param("assignmentId")
-	if !ValidUUID(assignmentID) {
-		uuidError(c, "assignmentId")
+	if !common.ValidUUID(assignmentID) {
+		common.UUIDError(c, "assignmentId")
 		return
 	}
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	items, total, err := h.assignments.ListSubmissions(c.Request.Context(), assignmentID, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -120,12 +121,12 @@ func (h *AssignmentHandler) ListSubmissions(c *gin.Context) {
 
 func (h *AssignmentHandler) GradeSubmission(c *gin.Context) {
 	assignmentID, studentID := c.Param("assignmentId"), c.Param("studentUserId")
-	if !ValidUUID(assignmentID) {
-		uuidError(c, "assignmentId")
+	if !common.ValidUUID(assignmentID) {
+		common.UUIDError(c, "assignmentId")
 		return
 	}
-	if !ValidUUID(studentID) {
-		uuidError(c, "studentUserId")
+	if !common.ValidUUID(studentID) {
+		common.UUIDError(c, "studentUserId")
 		return
 	}
 	var req struct {
@@ -138,12 +139,12 @@ func (h *AssignmentHandler) GradeSubmission(c *gin.Context) {
 	}
 	actor, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	item, err := h.assignments.GradeSubmission(c.Request.Context(), assignmentID, studentID, actor, *req.Score, req.Note)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, submissionJSON(item))

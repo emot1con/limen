@@ -1,6 +1,7 @@
-package handler
+package aptitude
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,13 +21,13 @@ func NewAptitudeHandler(aptitudes *aptitudeuc.UseCase) *AptitudeHandler {
 
 func (h *AptitudeHandler) ListAptitudeResults(c *gin.Context) {
 	studentID := c.Param("studentId")
-	if !ValidUUID(studentID) {
-		uuidError(c, "studentId")
+	if !common.ValidUUID(studentID) {
+		common.UUIDError(c, "studentId")
 		return
 	}
 	items, err := h.aptitudes.ListAptitudeResults(c.Request.Context(), studentID)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -38,15 +39,15 @@ func (h *AptitudeHandler) ListAptitudeResults(c *gin.Context) {
 
 func (h *AptitudeHandler) CreateTargetMajor(c *gin.Context) {
 	studentID := c.Param("studentId")
-	if !ValidUUID(studentID) {
-		uuidError(c, "studentId")
+	if !common.ValidUUID(studentID) {
+		common.UUIDError(c, "studentId")
 		return
 	}
 	var req struct {
 		Major string `json:"major"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	if strings.TrimSpace(req.Major) == "" {
@@ -55,14 +56,14 @@ func (h *AptitudeHandler) CreateTargetMajor(c *gin.Context) {
 	}
 	item, err := h.aptitudes.AddTargetMajor(c.Request.Context(), studentID, req.Major)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, targetMajorJSON(item))
 }
 
 func (h *AptitudeHandler) ListPassingGrades(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
@@ -77,7 +78,7 @@ func (h *AptitudeHandler) ListPassingGrades(c *gin.Context) {
 	}
 	items, total, err := h.aptitudes.ListPassingGrades(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -89,13 +90,13 @@ func (h *AptitudeHandler) ListPassingGrades(c *gin.Context) {
 
 func (h *AptitudeHandler) GetPassingGrade(c *gin.Context) {
 	id := c.Param("passingGradeId")
-	if !ValidUUID(id) {
-		uuidError(c, "passingGradeId")
+	if !common.ValidUUID(id) {
+		common.UUIDError(c, "passingGradeId")
 		return
 	}
 	item, err := h.aptitudes.GetPassingGrade(c.Request.Context(), id)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, passingGradeJSON(item))

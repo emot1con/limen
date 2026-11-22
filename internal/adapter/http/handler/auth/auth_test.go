@@ -1,4 +1,4 @@
-package handler_test
+package auth_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"limen/internal/adapter/http/handler"
+	authhandler "limen/internal/adapter/http/handler/auth"
 	userdomain "limen/internal/domain/user"
 	"limen/internal/usecase/auth"
 )
@@ -67,7 +67,7 @@ func TestLoginEndpointWithMockRepositories(t *testing.T) {
 	sessionRepo := &httpSessionRepo{}
 	logger := logrus.New()
 	loginUC := auth.NewLoginUseCase(userRepo, &httpRoleRepo{}, sessionRepo, logger)
-	handler := handler.NewAuthHandler(loginUC, nil, nil, nil)
+	handler := authhandler.NewAuthHandler(loginUC, nil, nil, nil)
 	router := gin.New()
 	router.POST("/api/v1/auth/login", handler.Login)
 
@@ -107,7 +107,7 @@ func TestLoginEndpointRejectsInvalidRequest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	loginUC := auth.NewLoginUseCase(&httpUserRepo{}, &httpRoleRepo{}, &httpSessionRepo{}, logrus.New())
 	router := gin.New()
-	router.POST("/api/v1/auth/login", handler.NewAuthHandler(loginUC, nil, nil, nil).Login)
+	router.POST("/api/v1/auth/login", authhandler.NewAuthHandler(loginUC, nil, nil, nil).Login)
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"email":"bad","password":"secret"}`))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()

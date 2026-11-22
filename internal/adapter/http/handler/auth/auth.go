@@ -1,6 +1,7 @@
-package handler
+package auth
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"errors"
 	"net/http"
 
@@ -107,7 +108,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	userID := c.Param("userId")
-	if !ValidUUID(userID) {
+	if !common.ValidUUID(userID) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "userId", Message: "must be a UUID"})
 		return
 	}

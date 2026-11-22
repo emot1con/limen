@@ -1,4 +1,4 @@
-package handler
+package fingerprint
 
 import (
 	"encoding/json"

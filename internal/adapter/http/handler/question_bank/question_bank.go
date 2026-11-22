@@ -1,6 +1,7 @@
-package handler
+package question_bank
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -20,13 +21,13 @@ func NewQuestionBankHandler(questionbank *questionbankuc.UseCase) *QuestionBankH
 }
 
 func (h *QuestionBankHandler) ListBanks(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	for _, key := range []string{"subjectId", "ownerId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
-			uuidError(c, key)
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
+			common.UUIDError(c, key)
 			return
 		}
 	}
@@ -40,7 +41,7 @@ func (h *QuestionBankHandler) ListBanks(c *gin.Context) {
 	}
 	items, total, err := h.questionbank.ListBanks(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -56,11 +57,11 @@ func (h *QuestionBankHandler) CreateBank(c *gin.Context) {
 		Scope     string `json:"scope"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	var fields []response.FieldError
-	if !ValidUUID(req.SubjectID) {
+	if !common.ValidUUID(req.SubjectID) {
 		fields = append(fields, response.FieldError{Field: "subjectId", Message: "must be a UUID"})
 	}
 	scope := quizdomain.QuestionBankScope(strings.TrimSpace(req.Scope))
@@ -73,12 +74,12 @@ func (h *QuestionBankHandler) CreateBank(c *gin.Context) {
 	}
 	ownerID, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	item, err := h.questionbank.CreateBank(c.Request.Context(), req.SubjectID, ownerID, scope)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, questionBankJSON(item))
@@ -86,17 +87,17 @@ func (h *QuestionBankHandler) CreateBank(c *gin.Context) {
 
 func (h *QuestionBankHandler) ListQuestions(c *gin.Context) {
 	bankID := c.Param("bankId")
-	if !ValidUUID(bankID) {
-		uuidError(c, "bankId")
+	if !common.ValidUUID(bankID) {
+		common.UUIDError(c, "bankId")
 		return
 	}
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	items, total, err := h.questionbank.ListQuestions(c.Request.Context(), bankID, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -108,8 +109,8 @@ func (h *QuestionBankHandler) ListQuestions(c *gin.Context) {
 
 func (h *QuestionBankHandler) CreateQuestion(c *gin.Context) {
 	bankID := c.Param("bankId")
-	if !ValidUUID(bankID) {
-		uuidError(c, "bankId")
+	if !common.ValidUUID(bankID) {
+		common.UUIDError(c, "bankId")
 		return
 	}
 	input, ok := bindQuestionInput(c)
@@ -118,7 +119,7 @@ func (h *QuestionBankHandler) CreateQuestion(c *gin.Context) {
 	}
 	item, err := h.questionbank.CreateQuestion(c.Request.Context(), bankID, input)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, questionJSON(item))
@@ -126,8 +127,8 @@ func (h *QuestionBankHandler) CreateQuestion(c *gin.Context) {
 
 func (h *QuestionBankHandler) UpdateQuestion(c *gin.Context) {
 	questionID := c.Param("questionId")
-	if !ValidUUID(questionID) {
-		uuidError(c, "questionId")
+	if !common.ValidUUID(questionID) {
+		common.UUIDError(c, "questionId")
 		return
 	}
 	input, ok := bindQuestionInput(c)
@@ -136,7 +137,7 @@ func (h *QuestionBankHandler) UpdateQuestion(c *gin.Context) {
 	}
 	item, err := h.questionbank.UpdateQuestion(c.Request.Context(), questionID, input)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, questionJSON(item))
@@ -144,12 +145,12 @@ func (h *QuestionBankHandler) UpdateQuestion(c *gin.Context) {
 
 func (h *QuestionBankHandler) DeleteQuestion(c *gin.Context) {
 	questionID := c.Param("questionId")
-	if !ValidUUID(questionID) {
-		uuidError(c, "questionId")
+	if !common.ValidUUID(questionID) {
+		common.UUIDError(c, "questionId")
 		return
 	}
 	if err := h.questionbank.DeleteQuestion(c.Request.Context(), questionID); err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteNoContent(c)
@@ -163,7 +164,7 @@ func bindQuestionInput(c *gin.Context) (questionbankuc.QuestionInput, bool) {
 		AnswerKey json.RawMessage `json:"answerKey"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return questionbankuc.QuestionInput{}, false
 	}
 	var fields []response.FieldError

@@ -1,10 +1,9 @@
-package handler
+package admin
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"errors"
 	"net/http"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +29,7 @@ func NewAdminHandler(settings *settingsuc.UseCase, devices *deviceuc.UseCase, us
 func (h *AdminHandler) GetSettings(c *gin.Context) {
 	out, err := h.settings.Get(c.Request.Context())
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, settingsJSON(out))
@@ -63,14 +62,14 @@ func (h *AdminHandler) UpdateSettings(c *gin.Context) {
 			response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "firstEntryTime", Message: "must be HH:mm"})
 			return
 		}
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, settingsJSON(out))
 }
 
 func (h *AdminHandler) ListDevices(c *gin.Context) {
-	page, pageSize, ok := pageQuery(c)
+	page, pageSize, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
@@ -88,7 +87,7 @@ func (h *AdminHandler) ListDevices(c *gin.Context) {
 
 	out, err := h.devices.List(c.Request.Context(), page, pageSize, isActive)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	items := make([]gin.H, len(out.Items))
@@ -115,7 +114,7 @@ func (h *AdminHandler) CreateDevice(c *gin.Context) {
 	}
 	out, err := h.devices.Create(c.Request.Context(), deviceuc.CreateInput{Name: req.Name, Location: req.Location, Serial: req.Serial, IsActive: req.IsActive})
 	if err != nil {
-		writeMappedError(c, err, "serial")
+		common.WriteMappedError(c, err, "serial")
 		return
 	}
 	body := deviceJSON(out.Device)
@@ -124,20 +123,20 @@ func (h *AdminHandler) CreateDevice(c *gin.Context) {
 }
 
 func (h *AdminHandler) GetDevice(c *gin.Context) {
-	if !ValidUUID(c.Param("deviceId")) {
+	if !common.ValidUUID(c.Param("deviceId")) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "deviceId", Message: "must be a UUID"})
 		return
 	}
 	out, err := h.devices.Get(c.Request.Context(), c.Param("deviceId"))
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, deviceJSON(out))
 }
 
 func (h *AdminHandler) UpdateDevice(c *gin.Context) {
-	if !ValidUUID(c.Param("deviceId")) {
+	if !common.ValidUUID(c.Param("deviceId")) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "deviceId", Message: "must be a UUID"})
 		return
 	}
@@ -157,26 +156,26 @@ func (h *AdminHandler) UpdateDevice(c *gin.Context) {
 	}
 	out, err := h.devices.Update(c.Request.Context(), deviceuc.UpdateInput{ID: c.Param("deviceId"), Name: req.Name, Location: req.Location, Serial: req.Serial, IsActive: req.IsActive})
 	if err != nil {
-		writeMappedError(c, err, "serial")
+		common.WriteMappedError(c, err, "serial")
 		return
 	}
 	response.WriteOK(c, deviceJSON(out))
 }
 
 func (h *AdminHandler) DeleteDevice(c *gin.Context) {
-	if !ValidUUID(c.Param("deviceId")) {
+	if !common.ValidUUID(c.Param("deviceId")) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "deviceId", Message: "must be a UUID"})
 		return
 	}
 	if err := h.devices.Delete(c.Request.Context(), c.Param("deviceId")); err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteNoContent(c)
 }
 
 func (h *AdminHandler) ListUsers(c *gin.Context) {
-	page, pageSize, ok := pageQuery(c)
+	page, pageSize, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
@@ -195,7 +194,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	}
 	out, err := h.users.List(c.Request.Context(), c.Query("q"), role, status, page, pageSize)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	items := make([]gin.H, len(out.Items))
@@ -223,39 +222,39 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 	actor, _ := middleware.GetUserID(c)
 	out, err := h.users.Create(c.Request.Context(), useruc.CreateInput{Email: req.Email, Password: req.Password, FullName: req.FullName, Roles: req.Roles, GrantedBy: actor})
 	if err != nil {
-		writeMappedError(c, err, "email")
+		common.WriteMappedError(c, err, "email")
 		return
 	}
 	response.WriteCreated(c, userJSON(out))
 }
 
 func (h *AdminHandler) GetUser(c *gin.Context) {
-	if !ValidUUID(c.Param("userId")) {
+	if !common.ValidUUID(c.Param("userId")) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "userId", Message: "must be a UUID"})
 		return
 	}
 	out, err := h.users.Get(c.Request.Context(), c.Param("userId"))
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, userJSON(out))
 }
 
 func (h *AdminHandler) DeleteUser(c *gin.Context) {
-	if !ValidUUID(c.Param("userId")) {
+	if !common.ValidUUID(c.Param("userId")) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "userId", Message: "must be a UUID"})
 		return
 	}
 	if err := h.users.Delete(c.Request.Context(), c.Param("userId")); err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteNoContent(c)
 }
 
 func (h *AdminHandler) UpdateUser(c *gin.Context) {
-	if !ValidUUID(c.Param("userId")) {
+	if !common.ValidUUID(c.Param("userId")) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "userId", Message: "must be a UUID"})
 		return
 	}
@@ -295,7 +294,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	actor, _ := middleware.GetUserID(c)
 	out, err := h.users.Update(c.Request.Context(), useruc.UpdateInput{ID: c.Param("userId"), Email: req.Email, FullName: req.FullName, Status: status, Roles: req.Roles, GrantedBy: actor})
 	if err != nil {
-		writeMappedError(c, err, "email")
+		common.WriteMappedError(c, err, "email")
 		return
 	}
 	response.WriteOK(c, userJSON(out))
@@ -311,28 +310,6 @@ func deviceJSON(item deviceuc.Device) gin.H {
 
 func userJSON(item useruc.User) gin.H {
 	return gin.H{"id": item.ID, "email": item.Email, "fullName": item.FullName, "status": item.Status, "roles": item.Roles, "profile": item.Profile, "lastLoginAt": item.LastLoginAt, "createdAt": item.CreatedAt, "updatedAt": item.UpdatedAt}
-}
-
-func pageQuery(c *gin.Context) (int, int, bool) {
-	page := 1
-	pageSize := 20
-	if raw := c.Query("page"); raw != "" {
-		value, err := strconv.Atoi(raw)
-		if err != nil || value < 1 {
-			response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "page", Message: "must be 1 or greater"})
-			return 0, 0, false
-		}
-		page = value
-	}
-	if raw := c.Query("pageSize"); raw != "" {
-		value, err := strconv.Atoi(raw)
-		if err != nil || value < 1 || value > 100 {
-			response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "pageSize", Message: "must be between 1 and 100"})
-			return 0, 0, false
-		}
-		pageSize = value
-	}
-	return page, pageSize, true
 }
 
 func userFields(email, password, fullName string, roles []string, creating bool) []response.FieldError {
@@ -383,39 +360,3 @@ func validPassword(password string) bool {
 	return lower && upper && digit
 }
 
-func writeMappedError(c *gin.Context, err error, duplicateField ...string) {
-	if !errors.Is(err, domain.ErrNotFound) && !errors.Is(err, domain.ErrAlreadyExists) && !errors.Is(err, domain.ErrInvalid) && !errors.Is(err, domain.ErrConflict) && !isUniqueViolation(err) {
-		response.TraceError(c, "handler.use_case", err)
-	}
-	if errors.Is(err, domain.ErrNotFound) {
-		response.WriteError(c, http.StatusNotFound, "NOT_FOUND", "resource not found")
-		return
-	}
-	if errors.Is(err, domain.ErrAlreadyExists) || isUniqueViolation(err) {
-		field := "request"
-		if len(duplicateField) > 0 {
-			field = duplicateField[0]
-		}
-		response.WriteError(c, http.StatusConflict, "CONFLICT", "resource already exists", response.FieldError{Field: field, Message: "already exists"})
-		return
-	}
-	if errors.Is(err, domain.ErrConflict) {
-		response.WriteError(c, http.StatusConflict, "CONFLICT", "resource is in use")
-		return
-	}
-	if errors.Is(err, domain.ErrInvalid) {
-		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed")
-		return
-	}
-	response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
-}
-
-func isUniqueViolation(err error) bool {
-	message := err.Error()
-	return strings.Contains(message, "23505") || strings.Contains(message, "duplicate key")
-}
-
-func ValidUUID(value string) bool {
-	matched, _ := regexp.MatchString(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`, value)
-	return matched
-}

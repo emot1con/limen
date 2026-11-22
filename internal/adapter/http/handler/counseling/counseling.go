@@ -1,6 +1,7 @@
-package handler
+package counseling
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"net/http"
 	"strings"
 
@@ -19,13 +20,13 @@ func NewCounselingHandler(counseling *counselinguc.UseCase) *CounselingHandler {
 }
 
 func (h *CounselingHandler) ListNotes(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	for _, key := range []string{"studentUserId", "classId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
-			uuidError(c, key)
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
+			common.UUIDError(c, key)
 			return
 		}
 	}
@@ -41,7 +42,7 @@ func (h *CounselingHandler) ListNotes(c *gin.Context) {
 	}
 	items, total, err := h.counseling.ListNotes(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -57,11 +58,11 @@ func (h *CounselingHandler) CreateNote(c *gin.Context) {
 		Note          string `json:"note"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	var fields []response.FieldError
-	if !ValidUUID(req.StudentUserID) {
+	if !common.ValidUUID(req.StudentUserID) {
 		fields = append(fields, response.FieldError{Field: "studentUserId", Message: "must be a UUID"})
 	}
 	if strings.TrimSpace(req.Note) == "" {
@@ -73,12 +74,12 @@ func (h *CounselingHandler) CreateNote(c *gin.Context) {
 	}
 	authorID, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	item, err := h.counseling.CreateNote(c.Request.Context(), req.StudentUserID, authorID, req.Note)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, counselingNoteJSON(item))
@@ -86,15 +87,15 @@ func (h *CounselingHandler) CreateNote(c *gin.Context) {
 
 func (h *CounselingHandler) UpdateNote(c *gin.Context) {
 	noteID := c.Param("noteId")
-	if !ValidUUID(noteID) {
-		uuidError(c, "noteId")
+	if !common.ValidUUID(noteID) {
+		common.UUIDError(c, "noteId")
 		return
 	}
 	var req struct {
 		Note string `json:"note"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	if strings.TrimSpace(req.Note) == "" {
@@ -103,7 +104,7 @@ func (h *CounselingHandler) UpdateNote(c *gin.Context) {
 	}
 	item, err := h.counseling.UpdateNote(c.Request.Context(), noteID, req.Note)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, counselingNoteJSON(item))
@@ -111,15 +112,15 @@ func (h *CounselingHandler) UpdateNote(c *gin.Context) {
 
 func (h *CounselingHandler) AddFollowup(c *gin.Context) {
 	noteID := c.Param("noteId")
-	if !ValidUUID(noteID) {
-		uuidError(c, "noteId")
+	if !common.ValidUUID(noteID) {
+		common.UUIDError(c, "noteId")
 		return
 	}
 	var req struct {
 		Note string `json:"note"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	if strings.TrimSpace(req.Note) == "" {
@@ -128,12 +129,12 @@ func (h *CounselingHandler) AddFollowup(c *gin.Context) {
 	}
 	createdBy, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	item, err := h.counseling.AddFollowup(c.Request.Context(), noteID, createdBy, req.Note)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, followupJSON(item))

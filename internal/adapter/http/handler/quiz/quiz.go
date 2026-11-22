@@ -1,6 +1,7 @@
-package handler
+package quiz
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -32,11 +33,11 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 		QuestionIDs []string `json:"questionIds"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	var fields []response.FieldError
-	if !ValidUUID(req.SubjectID) {
+	if !common.ValidUUID(req.SubjectID) {
 		fields = append(fields, response.FieldError{Field: "subjectId", Message: "must be a UUID"})
 	}
 	if strings.TrimSpace(req.Title) == "" {
@@ -53,7 +54,7 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 		fields = append(fields, response.FieldError{Field: "endTime", Message: "must be after startTime"})
 	}
 	for i, questionID := range req.QuestionIDs {
-		if !ValidUUID(questionID) {
+		if !common.ValidUUID(questionID) {
 			fields = append(fields, response.FieldError{Field: "questionIds", Message: "item " + strconv.Itoa(i) + " must be a UUID"})
 		}
 	}
@@ -63,7 +64,7 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 	}
 	ownerID, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	detail, err := h.quiz.CreateQuiz(c.Request.Context(), quizuc.CreateQuizInput{
@@ -77,7 +78,7 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 		QuestionIDs: req.QuestionIDs,
 	})
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, quizDetailJSON(detail))
@@ -96,13 +97,13 @@ func parseTimePtr(raw *string, field string, fields *[]response.FieldError) (*ti
 }
 
 func (h *QuizHandler) ListQuizzes(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	var fields []response.FieldError
 	for _, key := range []string{"subjectId", "classId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
 			fields = append(fields, response.FieldError{Field: key, Message: "must be a UUID"})
 		}
 	}
@@ -121,7 +122,7 @@ func (h *QuizHandler) ListQuizzes(c *gin.Context) {
 	}
 	items, total, err := h.quiz.ListQuizzes(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -133,18 +134,18 @@ func (h *QuizHandler) ListQuizzes(c *gin.Context) {
 
 func (h *QuizHandler) GetQuiz(c *gin.Context) {
 	quizID := c.Param("quizId")
-	if !ValidUUID(quizID) {
-		uuidError(c, "quizId")
+	if !common.ValidUUID(quizID) {
+		common.UUIDError(c, "quizId")
 		return
 	}
 	attemptID := c.Query("attemptId")
-	if attemptID != "" && !ValidUUID(attemptID) {
-		uuidError(c, "attemptId")
+	if attemptID != "" && !common.ValidUUID(attemptID) {
+		common.UUIDError(c, "attemptId")
 		return
 	}
 	detail, err := h.quiz.GetQuizDetail(c.Request.Context(), quizID, attemptID)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, quizDetailJSON(detail))
@@ -152,18 +153,18 @@ func (h *QuizHandler) GetQuiz(c *gin.Context) {
 
 func (h *QuizHandler) StartAttempt(c *gin.Context) {
 	quizID := c.Param("quizId")
-	if !ValidUUID(quizID) {
-		uuidError(c, "quizId")
+	if !common.ValidUUID(quizID) {
+		common.UUIDError(c, "quizId")
 		return
 	}
 	studentUserID, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	attempt, err := h.quiz.StartAttempt(c.Request.Context(), quizID, studentUserID)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, attemptJSON(attempt))
@@ -171,8 +172,8 @@ func (h *QuizHandler) StartAttempt(c *gin.Context) {
 
 func (h *QuizHandler) SaveAnswer(c *gin.Context) {
 	attemptID := c.Param("attemptId")
-	if !ValidUUID(attemptID) {
-		uuidError(c, "attemptId")
+	if !common.ValidUUID(attemptID) {
+		common.UUIDError(c, "attemptId")
 		return
 	}
 	questionNumber, err := strconv.Atoi(c.Param("questionId"))
@@ -182,7 +183,7 @@ func (h *QuizHandler) SaveAnswer(c *gin.Context) {
 	}
 	var body map[string]json.RawMessage
 	if err := c.ShouldBindJSON(&body); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	userAnswer, ok := body["userAnswer"]
@@ -192,7 +193,7 @@ func (h *QuizHandler) SaveAnswer(c *gin.Context) {
 	}
 	result, err := h.quiz.SaveAnswer(c.Request.Context(), attemptID, questionNumber, userAnswer)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, gin.H{"questionId": result.QuestionID, "userAnswer": rawJSON(result.UserAnswer), "isCompleted": result.IsCompleted, "updatedAt": result.UpdatedAt})
@@ -200,26 +201,26 @@ func (h *QuizHandler) SaveAnswer(c *gin.Context) {
 
 func (h *QuizHandler) SubmitAttempt(c *gin.Context) {
 	attemptID := c.Param("attemptId")
-	if !ValidUUID(attemptID) {
-		uuidError(c, "attemptId")
+	if !common.ValidUUID(attemptID) {
+		common.UUIDError(c, "attemptId")
 		return
 	}
 	result, err := h.quiz.SubmitAttempt(c.Request.Context(), attemptID)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, attemptResultJSON(result))
 }
 
 func (h *QuizHandler) ListAttempts(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	var fields []response.FieldError
 	for _, key := range []string{"quizId", "studentUserId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
 			fields = append(fields, response.FieldError{Field: key, Message: "must be a UUID"})
 		}
 	}
@@ -238,7 +239,7 @@ func (h *QuizHandler) ListAttempts(c *gin.Context) {
 	}
 	items, total, err := h.quiz.ListAttempts(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -250,13 +251,13 @@ func (h *QuizHandler) ListAttempts(c *gin.Context) {
 
 func (h *QuizHandler) GetAttempt(c *gin.Context) {
 	attemptID := c.Param("attemptId")
-	if !ValidUUID(attemptID) {
-		uuidError(c, "attemptId")
+	if !common.ValidUUID(attemptID) {
+		common.UUIDError(c, "attemptId")
 		return
 	}
 	result, err := h.quiz.GetAttempt(c.Request.Context(), attemptID)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, attemptResultJSON(result))
@@ -264,13 +265,13 @@ func (h *QuizHandler) GetAttempt(c *gin.Context) {
 
 func (h *QuizHandler) GradeAnswer(c *gin.Context) {
 	attemptID := c.Param("attemptId")
-	if !ValidUUID(attemptID) {
-		uuidError(c, "attemptId")
+	if !common.ValidUUID(attemptID) {
+		common.UUIDError(c, "attemptId")
 		return
 	}
 	answerID := c.Param("answerId")
-	if !ValidUUID(answerID) {
-		uuidError(c, "answerId")
+	if !common.ValidUUID(answerID) {
+		common.UUIDError(c, "answerId")
 		return
 	}
 	var req struct {
@@ -279,17 +280,17 @@ func (h *QuizHandler) GradeAnswer(c *gin.Context) {
 		Feedback  *string  `json:"feedback"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	graderID, err := middleware.GetUserID(c)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	result, err := h.quiz.GradeAnswer(c.Request.Context(), attemptID, answerID, graderID, quizuc.GradeInput{IsCorrect: req.IsCorrect, Score: req.Score, Feedback: req.Feedback})
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, gin.H{"answerId": result.AnswerID, "isCorrect": result.IsCorrect, "score": result.Score, "gradedBy": result.GradedBy, "gradedAt": result.GradedAt})

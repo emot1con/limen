@@ -1,6 +1,7 @@
-package handler
+package report
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"net/http"
 	"strings"
 	"time"
@@ -21,8 +22,8 @@ func NewReportsHandler(reports *reportsuc.UseCase) *ReportsHandler {
 
 func (h *ReportsHandler) Attendance(c *gin.Context) {
 	for _, key := range []string{"classId", "studentUserId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
-			uuidError(c, key)
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
+			common.UUIDError(c, key)
 			return
 		}
 	}
@@ -71,7 +72,7 @@ func (h *ReportsHandler) Attendance(c *gin.Context) {
 
 	items, err := h.reports.Attendance(c.Request.Context(), filter)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -82,20 +83,20 @@ func (h *ReportsHandler) Attendance(c *gin.Context) {
 }
 
 func (h *ReportsHandler) Grades(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	for _, key := range []string{"classId", "subjectId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
-			uuidError(c, key)
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
+			common.UUIDError(c, key)
 			return
 		}
 	}
 	filter := reportsdomain.GradeFilter{ClassID: c.Query("classId"), SubjectID: c.Query("subjectId"), Period: c.Query("period")}
 	items, total, err := h.reports.Grades(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -107,14 +108,14 @@ func (h *ReportsHandler) Grades(c *gin.Context) {
 
 func (h *ReportsHandler) ReportCard(c *gin.Context) {
 	studentID := c.Param("studentId")
-	if !ValidUUID(studentID) {
-		uuidError(c, "studentId")
+	if !common.ValidUUID(studentID) {
+		common.UUIDError(c, "studentId")
 		return
 	}
 	period := strings.TrimSpace(c.Query("period"))
 	items, err := h.reports.ReportCard(c.Request.Context(), studentID, period)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	subjects := make([]gin.H, len(items))

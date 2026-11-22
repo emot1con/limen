@@ -1,6 +1,7 @@
-package handler
+package schedule
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -20,14 +21,14 @@ func NewScheduleHandler(schedule *scheduleuc.UseCase) *ScheduleHandler {
 }
 
 func (h *ScheduleHandler) ListSchedules(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	filter := academicdomain.ScheduleFilter{}
 	for _, key := range []string{"classId", "subjectId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
-			uuidError(c, key)
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
+			common.UUIDError(c, key)
 			return
 		}
 	}
@@ -62,7 +63,7 @@ func (h *ScheduleHandler) ListSchedules(c *gin.Context) {
 	}
 	items, total, err := h.schedule.ListSchedules(c.Request.Context(), filter, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -82,17 +83,17 @@ func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 		TeacherUserID *string `json:"teacherUserId"`
 		DayOfWeek     int16   `json:"dayOfWeek"`
 	}
-	if !bindAcademic(c, &req) {
+	if !common.BindJSON(c, &req) {
 		return
 	}
 	var fields []response.FieldError
 	for key, value := range map[string]string{"classId": req.ClassID, "subjectId": req.SubjectID} {
-		if !ValidUUID(value) {
+		if !common.ValidUUID(value) {
 			fields = append(fields, response.FieldError{Field: key, Message: "must be a UUID"})
 
 		}
 	}
-	if req.TeacherUserID != nil && !ValidUUID(*req.TeacherUserID) {
+	if req.TeacherUserID != nil && !common.ValidUUID(*req.TeacherUserID) {
 		fields = append(fields, response.FieldError{Field: "teacherUserId", Message: "must be a UUID"})
 	}
 	if req.DayOfWeek < 1 || req.DayOfWeek > 7 {
@@ -107,19 +108,19 @@ func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 	}
 	out, err := h.schedule.CreateSchedule(c.Request.Context(), scheduleuc.ScheduleInput{ClassID: req.ClassID, SubjectID: req.SubjectID, TeacherUserID: req.TeacherUserID, DayOfWeek: req.DayOfWeek, StartTime: req.StartTime, EndTime: req.EndTime, Kind: academicdomain.ScheduleKind(req.Kind)})
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, scheduleJSON(out))
 }
 
 func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
-	if !ValidUUID(c.Param("scheduleId")) {
-		uuidError(c, "scheduleId")
+	if !common.ValidUUID(c.Param("scheduleId")) {
+		common.UUIDError(c, "scheduleId")
 		return
 	}
 	var raw map[string]json.RawMessage
-	if !bindAcademic(c, &raw) {
+	if !common.BindJSON(c, &raw) {
 		return
 	}
 	var req struct {
@@ -133,7 +134,7 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 	}
 	body, _ := json.Marshal(raw)
 	if err := json.Unmarshal(body, &req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	_, classSet := raw["classId"]
@@ -150,30 +151,30 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 	input := scheduleuc.ScheduleInput{}
 	if classSet {
 		if req.ClassID == nil {
-			uuidError(c, "classId")
+			common.UUIDError(c, "classId")
 			return
 		}
 		input.ClassID = *req.ClassID
-		if !ValidUUID(input.ClassID) {
-			uuidError(c, "classId")
+		if !common.ValidUUID(input.ClassID) {
+			common.UUIDError(c, "classId")
 			return
 		}
 	}
 	if subjectSet {
 		if req.SubjectID == nil {
-			uuidError(c, "subjectId")
+			common.UUIDError(c, "subjectId")
 			return
 		}
 		input.SubjectID = *req.SubjectID
-		if !ValidUUID(input.SubjectID) {
-			uuidError(c, "subjectId")
+		if !common.ValidUUID(input.SubjectID) {
+			common.UUIDError(c, "subjectId")
 			return
 		}
 	}
 	if teacherSet {
 		input.TeacherUserID = req.TeacherUserID
-		if req.TeacherUserID != nil && !ValidUUID(*req.TeacherUserID) {
-			uuidError(c, "teacherUserId")
+		if req.TeacherUserID != nil && !common.ValidUUID(*req.TeacherUserID) {
+			common.UUIDError(c, "teacherUserId")
 			return
 		}
 	}
@@ -190,21 +191,21 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 	}
 	if startSet {
 		if req.StartTime == nil {
-			validationBody(c)
+			common.ValidationBody(c)
 			return
 		}
 		input.StartTime = *req.StartTime
 	}
 	if endSet {
 		if req.EndTime == nil {
-			validationBody(c)
+			common.ValidationBody(c)
 			return
 		}
 		input.EndTime = *req.EndTime
 	}
 	if kindSet {
 		if req.Kind == nil {
-			validationBody(c)
+			common.ValidationBody(c)
 			return
 		}
 		input.Kind = academicdomain.ScheduleKind(*req.Kind)
@@ -215,19 +216,19 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 	}
 	out, err := h.schedule.UpdateSchedule(c.Request.Context(), c.Param("scheduleId"), input, classSet, subjectSet, teacherSet, daySet, startSet, endSet, kindSet)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, scheduleJSON(out))
 }
 
 func (h *ScheduleHandler) DeleteSchedule(c *gin.Context) {
-	if !ValidUUID(c.Param("scheduleId")) {
-		uuidError(c, "scheduleId")
+	if !common.ValidUUID(c.Param("scheduleId")) {
+		common.UUIDError(c, "scheduleId")
 		return
 	}
 	if err := h.schedule.DeleteSchedule(c.Request.Context(), c.Param("scheduleId")); err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteNoContent(c)

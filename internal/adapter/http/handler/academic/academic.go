@@ -1,6 +1,7 @@
-package handler
+package academic
 
 import (
+	"limen/internal/adapter/http/handler/common"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,13 +23,13 @@ func NewAcademicHandler(academic *academicuc.UseCase) *AcademicHandler {
 }
 
 func (h *AcademicHandler) ListClasses(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	items, total, err := h.academic.ListClasses(c.Request.Context(), c.Query("level"), c.Query("q"), page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -44,34 +45,34 @@ func (h *AcademicHandler) CreateClass(c *gin.Context) {
 		Level                 *string `json:"level"`
 		HomeroomTeacherUserID *string `json:"homeroomTeacherUserId"`
 	}
-	if !bindAcademic(c, &req) {
+	if !common.BindJSON(c, &req) {
 		return
 	}
 	if strings.TrimSpace(req.Name) == "" {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "name", Message: "required"})
 		return
 	}
-	if req.HomeroomTeacherUserID != nil && !ValidUUID(*req.HomeroomTeacherUserID) {
-		uuidError(c, "homeroomTeacherUserId")
+	if req.HomeroomTeacherUserID != nil && !common.ValidUUID(*req.HomeroomTeacherUserID) {
+		common.UUIDError(c, "homeroomTeacherUserId")
 		return
 	}
 
 	fmt.Println("req after: ", req.Name, req.Level, req.HomeroomTeacherUserID)
 	out, err := h.academic.CreateClass(c.Request.Context(), req.Name, req.Level, req.HomeroomTeacherUserID)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, classJSON(academicdomain.ClassDetail{Class: out}))
 }
 
 func (h *AcademicHandler) UpdateClass(c *gin.Context) {
-	if !ValidUUID(c.Param("classId")) {
-		uuidError(c, "classId")
+	if !common.ValidUUID(c.Param("classId")) {
+		common.UUIDError(c, "classId")
 		return
 	}
 	var raw map[string]json.RawMessage
-	if !bindAcademic(c, &raw) {
+	if !common.BindJSON(c, &raw) {
 		return
 	}
 	var req struct {
@@ -81,30 +82,30 @@ func (h *AcademicHandler) UpdateClass(c *gin.Context) {
 	}
 	body, _ := json.Marshal(raw)
 	if err := json.Unmarshal(body, &req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	_, teacherSet := raw["homeroomTeacherUserId"]
-	if teacherSet && req.HomeroomTeacherUserID != nil && !ValidUUID(*req.HomeroomTeacherUserID) {
-		uuidError(c, "homeroomTeacherUserId")
+	if teacherSet && req.HomeroomTeacherUserID != nil && !common.ValidUUID(*req.HomeroomTeacherUserID) {
+		common.UUIDError(c, "homeroomTeacherUserId")
 		return
 	}
 	out, err := h.academic.UpdateClass(c.Request.Context(), c.Param("classId"), req.Name, req.Level, req.HomeroomTeacherUserID, teacherSet)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, classJSON(academicdomain.ClassDetail{Class: out}))
 }
 
 func (h *AcademicHandler) ListSubjects(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	items, total, err := h.academic.ListSubjects(c.Request.Context(), c.Query("q"), page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -119,7 +120,7 @@ func (h *AcademicHandler) CreateSubject(c *gin.Context) {
 		Code string `json:"code"`
 		Name string `json:"name"`
 	}
-	if !bindAcademic(c, &req) {
+	if !common.BindJSON(c, &req) {
 		return
 	}
 	var fields []response.FieldError
@@ -135,20 +136,20 @@ func (h *AcademicHandler) CreateSubject(c *gin.Context) {
 	}
 	out, err := h.academic.CreateSubject(c.Request.Context(), req.Code, req.Name)
 	if err != nil {
-		writeMappedError(c, err, "code")
+		common.WriteMappedError(c, err, "code")
 		return
 	}
 	response.WriteCreated(c, subjectJSON(out))
 }
 
 func (h *AcademicHandler) ListStudents(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	classID := c.Query("classId")
-	if classID != "" && !ValidUUID(classID) {
-		uuidError(c, "classId")
+	if classID != "" && !common.ValidUUID(classID) {
+		common.UUIDError(c, "classId")
 		return
 	}
 	sort := c.Query("sort")
@@ -158,7 +159,7 @@ func (h *AcademicHandler) ListStudents(c *gin.Context) {
 	}
 	items, total, err := h.academic.ListStudents(c.Request.Context(), classID, c.Query("q"), sort, page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -169,25 +170,25 @@ func (h *AcademicHandler) ListStudents(c *gin.Context) {
 }
 
 func (h *AcademicHandler) GetStudent(c *gin.Context) {
-	if !ValidUUID(c.Param("studentId")) {
-		uuidError(c, "studentId")
+	if !common.ValidUUID(c.Param("studentId")) {
+		common.UUIDError(c, "studentId")
 		return
 	}
 	out, err := h.academic.GetStudent(c.Request.Context(), c.Param("studentId"))
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteOK(c, studentJSON(out))
 }
 
 func (h *AcademicHandler) UpdateStudent(c *gin.Context) {
-	if !ValidUUID(c.Param("studentId")) {
-		uuidError(c, "studentId")
+	if !common.ValidUUID(c.Param("studentId")) {
+		common.UUIDError(c, "studentId")
 		return
 	}
 	var raw map[string]json.RawMessage
-	if !bindAcademic(c, &raw) {
+	if !common.BindJSON(c, &raw) {
 		return
 	}
 	var req struct {
@@ -196,7 +197,7 @@ func (h *AcademicHandler) UpdateStudent(c *gin.Context) {
 	}
 	body, _ := json.Marshal(raw)
 	if err := json.Unmarshal(body, &req); err != nil {
-		validationBody(c)
+		common.ValidationBody(c)
 		return
 	}
 	_, nisSet := raw["nis"]
@@ -209,32 +210,32 @@ func (h *AcademicHandler) UpdateStudent(c *gin.Context) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "nis", Message: "required"})
 		return
 	}
-	if classSet && req.ClassID != nil && !ValidUUID(*req.ClassID) {
-		uuidError(c, "classId")
+	if classSet && req.ClassID != nil && !common.ValidUUID(*req.ClassID) {
+		common.UUIDError(c, "classId")
 		return
 	}
 	out, err := h.academic.UpdateStudent(c.Request.Context(), c.Param("studentId"), req.NIS, req.ClassID, nisSet, classSet)
 	if err != nil {
-		writeMappedError(c, err, "nis")
+		common.WriteMappedError(c, err, "nis")
 		return
 	}
 	response.WriteOK(c, studentJSON(out))
 }
 
 func (h *AcademicHandler) ListAssignments(c *gin.Context) {
-	page, size, ok := pageQuery(c)
+	page, size, ok := common.PageQuery(c)
 	if !ok {
 		return
 	}
 	for _, key := range []string{"teacherUserId", "classId", "subjectId"} {
-		if value := c.Query(key); value != "" && !ValidUUID(value) {
-			uuidError(c, key)
+		if value := c.Query(key); value != "" && !common.ValidUUID(value) {
+			common.UUIDError(c, key)
 			return
 		}
 	}
 	items, total, err := h.academic.ListAssignments(c.Request.Context(), c.Query("teacherUserId"), c.Query("classId"), c.Query("subjectId"), page, size)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	out := make([]gin.H, len(items))
@@ -250,12 +251,12 @@ func (h *AcademicHandler) CreateAssignment(c *gin.Context) {
 		SubjectID     string `json:"subjectId"`
 		ClassID       string `json:"classId"`
 	}
-	if !bindAcademic(c, &req) {
+	if !common.BindJSON(c, &req) {
 		return
 	}
 	var fields []response.FieldError
 	for key, value := range map[string]string{"teacherUserId": req.TeacherUserID, "subjectId": req.SubjectID, "classId": req.ClassID} {
-		if !ValidUUID(value) {
+		if !common.ValidUUID(value) {
 			fields = append(fields, response.FieldError{Field: key, Message: "must be a UUID"})
 		}
 	}
@@ -265,26 +266,10 @@ func (h *AcademicHandler) CreateAssignment(c *gin.Context) {
 	}
 	out, err := h.academic.CreateAssignment(c.Request.Context(), req.TeacherUserID, req.SubjectID, req.ClassID)
 	if err != nil {
-		writeMappedError(c, err)
+		common.WriteMappedError(c, err)
 		return
 	}
 	response.WriteCreated(c, assignmentJSON(out))
-}
-
-func bindAcademic(c *gin.Context, target interface{}) bool {
-	if err := c.ShouldBindJSON(target); err != nil {
-		validationBody(c)
-		return false
-	}
-	return true
-}
-
-func validationBody(c *gin.Context) {
-	response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "request", Message: "invalid request body"})
-}
-
-func uuidError(c *gin.Context, field string) {
-	response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: field, Message: "must be a UUID"})
 }
 
 func classJSON(item academicdomain.ClassDetail) gin.H {
