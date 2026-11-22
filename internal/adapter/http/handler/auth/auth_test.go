@@ -66,8 +66,8 @@ func TestLoginEndpointWithMockRepositories(t *testing.T) {
 	userRepo := &httpUserRepo{user: userdomain.User{ID: "user-1", Email: "user@example.com", FullName: "Test User", Status: userdomain.StatusActive, PasswordHash: hash}}
 	sessionRepo := &httpSessionRepo{}
 	logger := logrus.New()
-	loginUC := auth.NewLoginUseCase(userRepo, &httpRoleRepo{}, sessionRepo, logger)
-	handler := authhandler.NewAuthHandler(loginUC, nil, nil, nil)
+	authUC := auth.NewUseCase(userRepo, &httpRoleRepo{}, sessionRepo, logger)
+	handler := authhandler.NewAuthHandler(authUC)
 	router := gin.New()
 	router.POST("/api/v1/auth/login", handler.Login)
 
@@ -105,9 +105,9 @@ func TestLoginEndpointWithMockRepositories(t *testing.T) {
 
 func TestLoginEndpointRejectsInvalidRequest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	loginUC := auth.NewLoginUseCase(&httpUserRepo{}, &httpRoleRepo{}, &httpSessionRepo{}, logrus.New())
+	authUC := auth.NewUseCase(&httpUserRepo{}, &httpRoleRepo{}, &httpSessionRepo{}, logrus.New())
 	router := gin.New()
-	router.POST("/api/v1/auth/login", authhandler.NewAuthHandler(loginUC, nil, nil, nil).Login)
+	router.POST("/api/v1/auth/login", authhandler.NewAuthHandler(authUC).Login)
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"email":"bad","password":"secret"}`))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()

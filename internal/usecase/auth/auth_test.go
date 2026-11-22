@@ -70,7 +70,7 @@ func (m *loginSessionRepoMock) RevokeAllByUserID(context.Context, string, time.T
 	return nil
 }
 
-func TestLoginUseCaseExecuteSuccess(t *testing.T) {
+func TestLoginExecuteSuccess(t *testing.T) {
 	hash, err := HashArgon2idPassword("secret")
 	if err != nil {
 		t.Fatal(err)
@@ -78,8 +78,8 @@ func TestLoginUseCaseExecuteSuccess(t *testing.T) {
 	users := &loginUserRepoMock{user: userdomain.User{ID: "user-1", Email: "user@example.com", FullName: "Test User", Status: userdomain.StatusActive, PasswordHash: hash}}
 	roles := &loginRoleRepoMock{roles: []userdomain.UserRole{{RoleCode: "admin"}}}
 	sessions := &loginSessionRepoMock{}
-	uc := NewLoginUseCase(users, roles, sessions, logrus.New())
-	out, err := uc.Execute(context.Background(), LoginInput{Email: "user@example.com", Password: "secret", IP: net.ParseIP("127.0.0.1"), UserAgent: "test-agent"})
+	uc := NewUseCase(users, roles, sessions, logrus.New())
+	out, err := uc.Login(context.Background(), LoginInput{Email: "user@example.com", Password: "secret", IP: net.ParseIP("127.0.0.1"), UserAgent: "test-agent"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestLoginUseCaseExecuteSuccess(t *testing.T) {
 	}
 }
 
-func TestLoginUseCaseExecuteRejectsInvalidCredentials(t *testing.T) {
+func TestLoginExecuteRejectsInvalidCredentials(t *testing.T) {
 	hash, err := HashArgon2idPassword("secret")
 	if err != nil {
 		t.Fatal(err)
@@ -117,8 +117,8 @@ func TestLoginUseCaseExecuteRejectsInvalidCredentials(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			uc := NewLoginUseCase(&loginUserRepoMock{user: tc.user, err: tc.findErr}, &loginRoleRepoMock{}, &loginSessionRepoMock{}, logrus.New())
-			_, err := uc.Execute(context.Background(), LoginInput{Email: "user@example.com", Password: tc.password})
+			uc := NewUseCase(&loginUserRepoMock{user: tc.user, err: tc.findErr}, &loginRoleRepoMock{}, &loginSessionRepoMock{}, logrus.New())
+			_, err := uc.Login(context.Background(), LoginInput{Email: "user@example.com", Password: tc.password})
 			if !errors.Is(err, domain.ErrInvalid) {
 				t.Fatalf("expected ErrInvalid, got %v", err)
 			}
@@ -126,14 +126,14 @@ func TestLoginUseCaseExecuteRejectsInvalidCredentials(t *testing.T) {
 	}
 }
 
-func TestLoginUseCaseExecuteReturnsSessionError(t *testing.T) {
+func TestLoginExecuteReturnsSessionError(t *testing.T) {
 	hash, err := HashArgon2idPassword("secret")
 	if err != nil {
 		t.Fatal(err)
 	}
 	wantErr := errors.New("session storage unavailable")
-	uc := NewLoginUseCase(&loginUserRepoMock{user: userdomain.User{ID: "user-1", Status: userdomain.StatusActive, PasswordHash: hash}}, &loginRoleRepoMock{}, &loginSessionRepoMock{err: wantErr}, logrus.New())
-	if _, err := uc.Execute(context.Background(), LoginInput{Password: "secret"}); !errors.Is(err, wantErr) {
+	uc := NewUseCase(&loginUserRepoMock{user: userdomain.User{ID: "user-1", Status: userdomain.StatusActive, PasswordHash: hash}}, &loginRoleRepoMock{}, &loginSessionRepoMock{err: wantErr}, logrus.New())
+	if _, err := uc.Login(context.Background(), LoginInput{Password: "secret"}); !errors.Is(err, wantErr) {
 		t.Fatalf("expected session error, got %v", err)
 	}
 }

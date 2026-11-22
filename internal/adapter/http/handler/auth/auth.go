@@ -13,18 +13,12 @@ import (
 )
 
 type AuthHandler struct {
-	loginUC         *auth.LoginUseCase
-	logoutUC        *auth.LogoutUseCase
-	meUC            *auth.MeUseCase
-	resetPasswordUC *auth.ResetPasswordUseCase
+	authUC *auth.UseCase
 }
 
-func NewAuthHandler(loginUC *auth.LoginUseCase, logoutUC *auth.LogoutUseCase, meUC *auth.MeUseCase, resetPasswordUC *auth.ResetPasswordUseCase) *AuthHandler {
+func NewAuthHandler(authUC *auth.UseCase) *AuthHandler {
 	return &AuthHandler{
-		loginUC:         loginUC,
-		logoutUC:        logoutUC,
-		meUC:            meUC,
-		resetPasswordUC: resetPasswordUC,
+		authUC: authUC,
 	}
 }
 
@@ -37,7 +31,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "request", Message: "invalid request body"})
 		return
 	}
-	output, err := h.loginUC.Execute(c.Request.Context(), auth.LoginInput{
+	output, err := h.authUC.Login(c.Request.Context(), auth.LoginInput{
 		Email:     req.Email,
 		Password:  req.Password,
 		IP:        middleware.ParseIP(c),
@@ -74,7 +68,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		response.WriteError(c, http.StatusUnauthorized, "UNAUTHENTICATED", "session required")
 		return
 	}
-	if err := h.logoutUC.Execute(c.Request.Context(), auth.LogoutInput{SessionID: sessionID}); err != nil {
+	if err := h.authUC.Logout(c.Request.Context(), auth.LogoutInput{SessionID: sessionID}); err != nil {
 		response.TraceError(c, "auth.logout", err)
 		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
@@ -91,7 +85,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		response.WriteError(c, http.StatusUnauthorized, "UNAUTHENTICATED", "user_id required")
 		return
 	}
-	output, err := h.meUC.Execute(c.Request.Context(), userID)
+	output, err := h.authUC.Me(c.Request.Context(), userID)
 	if err != nil {
 		response.TraceError(c, "auth.me", err)
 		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
@@ -119,7 +113,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "request", Message: "invalid request body"})
 		return
 	}
-	err := h.resetPasswordUC.Execute(c.Request.Context(), auth.ResetPasswordInput{
+	err := h.authUC.ResetPassword(c.Request.Context(), auth.ResetPasswordInput{
 		UserID:      userID,
 		NewPassword: req.NewPassword,
 	})

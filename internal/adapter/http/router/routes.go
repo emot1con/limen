@@ -58,12 +58,9 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 	sessionRepo := postgresuser.NewSessionRepository(postgresDB)
 	studentRepo := postgresacademic.NewStudentRepository(postgresDB)
 
-	loginUseCase := auth.NewLoginUseCase(userRepo, userRoleRepo, sessionRepo, logger)
-	logoutUseCase := auth.NewLogoutUseCase(sessionRepo, logger)
-	meUseCase := auth.NewMeUseCase(userRepo, userRoleRepo, logger)
-	resetPasswordUseCase := auth.NewResetPasswordUseCase(userRepo, sessionRepo, logger)
+	authUseCase := auth.NewUseCase(userRepo, userRoleRepo, sessionRepo, logger)
 
-	authHandler := authhandler.NewAuthHandler(loginUseCase, logoutUseCase, meUseCase, resetPasswordUseCase)
+	authHandler := authhandler.NewAuthHandler(authUseCase)
 	authMiddleware := middleware.NewAuthMiddleware(sessionRepo, userRoleRepo)
 
 	v1 := router.Group("/api/v1")
