@@ -152,6 +152,14 @@ func (uc *UseCase) Delete(ctx context.Context, id string) error {
 }
 
 func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) {
+	var normalizedRoles []string
+	if input.Roles != nil {
+		var err error
+		normalizedRoles, err = normalizeRoles(*input.Roles)
+		if err != nil {
+			return User{}, err
+		}
+	}
 	item, err := uc.users.FindByID(ctx, input.ID)
 	if err != nil {
 		uc.logError(err, "user_get_for_update", logrus.Fields{"user_id": input.ID})
@@ -185,13 +193,9 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) 
 		return User{}, err
 	}
 	if input.Roles != nil {
-		roles, err := normalizeRoles(*input.Roles)
-		if err != nil {
-			return User{}, err
-		}
-		granted := make([]userdomain.UserRole, len(roles))
+		granted := make([]userdomain.UserRole, len(normalizedRoles))
 		now := uc.now()
-		for i, role := range roles {
+		for i, role := range normalizedRoles {
 			granted[i] = userdomain.UserRole{UserID: input.ID, RoleCode: role, GrantedAt: now, GrantedBy: optional(input.GrantedBy)}
 		}
 		if err := uc.userRole.Replace(ctx, input.ID, granted); err != nil {

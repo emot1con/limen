@@ -71,37 +71,17 @@ Rollback semua migrasi yang tercatat:
 make migrate-down
 ```
 
-## Admin awal
+## Seeder data awal dan pengujian
 
-Buat atau perbarui akun admin setelah migrasi:
-
-```sh
-make seed-admin \
-  ADMIN_EMAIL=admin@example.com \
-  ADMIN_FULL_NAME="Admin Sekolah" \
-  ADMIN_PASSWORD='ganti-dengan-password-kuat'
-```
-
-Perintah ini membutuhkan PostgreSQL aktif dan konfigurasi `.env` benar.
-
-## Seeder pengujian quiz
-
-Mengisi data uji dan menyimulasikan alur quiz secara end-to-end: membuat soal, membuat quiz, memulai pengerjaan, mengisi jawaban, submit, lalu mengoreksi essay.
+Membuat atau memperbarui akun demo dengan role siswa, guru_mapel, guru_wali, guru_bk, dan admin; lalu membuat data uji quiz serta menjalankan alur pengerjaan dan penilaian.
 
 ```sh
-make seed-quiz
+make seed SEED_PASSWORD='ganti-dengan-password-kuat'
 ```
 
-Target ini menjalankan seeder dari host dengan `POSTGRES_HOST=localhost` (lihat `SEED_POSTGRES_HOST`). Bila dijalankan dari dalam jaringan Docker, override dengan `make seed-quiz SEED_POSTGRES_HOST=postgres`.
+Target ini membutuhkan PostgreSQL aktif dan konfigurasi `.env` benar. Seeder menggunakan `POSTGRES_HOST=localhost` secara default; untuk jaringan Docker, jalankan `make seed SEED_PASSWORD='...' SEED_POSTGRES_HOST=postgres`.
 
-Yang dibuat (idempoten untuk pengguna dan subject):
-
-- Pengguna `guru.quiz@limen.test` (peran `guru_mapel`) dan `siswa.quiz@limen.test` (peran `siswa`), sandi `GuruQuiz123` / `SiswaQuiz123`.
-- Subject `QZTEST`, satu bank soal `ujian`, dan lima soal (satu per tipe).
-- Satu quiz baru berisi kelima soal tersebut.
-- Satu attempt siswa yang diisi semua jawaban, di-submit, lalu essay-nya dinilai.
-
-Setiap kali dijalankan akan membuat bank, soal, dan quiz baru; jalankan pada database pengujian.
+Akun demo dan subject `QZTEST` idempoten. Bank soal, quiz, dan attempt baru dibuat tiap eksekusi; jalankan pada database pengujian.
 
 ## Menjalankan aplikasi
 

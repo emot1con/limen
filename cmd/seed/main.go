@@ -12,18 +12,36 @@ import (
 
 	"limen/internal/adapter/persistence/postgres/academic"
 	"limen/internal/adapter/persistence/postgres/quiz"
+	"limen/internal/domain"
+	academicdomain "limen/internal/domain/academic"
+	quizdomain "limen/internal/domain/quiz"
 	"limen/internal/platform/config"
 	"limen/internal/platform/database"
 	"limen/internal/usecase/auth"
 	questionbankuc "limen/internal/usecase/question_bank"
 	quizuc "limen/internal/usecase/quiz"
 
-	"limen/internal/domain"
-	academicdomain "limen/internal/domain/academic"
-	quizdomain "limen/internal/domain/quiz"
-
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
+
+type seedUser struct {
+	email    string
+	fullName string
+	roleCode string
+	nis      string
+	nip      string
+}
+
+var users = []seedUser{
+	{email: "siswa@limen.test", fullName: "Siswa Limen", roleCode: "siswa", nis: "SISWA-001"},
+	{email: "guru.mapel@limen.test", fullName: "Guru Mata Pelajaran", roleCode: "guru_mapel", nip: "GURU-001"},
+	{email: "guru.wali@limen.test", fullName: "Guru Wali Kelas", roleCode: "guru_wali", nip: "GURU-002"},
+	{email: "guru.bk@limen.test", fullName: "Guru Bimbingan Konseling", roleCode: "guru_bk", nip: "GURU-003"},
+	{email: "admin@limen.test", fullName: "Admin Limen", roleCode: "admin"},
+	{email: "guru.quiz@limen.test", fullName: "Guru Quiz", roleCode: "guru_mapel"},
+	{email: "siswa.quiz@limen.test", fullName: "Siswa Quiz", roleCode: "siswa"},
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -33,8 +51,12 @@ func main() {
 }
 
 func run() error {
-	ctx := context.Background()
+	password := os.Getenv("SEED_PASSWORD")
+	if password == "" {
+		return errors.New("SEED_PASSWORD is required")
+	}
 
+	ctx := context.Background()
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -45,10 +67,100 @@ func run() error {
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
-		return fmt.Errorf("get postgres pool: %w", err)
+		return fmt.Errorf("get postgres connection pool: %w", err)
 	}
 	defer sqlDB.Close()
 
+	hash, err := auth.HashArgon2idPassword(password)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+
+	userIDs, err := seedAccounts(ctx, sqlDB, hash)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("seeded %d users\n", len(userIDs))
+
+	return seedQuiz(ctx, db, userIDs["guru.quiz@limen.test"], userIDs["siswa.quiz@limen.test"])
+}
+
+func seedAccounts(ctx context.Context, sqlDB *sql.DB, hash string) (map[string]string, error) {
+	tx, err := sqlDB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	userIDs := make(map[string]string, len(users))
+	for _, user := range users {
+		userID, err := seedAccount(ctx, tx, user, hash)
+		if err != nil {
+			return nil, err
+		}
+		userIDs[user.email] = userID
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit user seed: %w", err)
+	}
+	return userIDs, nil
+}
+
+func seedAccount(ctx context.Context, tx *sql.Tx, user seedUser, hash string) (string, error) {
+	var userID string
+	if err := tx.QueryRowContext(ctx, `
+		INSERT INTO users (email, password_hash, full_name, status)
+		VALUES ($1, $2, $3, 'active')
+		ON CONFLICT (email) DO UPDATE
+		SET password_hash = EXCLUDED.password_hash,
+			full_name = EXCLUDED.full_name,
+			status = 'active',
+			updated_at = now(),
+			deleted_at = NULL
+		RETURNING id
+	`, strings.ToLower(user.email), hash, user.fullName).Scan(&userID); err != nil {
+		return "", fmt.Errorf("seed user %s: %w", user.email, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		INSERT INTO user_roles (user_id, role_code)
+		VALUES ($1, $2)
+		ON CONFLICT (user_id, role_code) DO NOTHING
+	`, userID, user.roleCode); err != nil {
+		return "", fmt.Errorf("assign %s role: %w", user.email, err)
+	}
+
+	if user.nis != "" {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO students (user_id, nis)
+			VALUES ($1, $2)
+			ON CONFLICT (user_id) DO UPDATE
+			SET nis = EXCLUDED.nis,
+				updated_at = now(),
+				deleted_at = NULL
+		`, userID, user.nis); err != nil {
+			return "", fmt.Errorf("seed student profile %s: %w", user.email, err)
+		}
+	}
+
+	if user.nip != "" {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO teachers (user_id, nip)
+			VALUES ($1, $2)
+			ON CONFLICT (user_id) DO UPDATE
+			SET nip = EXCLUDED.nip,
+				updated_at = now(),
+				deleted_at = NULL
+		`, userID, user.nip); err != nil {
+			return "", fmt.Errorf("seed teacher profile %s: %w", user.email, err)
+		}
+	}
+
+	return userID, nil
+}
+
+func seedQuiz(ctx context.Context, db *gorm.DB, teacherID, studentID string) error {
 	logger := logrus.New()
 	logger.SetLevel(logrus.WarnLevel)
 
@@ -64,14 +176,6 @@ func run() error {
 	bankUC := questionbankuc.NewUseCase(bankRepo, questionRepo, subjectRepo, logger)
 	quizUC := quizuc.NewUseCase(quizRepo, questionRepo, quizQuestionRepo, attemptRepo, answerRepo, queryRepo, subjectRepo, nil, time.Second, logger)
 
-	teacherID, err := seedUser(ctx, sqlDB, "guru.quiz@limen.test", "Guru Quiz", "GuruQuiz123", "guru_mapel")
-	if err != nil {
-		return err
-	}
-	studentID, err := seedUser(ctx, sqlDB, "siswa.quiz@limen.test", "Siswa Quiz", "SiswaQuiz123", "siswa")
-	if err != nil {
-		return err
-	}
 	subjectID, err := seedSubject(ctx, subjectRepo, "QZTEST", "Quiz Testing")
 	if err != nil {
 		return err
@@ -85,9 +189,8 @@ func run() error {
 	fmt.Printf("created bank=%s scope=%s\n", bank.ID, bank.Scope)
 
 	questions := []struct {
-		input   questionbankuc.QuestionInput
-		answer  json.RawMessage
-		correct bool
+		input  questionbankuc.QuestionInput
+		answer json.RawMessage
 	}{
 		{
 			input: questionbankuc.QuestionInput{
@@ -96,8 +199,7 @@ func run() error {
 				Options:   raw(`{"choices":[{"id":"A","text":"Bandung"},{"id":"B","text":"Jakarta"},{"id":"C","text":"Surabaya"}]}`),
 				AnswerKey: raw(`{"correct":"B"}`),
 			},
-			answer:  raw(`"B"`),
-			correct: true,
+			answer: raw(`"B"`),
 		},
 		{
 			input: questionbankuc.QuestionInput{
@@ -106,8 +208,7 @@ func run() error {
 				Options:   raw(`{"choices":[{"id":"A","text":"2"},{"id":"B","text":"3"},{"id":"C","text":"4"},{"id":"D","text":"5"}]}`),
 				AnswerKey: raw(`{"correct":["A","B","D"]}`),
 			},
-			answer:  raw(`["A","B","D"]`),
-			correct: true,
+			answer: raw(`["A","B","D"]`),
 		},
 		{
 			input: questionbankuc.QuestionInput{
@@ -115,8 +216,7 @@ func run() error {
 				Body:      "Air mendidih pada 100°C di tekanan 1 atm.",
 				AnswerKey: raw(`{"correct":true}`),
 			},
-			answer:  raw(`true`),
-			correct: true,
+			answer: raw(`true`),
 		},
 		{
 			input: questionbankuc.QuestionInput{
@@ -125,8 +225,7 @@ func run() error {
 				Options:   raw(`{"min":0,"max":10}`),
 				AnswerKey: raw(`{"min":7,"max":10}`),
 			},
-			answer:  raw(`8`),
-			correct: true,
+			answer: raw(`8`),
 		},
 		{
 			input: questionbankuc.QuestionInput{
@@ -134,8 +233,7 @@ func run() error {
 				Body:      "Jelaskan proses fotosintesis.",
 				AnswerKey: raw(`{"rubric":"klorofil, cahaya, CO2, H2O, glukosa"}`),
 			},
-			answer:  raw(`"Fotosintesis mengubah cahaya menjadi energi kimia."`),
-			correct: true,
+			answer: raw(`"Fotosintesis mengubah cahaya menjadi energi kimia."`),
 		},
 	}
 
@@ -205,8 +303,23 @@ func run() error {
 		return fmt.Errorf("get final attempt: %w", err)
 	}
 	printResult("after grading essay", final)
-	fmt.Println("quiz testing seeder completed successfully")
+	fmt.Println("seed completed successfully")
 	return nil
+}
+
+func seedSubject(ctx context.Context, repo *academic.SubjectRepository, code, name string) (string, error) {
+	existing, err := repo.FindByCode(ctx, code)
+	if err == nil {
+		return existing.ID, nil
+	}
+	if !errors.Is(err, domain.ErrNotFound) {
+		return "", fmt.Errorf("find subject %s: %w", code, err)
+	}
+	id, err := repo.Create(ctx, academicdomain.Subject{Code: code, Name: name})
+	if err != nil {
+		return "", fmt.Errorf("create subject %s: %w", code, err)
+	}
+	return id, nil
 }
 
 func printResult(label string, result quizdomain.AttemptResult) {
@@ -223,66 +336,6 @@ func printResult(label string, result quizdomain.AttemptResult) {
 		}
 		fmt.Printf("  - q#%d answerId=%s isCorrect=%s userAnswer=%s\n", answer.QuestionID, answer.AnswerID, isCorrect, string(answer.UserAnswer))
 	}
-}
-
-func seedUser(ctx context.Context, sqlDB *sql.DB, email, fullName, password, roleCode string) (string, error) {
-	email = strings.ToLower(strings.TrimSpace(email))
-	hash, err := auth.HashArgon2idPassword(password)
-	if err != nil {
-		return "", fmt.Errorf("hash password: %w", err)
-	}
-	tx, err := sqlDB.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO roles (code, name) VALUES ($1, $2)
-		ON CONFLICT (code) DO NOTHING
-	`, roleCode, roleCode); err != nil {
-		return "", fmt.Errorf("seed role %s: %w", roleCode, err)
-	}
-
-	var userID string
-	if err := tx.QueryRowContext(ctx, `
-		INSERT INTO users (email, password_hash, full_name, status)
-		VALUES ($1, $2, $3, 'active')
-		ON CONFLICT (email) DO UPDATE
-		SET password_hash = EXCLUDED.password_hash,
-			full_name = EXCLUDED.full_name,
-			status = 'active',
-			updated_at = now(),
-			deleted_at = NULL
-		RETURNING id
-	`, email, hash, fullName).Scan(&userID); err != nil {
-		return "", fmt.Errorf("seed user %s: %w", email, err)
-	}
-	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO user_roles (user_id, role_code) VALUES ($1, $2)
-		ON CONFLICT (user_id, role_code) DO NOTHING
-	`, userID, roleCode); err != nil {
-		return "", fmt.Errorf("assign role %s: %w", roleCode, err)
-	}
-	if err := tx.Commit(); err != nil {
-		return "", err
-	}
-	return userID, nil
-}
-
-func seedSubject(ctx context.Context, repo *academic.SubjectRepository, code, name string) (string, error) {
-	existing, err := repo.FindByCode(ctx, code)
-	if err == nil {
-		return existing.ID, nil
-	}
-	if !errors.Is(err, domain.ErrNotFound) {
-		return "", fmt.Errorf("find subject %s: %w", code, err)
-	}
-	id, err := repo.Create(ctx, academicdomain.Subject{Code: code, Name: name})
-	if err != nil {
-		return "", fmt.Errorf("create subject %s: %w", code, err)
-	}
-	return id, nil
 }
 
 func raw(value string) json.RawMessage {

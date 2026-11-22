@@ -496,7 +496,7 @@ PUT /api/v1/quiz-attempts/:attemptId/answers/:answerId/grade
 
 Run test seeder:
 ```bash
-make seed-quiz
+make seed SEED_PASSWORD='ganti-dengan-password-kuat'
 ```
 
 Seeder buat:
