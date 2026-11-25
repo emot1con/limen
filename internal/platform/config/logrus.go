@@ -22,5 +22,14 @@ func NewLogger(cfg *Config) (*logrus.Logger, error) {
 	} else {
 		logger.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
 	}
+
+	if cfg.LokiEnabled && cfg.LokiURL != "" {
+		lokiHook := NewLokiHook(cfg.LokiURL, map[string]string{
+			"app": cfg.OtelServiceName,
+			"env": cfg.AppEnv,
+		})
+		logger.AddHook(lokiHook)
+	}
+
 	return logger, nil
 }

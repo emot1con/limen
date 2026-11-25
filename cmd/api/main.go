@@ -16,6 +16,7 @@ import (
 	"limen/internal/platform/cache"
 	"limen/internal/platform/config"
 	"limen/internal/platform/database"
+	"limen/internal/platform/tracer"
 )
 
 func main() {
@@ -37,6 +38,22 @@ func run() error {
 	logger, err := config.NewLogger(cfg)
 	if err != nil {
 		return fmt.Errorf("setup logger: %w", err)
+	}
+
+	if cfg.OtelEnabled {
+		tp, err := tracer.InitTracer(ctx, cfg.OtelServiceName, cfg.OtelEndpoint, cfg.AppEnv)
+		if err != nil {
+			logger.WithError(err).Warn("failed to initialize tracer exporter, continuing without tracing")
+		} else {
+			defer func() {
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+				defer cancel()
+				if err := tp.Shutdown(shutdownCtx); err != nil {
+					logger.WithError(err).Error("failed to shutdown tracer provider")
+				}
+			}()
+			logger.WithField("endpoint", cfg.OtelEndpoint).Info("opentelemetry tracer initialized")
+		}
 	}
 
 	postgresDB, err := database.NewPostgresConnection(ctx, cfg)

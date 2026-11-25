@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func RequestLogger(logger *logrus.Logger) gin.HandlerFunc {
@@ -15,15 +16,23 @@ func RequestLogger(logger *logrus.Logger) gin.HandlerFunc {
 		startedAt := time.Now()
 		c.Next()
 
-		status := c.Writer.Status()
-		entry := logger.WithFields(logrus.Fields{
+		fields := logrus.Fields{
 			"method":      c.Request.Method,
 			"path":        c.FullPath(),
-			"status":      status,
+			"status":      c.Writer.Status(),
 			"duration_ms": time.Since(startedAt).Milliseconds(),
 			"client_ip":   c.ClientIP(),
 			"request_id":  c.GetString("request_id"),
-		})
+		}
+
+		span := trace.SpanFromContext(c.Request.Context())
+		if span != nil && span.SpanContext().IsValid() {
+			fields["trace_id"] = span.SpanContext().TraceID().String()
+			fields["span_id"] = span.SpanContext().SpanID().String()
+		}
+
+		status := c.Writer.Status()
+		entry := logger.WithFields(fields)
 		if len(c.Errors) > 0 {
 			entry = entry.WithField("error_count", len(c.Errors))
 		}

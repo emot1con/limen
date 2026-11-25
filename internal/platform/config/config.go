@@ -38,6 +38,11 @@ type Config struct {
 	CacheTTLAcademic       time.Duration
 	CacheTTLSchedules      time.Duration
 	CacheTTLQuiz           time.Duration
+	OtelEnabled            bool
+	OtelEndpoint           string
+	OtelServiceName        string
+	LokiEnabled            bool
+	LokiURL                string
 }
 
 func LoadConfig() (*Config, error) {
@@ -65,6 +70,11 @@ func LoadConfig() (*Config, error) {
 		CacheTTLAcademic:       getEnvDuration("CACHE_TTL_ACADEMIC", 20*time.Minute),
 		CacheTTLSchedules:      getEnvDuration("CACHE_TTL_SCHEDULES", 20*time.Minute),
 		CacheTTLQuiz:           getEnvDuration("CACHE_TTL_QUIZ", 10*time.Minute),
+		OtelEnabled:            getEnvBool("OTEL_ENABLED", true),
+		OtelEndpoint:           getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317"),
+		OtelServiceName:        getEnv("OTEL_SERVICE_NAME", "limen-api"),
+		LokiEnabled:            getEnvBool("LOKI_ENABLED", true),
+		LokiURL:                getEnv("LOKI_URL", "http://localhost:3100"),
 	}
 
 	var err error

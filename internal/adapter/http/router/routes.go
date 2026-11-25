@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"gorm.io/gorm"
 	"limen/internal/adapter/http/handler/academic"
 	"limen/internal/adapter/http/handler/admin"
@@ -51,6 +52,9 @@ import (
 
 func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache, cfg *config.Config, logger *logrus.Logger, fingerprintGateway fingerprintdomain.Gateway) *gin.Engine {
 	router := gin.New()
+	if cfg.OtelEnabled {
+		router.Use(otelgin.Middleware(cfg.OtelServiceName))
+	}
 	router.Use(middleware.RequestID(), gin.Recovery(), middleware.RequestLogger(logger), middleware.CORS(cfg.CorsAllowedOrigins))
 
 	userRepo := postgresuser.NewUserRepository(postgresDB)
@@ -114,7 +118,7 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 	adminWrite.POST("/classes", writeLimiter, academicHandler.CreateClass)
 	adminWrite.PUT("/classes/:classId", writeLimiter, academicHandler.UpdateClass)
 
-	adminRead.GET("/subjects", masterReadLimiter, academicHandler.ListSubjects)
+	v1.GET("/subjects", authMiddleware.Authenticate(), authMiddleware.RequireRole("admin", "guru_mapel"), masterReadLimiter, academicHandler.ListSubjects)
 	adminWrite.POST("/subjects", writeLimiter, academicHandler.CreateSubject)
 
 	adminRead.GET("/students", sensitiveReadLimiter, academicHandler.ListStudents)
