@@ -51,6 +51,9 @@ func (m *questionRepoMock) FindByID(_ context.Context, id string) (quizdomain.Qu
 	}
 	return item, nil
 }
+func (m *questionRepoMock) FindByIDIncludingDeleted(ctx context.Context, id string) (quizdomain.Question, error) {
+	return m.FindByID(ctx, id)
+}
 func (m *questionRepoMock) ListByIDs(_ context.Context, ids []string) ([]quizdomain.Question, error) {
 	out := make([]quizdomain.Question, 0, len(ids))
 	for _, id := range ids {
@@ -59,6 +62,9 @@ func (m *questionRepoMock) ListByIDs(_ context.Context, ids []string) ([]quizdom
 		}
 	}
 	return out, nil
+}
+func (m *questionRepoMock) ListByIDsIncludingDeleted(ctx context.Context, ids []string) ([]quizdomain.Question, error) {
+	return m.ListByIDs(ctx, ids)
 }
 func (*questionRepoMock) List(context.Context, string, int, int) ([]quizdomain.Question, int64, error) {
 	return nil, 0, nil

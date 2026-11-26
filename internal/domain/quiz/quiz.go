@@ -192,7 +192,9 @@ type QuestionBankRepository interface {
 type QuestionRepository interface {
 	Create(context.Context, Question) (string, error)
 	FindByID(context.Context, string) (Question, error)
+	FindByIDIncludingDeleted(context.Context, string) (Question, error)
 	ListByIDs(context.Context, []string) ([]Question, error)
+	ListByIDsIncludingDeleted(context.Context, []string) ([]Question, error)
 	List(context.Context, string, int, int) ([]Question, int64, error)
 	Update(context.Context, Question) error
 	Delete(context.Context, string) error

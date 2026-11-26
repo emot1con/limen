@@ -90,8 +90,14 @@ func (m *mockQuestionRepo) FindByID(_ context.Context, id string) (quizdomain.Qu
 	}
 	return q, nil
 }
+func (m *mockQuestionRepo) FindByIDIncludingDeleted(ctx context.Context, id string) (quizdomain.Question, error) {
+	return m.FindByID(ctx, id)
+}
 func (m *mockQuestionRepo) ListByIDs(context.Context, []string) ([]quizdomain.Question, error) {
 	return nil, nil
+}
+func (m *mockQuestionRepo) ListByIDsIncludingDeleted(ctx context.Context, ids []string) ([]quizdomain.Question, error) {
+	return m.ListByIDs(ctx, ids)
 }
 func (m *mockQuestionRepo) List(_ context.Context, bankID string, _, _ int) ([]quizdomain.Question, int64, error) {
 	var list []quizdomain.Question

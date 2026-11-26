@@ -366,7 +366,7 @@ func (uc *UseCase) GradeAnswer(ctx context.Context, attemptID, answerID, graderI
 	if answer.AttemptID != attemptID {
 		return GradeResult{}, domain.ErrNotFound
 	}
-	question, err := uc.questions.FindByID(ctx, answer.QuestionID)
+	question, err := uc.questions.FindByIDIncludingDeleted(ctx, answer.QuestionID)
 	if err != nil {
 		uc.logError(err, "quiz_grade_get_question", logrus.Fields{"question_id": answer.QuestionID})
 		return GradeResult{}, err
@@ -421,7 +421,7 @@ func (uc *UseCase) loadQuestions(ctx context.Context, qqList []quizdomain.QuizQu
 	for i, qq := range qqList {
 		ids[i] = qq.QuestionID
 	}
-	questions, err := uc.questions.ListByIDs(ctx, ids)
+	questions, err := uc.questions.ListByIDsIncludingDeleted(ctx, ids)
 	if err != nil {
 		return nil, err
 	}

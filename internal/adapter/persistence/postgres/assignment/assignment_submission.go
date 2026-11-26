@@ -123,7 +123,7 @@ func (r *AssignmentSubmissionRepository) Update(ctx context.Context, submission 
 }
 
 func (r *AssignmentSubmissionRepository) List(ctx context.Context, assignmentID string, limit, offset int) ([]assignmentdomain.SubmissionDetail, int64, error) {
-	query := r.db.WithContext(ctx).Table("assignment_submissions s").Joins("JOIN users u ON u.id = s.student_user_id").Where("s.assignment_id = ? AND s.deleted_at IS NULL", assignmentID)
+	query := r.db.WithContext(ctx).Table("assignment_submissions s").Joins("JOIN users u ON u.id = s.student_user_id AND u.deleted_at IS NULL").Where("s.assignment_id = ? AND s.deleted_at IS NULL", assignmentID)
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -137,7 +137,7 @@ func (r *AssignmentSubmissionRepository) List(ctx context.Context, assignmentID 
 
 func (r *AssignmentSubmissionRepository) FindDetail(ctx context.Context, assignmentID, studentUserID string) (assignmentdomain.SubmissionDetail, error) {
 	var row submissionRow
-	err := r.db.WithContext(ctx).Table("assignment_submissions s").Joins("JOIN users u ON u.id = s.student_user_id").Where("s.assignment_id = ? AND s.student_user_id = ? AND s.deleted_at IS NULL", assignmentID, studentUserID).Select(submissionSelect).Scan(&row).Error
+	err := r.db.WithContext(ctx).Table("assignment_submissions s").Joins("JOIN users u ON u.id = s.student_user_id AND u.deleted_at IS NULL").Where("s.assignment_id = ? AND s.student_user_id = ? AND s.deleted_at IS NULL", assignmentID, studentUserID).Select(submissionSelect).Scan(&row).Error
 	if err != nil {
 		return assignmentdomain.SubmissionDetail{}, err
 	}

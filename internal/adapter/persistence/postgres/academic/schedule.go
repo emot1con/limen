@@ -13,16 +13,17 @@ import (
 )
 
 type scheduleModel struct {
-	ID            string    `gorm:"column:id;primaryKey"`
-	ClassID       string    `gorm:"column:class_id"`
-	SubjectID     string    `gorm:"column:subject_id"`
-	TeacherUserID *string   `gorm:"column:teacher_user_id"`
-	DayOfWeek     int16     `gorm:"column:day_of_week"`
-	StartTime     string    `gorm:"column:start_time"`
-	EndTime       string    `gorm:"column:end_time"`
-	Kind          string    `gorm:"column:kind"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
-	UpdatedAt     time.Time `gorm:"column:updated_at"`
+	ID            string         `gorm:"column:id;primaryKey"`
+	ClassID       string         `gorm:"column:class_id"`
+	SubjectID     string         `gorm:"column:subject_id"`
+	TeacherUserID *string        `gorm:"column:teacher_user_id"`
+	DayOfWeek     int16          `gorm:"column:day_of_week"`
+	StartTime     string         `gorm:"column:start_time"`
+	EndTime       string         `gorm:"column:end_time"`
+	Kind          string         `gorm:"column:kind"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (scheduleModel) TableName() string { return "schedules" }

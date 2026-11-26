@@ -12,14 +12,15 @@ import (
 )
 
 type questionModel struct {
-	ID        string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	BankID    string    `gorm:"column:bank_id"`
-	Type      string    `gorm:"column:type"`
-	Body      string    `gorm:"column:body"`
-	Options   []byte    `gorm:"column:options;type:jsonb"`
-	AnswerKey []byte    `gorm:"column:answer_key;type:jsonb"`
-	CreatedAt time.Time `gorm:"column:created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at"`
+	ID        string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	BankID    string         `gorm:"column:bank_id"`
+	Type      string         `gorm:"column:type"`
+	Body      string         `gorm:"column:body"`
+	Options   []byte         `gorm:"column:options;type:jsonb"`
+	AnswerKey []byte         `gorm:"column:answer_key;type:jsonb"`
+	CreatedAt time.Time      `gorm:"column:created_at"`
+	UpdatedAt time.Time      `gorm:"column:updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (questionModel) TableName() string {
@@ -61,12 +62,36 @@ func (r *QuestionRepository) FindByID(ctx context.Context, id string) (quizdomai
 	return r.toDomain(model), nil
 }
 
+func (r *QuestionRepository) FindByIDIncludingDeleted(ctx context.Context, id string) (quizdomain.Question, error) {
+	var model questionModel
+	err := r.db.WithContext(ctx).Unscoped().First(&model, "id = ?", id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return quizdomain.Question{}, domain.ErrNotFound
+		}
+		return quizdomain.Question{}, err
+	}
+	return r.toDomain(model), nil
+}
+
 func (r *QuestionRepository) ListByIDs(ctx context.Context, ids []string) ([]quizdomain.Question, error) {
+	return r.listByIDs(ctx, ids, false)
+}
+
+func (r *QuestionRepository) ListByIDsIncludingDeleted(ctx context.Context, ids []string) ([]quizdomain.Question, error) {
+	return r.listByIDs(ctx, ids, true)
+}
+
+func (r *QuestionRepository) listByIDs(ctx context.Context, ids []string, includingDeleted bool) ([]quizdomain.Question, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
 	var models []questionModel
-	if err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&models).Error; err != nil {
+	query := r.db.WithContext(ctx)
+	if includingDeleted {
+		query = query.Unscoped()
+	}
+	if err := query.Where("id IN ?", ids).Find(&models).Error; err != nil {
 		return nil, err
 	}
 	questions := make([]quizdomain.Question, len(models))

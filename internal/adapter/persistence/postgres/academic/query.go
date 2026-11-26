@@ -99,7 +99,7 @@ type studentRow struct {
 }
 
 func (r *QueryRepository) studentQuery(ctx context.Context, classID, q string) *gorm.DB {
-	query := r.db.WithContext(ctx).Table("students s").Joins("JOIN users u ON u.id = s.user_id").Joins("LEFT JOIN classes c ON c.id = s.class_id AND c.deleted_at IS NULL").Where("s.deleted_at IS NULL")
+	query := r.db.WithContext(ctx).Table("students s").Joins("JOIN users u ON u.id = s.user_id AND u.deleted_at IS NULL").Joins("LEFT JOIN classes c ON c.id = s.class_id AND c.deleted_at IS NULL").Where("s.deleted_at IS NULL")
 	if classID != "" {
 		query = query.Where("s.class_id = ?", classID)
 	}

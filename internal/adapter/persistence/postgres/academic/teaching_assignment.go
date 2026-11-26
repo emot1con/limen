@@ -12,12 +12,13 @@ import (
 )
 
 type teachingAssignmentModel struct {
-	ID            string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	TeacherUserID string    `gorm:"column:teacher_user_id"`
-	SubjectID     string    `gorm:"column:subject_id"`
-	ClassID       string    `gorm:"column:class_id"`
-	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	TeacherUserID string         `gorm:"column:teacher_user_id"`
+	SubjectID     string         `gorm:"column:subject_id"`
+	ClassID       string         `gorm:"column:class_id"`
+	CreatedAt     time.Time      `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;autoUpdateTime"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (teachingAssignmentModel) TableName() string {

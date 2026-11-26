@@ -112,7 +112,7 @@ func seedAccount(ctx context.Context, tx *sql.Tx, user seedUser, hash string) (s
 	if err := tx.QueryRowContext(ctx, `
 		INSERT INTO users (email, password_hash, full_name, status)
 		VALUES ($1, $2, $3, 'active')
-		ON CONFLICT (email) DO UPDATE
+		ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE
 		SET password_hash = EXCLUDED.password_hash,
 			full_name = EXCLUDED.full_name,
 			status = 'active',

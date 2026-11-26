@@ -93,7 +93,7 @@ func (r *AssessmentScoreRepository) Upsert(ctx context.Context, score assessment
 }
 
 func (r *AssessmentScoreRepository) List(ctx context.Context, assessmentID string, limit, offset int) ([]assessmentdomain.ScoreDetail, int64, error) {
-	query := r.db.WithContext(ctx).Table("assessment_scores s").Joins("JOIN users u ON u.id = s.student_user_id").Where("s.assessment_id = ? AND s.deleted_at IS NULL", assessmentID)
+	query := r.db.WithContext(ctx).Table("assessment_scores s").Joins("JOIN users u ON u.id = s.student_user_id AND u.deleted_at IS NULL").Where("s.assessment_id = ? AND s.deleted_at IS NULL", assessmentID)
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -121,7 +121,7 @@ func (r *AssessmentScoreRepository) FindDetail(ctx context.Context, assessmentID
 		UpdatedBy                                    *string
 		CreatedAt, UpdatedAt                         time.Time
 	}
-	err := r.db.WithContext(ctx).Table("assessment_scores s").Joins("JOIN users u ON u.id = s.student_user_id").Where("s.assessment_id = ? AND s.student_user_id = ? AND s.deleted_at IS NULL", assessmentID, studentUserID).Select("s.id, s.assessment_id, s.student_user_id, s.score, s.updated_by, s.created_at, s.updated_at, u.full_name AS student_name").Scan(&row).Error
+	err := r.db.WithContext(ctx).Table("assessment_scores s").Joins("JOIN users u ON u.id = s.student_user_id AND u.deleted_at IS NULL").Where("s.assessment_id = ? AND s.student_user_id = ? AND s.deleted_at IS NULL", assessmentID, studentUserID).Select("s.id, s.assessment_id, s.student_user_id, s.score, s.updated_by, s.created_at, s.updated_at, u.full_name AS student_name").Scan(&row).Error
 	if err != nil {
 		return assessmentdomain.ScoreDetail{}, err
 	}

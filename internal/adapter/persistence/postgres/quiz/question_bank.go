@@ -12,12 +12,13 @@ import (
 )
 
 type questionBankModel struct {
-	ID        string    `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	SubjectID string    `gorm:"column:subject_id"`
-	OwnerID   string    `gorm:"column:owner_id"`
-	Scope     string    `gorm:"column:scope"`
-	CreatedAt time.Time `gorm:"column:created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at"`
+	ID        string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	SubjectID string         `gorm:"column:subject_id"`
+	OwnerID   string         `gorm:"column:owner_id"`
+	Scope     string         `gorm:"column:scope"`
+	CreatedAt time.Time      `gorm:"column:created_at"`
+	UpdatedAt time.Time      `gorm:"column:updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (questionBankModel) TableName() string {
@@ -58,7 +59,7 @@ func (r *QuestionBankRepository) FindByID(ctx context.Context, id string) (quizd
 }
 
 func (r *QuestionBankRepository) List(ctx context.Context, filter quizdomain.QuestionBankFilter, limit, offset int) ([]quizdomain.QuestionBankDetail, int64, error) {
-	query := r.db.WithContext(ctx).Table("question_banks qb")
+	query := r.db.WithContext(ctx).Table("question_banks qb").Where("qb.deleted_at IS NULL")
 	if filter.Scope != "" {
 		query = query.Where("qb.scope = ?", string(filter.Scope))
 	}
@@ -83,7 +84,7 @@ func (r *QuestionBankRepository) List(ctx context.Context, filter quizdomain.Que
 	}
 	err := query.
 		Select("qb.id, qb.subject_id, qb.owner_id, qb.scope, qb.created_at, qb.updated_at, COUNT(q.id) AS question_count").
-		Joins("LEFT JOIN questions q ON q.bank_id = qb.id").
+		Joins("LEFT JOIN questions q ON q.bank_id = qb.id AND q.deleted_at IS NULL").
 		Group("qb.id, qb.subject_id, qb.owner_id, qb.scope, qb.created_at, qb.updated_at").
 		Order("qb.created_at, qb.id").
 		Limit(limit).

@@ -22,7 +22,7 @@ func (r *QueryRepository) ListQuizzes(ctx context.Context, filter quizdomain.Qui
 		query = query.Where("q.subject_id = ?", filter.SubjectID)
 	}
 	if filter.ClassID != "" {
-		query = query.Where("EXISTS (SELECT 1 FROM teaching_assignments ta WHERE ta.subject_id = q.subject_id AND ta.teacher_user_id = q.owner_id AND ta.class_id = ?)", filter.ClassID)
+		query = query.Where("EXISTS (SELECT 1 FROM teaching_assignments ta WHERE ta.subject_id = q.subject_id AND ta.teacher_user_id = q.owner_id AND ta.class_id = ? AND ta.deleted_at IS NULL)", filter.ClassID)
 	}
 	switch filter.Status {
 	case quizdomain.QuizStatusDraft:

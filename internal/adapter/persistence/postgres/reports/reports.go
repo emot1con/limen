@@ -66,7 +66,7 @@ func (r *QueryRepository) ListAttendanceSummaries(ctx context.Context, filter re
 	default:
 		err := query.
 			Select("ar.subject_user_id AS key, ar.subject_user_id AS student_user_id, u.full_name AS student_name, s.class_id AS class_id, c.name AS class_name, " + attendanceStatusSelect).
-			Joins("LEFT JOIN users u ON u.id = ar.subject_user_id").
+			Joins("LEFT JOIN users u ON u.id = ar.subject_user_id AND u.deleted_at IS NULL").
 			Joins("LEFT JOIN students s ON s.user_id = ar.subject_user_id AND s.deleted_at IS NULL").
 			Joins("LEFT JOIN classes c ON c.id = s.class_id AND c.deleted_at IS NULL").
 			Group("ar.subject_user_id, u.full_name, s.class_id, c.name").
@@ -100,7 +100,7 @@ func (r *QueryRepository) ListGradeSummaries(ctx context.Context, filter reports
 func (r *QueryRepository) gradeSummaryQuery(ctx context.Context, filter reportsdomain.GradeFilter) *gorm.DB {
 	query := r.db.WithContext(ctx).Table("assessment_scores sc").
 		Joins("JOIN assessments a ON a.id = sc.assessment_id AND a.deleted_at IS NULL").
-		Joins("JOIN users u ON u.id = sc.student_user_id").
+		Joins("JOIN users u ON u.id = sc.student_user_id AND u.deleted_at IS NULL").
 		Joins("LEFT JOIN classes c ON c.id = a.class_id AND c.deleted_at IS NULL").
 		Joins("LEFT JOIN subjects sub ON sub.id = a.subject_id AND sub.deleted_at IS NULL").
 		Where("sc.deleted_at IS NULL")

@@ -12,15 +12,16 @@ import (
 )
 
 type deviceModel struct {
-	ID            string     `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
-	Name          string     `gorm:"column:name"`
-	Location      *string    `gorm:"column:location"`
-	Serial        *string    `gorm:"column:serial"`
-	IsActive      bool       `gorm:"column:is_active"`
-	CredentialRef *string    `gorm:"column:credential_ref"`
-	LastSeenAt    *time.Time `gorm:"column:last_seen_at"`
-	CreatedAt     time.Time  `gorm:"column:created_at"`
-	UpdatedAt     time.Time  `gorm:"column:updated_at"`
+	ID            string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	Name          string         `gorm:"column:name"`
+	Location      *string        `gorm:"column:location"`
+	Serial        *string        `gorm:"column:serial"`
+	IsActive      bool           `gorm:"column:is_active"`
+	CredentialRef *string        `gorm:"column:credential_ref"`
+	LastSeenAt    *time.Time     `gorm:"column:last_seen_at"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 func (deviceModel) TableName() string {

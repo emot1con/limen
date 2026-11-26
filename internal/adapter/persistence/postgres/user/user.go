@@ -20,6 +20,7 @@ type userModel struct {
 	LastLoginAt  *time.Time        `gorm:"column:last_login_at"`
 	CreatedAt    time.Time         `gorm:"column:created_at"`
 	UpdatedAt    time.Time         `gorm:"column:updated_at"`
+	DeletedAt    gorm.DeletedAt    `gorm:"column:deleted_at;index"`
 }
 
 func (userModel) TableName() string {
