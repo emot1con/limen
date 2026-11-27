@@ -1,8 +1,8 @@
 package admin
 
 import (
-	"limen/internal/adapter/http/handler/common"
 	"errors"
+	"limen/internal/adapter/http/handler/common"
 	"net/http"
 	"strings"
 
@@ -207,6 +207,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 func (h *AdminHandler) CreateUser(c *gin.Context) {
 	var req struct {
 		Email    string   `json:"email"`
+		Phone    string   `json:"phone"`
 		Password string   `json:"password"`
 		FullName string   `json:"fullName"`
 		Roles    []string `json:"roles"`
@@ -215,12 +216,12 @@ func (h *AdminHandler) CreateUser(c *gin.Context) {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", response.FieldError{Field: "request", Message: "invalid request body"})
 		return
 	}
-	if fields := userFields(req.Email, req.Password, req.FullName, req.Roles, true); len(fields) > 0 {
+	if fields := userFields(req.Email, req.Phone, req.Password, req.FullName, req.Roles, true); len(fields) > 0 {
 		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", fields...)
 		return
 	}
 	actor, _ := middleware.GetUserID(c)
-	out, err := h.users.Create(c.Request.Context(), useruc.CreateInput{Email: req.Email, Password: req.Password, FullName: req.FullName, Roles: req.Roles, GrantedBy: actor})
+	out, err := h.users.Create(c.Request.Context(), useruc.CreateInput{Email: req.Email, Phone: req.Phone, Password: req.Password, FullName: req.FullName, Roles: req.Roles, GrantedBy: actor})
 	if err != nil {
 		common.WriteMappedError(c, err, "email")
 		return
@@ -260,6 +261,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	}
 	var req struct {
 		Email    *string   `json:"email"`
+		Phone    *string   `json:"phone"`
 		FullName *string   `json:"fullName"`
 		Status   *string   `json:"status"`
 		Roles    *[]string `json:"roles"`
@@ -271,6 +273,9 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	var fields []response.FieldError
 	if req.Email != nil && (strings.TrimSpace(*req.Email) == "" || !strings.Contains(*req.Email, "@")) {
 		fields = append(fields, response.FieldError{Field: "email", Message: "must be valid email"})
+	}
+	if req.Phone != nil && !userdomain.ValidPhone(strings.TrimSpace(*req.Phone)) {
+		fields = append(fields, response.FieldError{Field: "phone", Message: "must use +62 followed by 8 to 13 digits"})
 	}
 	if req.FullName != nil && strings.TrimSpace(*req.FullName) == "" {
 		fields = append(fields, response.FieldError{Field: "fullName", Message: "required"})
@@ -292,7 +297,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 	actor, _ := middleware.GetUserID(c)
-	out, err := h.users.Update(c.Request.Context(), useruc.UpdateInput{ID: c.Param("userId"), Email: req.Email, FullName: req.FullName, Status: status, Roles: req.Roles, GrantedBy: actor})
+	out, err := h.users.Update(c.Request.Context(), useruc.UpdateInput{ID: c.Param("userId"), Email: req.Email, Phone: req.Phone, FullName: req.FullName, Status: status, Roles: req.Roles, GrantedBy: actor})
 	if err != nil {
 		common.WriteMappedError(c, err, "email")
 		return
@@ -309,14 +314,17 @@ func deviceJSON(item deviceuc.Device) gin.H {
 }
 
 func userJSON(item useruc.User) gin.H {
-	return gin.H{"id": item.ID, "email": item.Email, "fullName": item.FullName, "status": item.Status, "roles": item.Roles, "profile": item.Profile, "lastLoginAt": item.LastLoginAt, "createdAt": item.CreatedAt, "updatedAt": item.UpdatedAt}
+	return gin.H{"id": item.ID, "email": item.Email, "phone": item.Phone, "fullName": item.FullName, "status": item.Status, "roles": item.Roles, "profile": item.Profile, "lastLoginAt": item.LastLoginAt, "createdAt": item.CreatedAt, "updatedAt": item.UpdatedAt}
 }
 
-func userFields(email, password, fullName string, roles []string, creating bool) []response.FieldError {
+func userFields(email, phone, password, fullName string, roles []string, creating bool) []response.FieldError {
 	var fields []response.FieldError
 	if creating {
 		if strings.TrimSpace(email) == "" || !strings.Contains(email, "@") {
 			fields = append(fields, response.FieldError{Field: "email", Message: "must be valid email"})
+		}
+		if !userdomain.ValidPhone(strings.TrimSpace(phone)) {
+			fields = append(fields, response.FieldError{Field: "phone", Message: "must use +62 followed by 8 to 13 digits"})
 		}
 		if !validPassword(password) {
 			fields = append(fields, response.FieldError{Field: "password", Message: "minimum 8 characters with uppercase, lowercase, and digit"})
@@ -359,4 +367,3 @@ func validPassword(password string) bool {
 	}
 	return lower && upper && digit
 }
-

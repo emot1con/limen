@@ -33,15 +33,16 @@ type QuestionInput struct {
 	AnswerKey json.RawMessage
 }
 
-func (uc *UseCase) CreateBank(ctx context.Context, subjectID, ownerID string, scope quizdomain.QuestionBankScope) (quizdomain.QuestionBankDetail, error) {
-	if !validBankScope(scope) || subjectID == "" || ownerID == "" {
+func (uc *UseCase) CreateBank(ctx context.Context, name, subjectID, ownerID string, scope quizdomain.QuestionBankScope) (quizdomain.QuestionBankDetail, error) {
+	name = strings.TrimSpace(name)
+	if name == "" || !validBankScope(scope) || subjectID == "" || ownerID == "" {
 		return quizdomain.QuestionBankDetail{}, domain.ErrInvalid
 	}
 	if _, err := uc.subjects.FindByID(ctx, subjectID); err != nil {
 		uc.logError(err, "question_bank_validate_subject", logrus.Fields{"subject_id": subjectID})
 		return quizdomain.QuestionBankDetail{}, err
 	}
-	id, err := uc.banks.Create(ctx, quizdomain.QuestionBank{SubjectID: subjectID, OwnerID: ownerID, Scope: scope})
+	id, err := uc.banks.Create(ctx, quizdomain.QuestionBank{Name: name, SubjectID: subjectID, OwnerID: ownerID, Scope: scope})
 	if err != nil {
 		uc.logError(err, "question_bank_create", nil)
 		return quizdomain.QuestionBankDetail{}, err

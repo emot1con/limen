@@ -1,8 +1,8 @@
 package question_bank
 
 import (
-	"limen/internal/adapter/http/handler/common"
 	"encoding/json"
+	"limen/internal/adapter/http/handler/common"
 	"net/http"
 	"strings"
 
@@ -53,6 +53,7 @@ func (h *QuestionBankHandler) ListBanks(c *gin.Context) {
 
 func (h *QuestionBankHandler) CreateBank(c *gin.Context) {
 	var req struct {
+		Name      string `json:"name"`
 		SubjectID string `json:"subjectId"`
 		Scope     string `json:"scope"`
 	}
@@ -61,6 +62,9 @@ func (h *QuestionBankHandler) CreateBank(c *gin.Context) {
 		return
 	}
 	var fields []response.FieldError
+	if strings.TrimSpace(req.Name) == "" {
+		fields = append(fields, response.FieldError{Field: "name", Message: "required"})
+	}
 	if !common.ValidUUID(req.SubjectID) {
 		fields = append(fields, response.FieldError{Field: "subjectId", Message: "must be a UUID"})
 	}
@@ -77,7 +81,7 @@ func (h *QuestionBankHandler) CreateBank(c *gin.Context) {
 		common.WriteMappedError(c, err)
 		return
 	}
-	item, err := h.questionbank.CreateBank(c.Request.Context(), req.SubjectID, ownerID, scope)
+	item, err := h.questionbank.CreateBank(c.Request.Context(), req.Name, req.SubjectID, ownerID, scope)
 	if err != nil {
 		common.WriteMappedError(c, err)
 		return
@@ -191,7 +195,7 @@ func validQuestionType(value quizdomain.QuestionType) bool {
 }
 
 func questionBankJSON(item quizdomain.QuestionBankDetail) gin.H {
-	return gin.H{"id": item.ID, "subjectId": item.SubjectID, "scope": item.Scope, "ownerId": item.OwnerID, "questionCount": item.QuestionCount}
+	return gin.H{"id": item.ID, "name": item.Name, "subjectId": item.SubjectID, "scope": item.Scope, "ownerId": item.OwnerID, "questionCount": item.QuestionCount}
 }
 
 func questionJSON(item quizdomain.Question) gin.H {

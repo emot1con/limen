@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"limen/internal/adapter/http/handler/common"
 	"errors"
+	"limen/internal/adapter/http/handler/common"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -55,6 +55,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"user": gin.H{
 			"id":       output.UserID,
 			"email":    output.Email,
+			"phone":    output.Phone,
 			"fullName": output.FullName,
 			"roles":    output.Roles,
 			"status":   output.Status,
@@ -94,6 +95,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	response.WriteOK(c, gin.H{
 		"id":       output.UserID,
 		"email":    output.Email,
+		"phone":    output.Phone,
 		"fullName": output.FullName,
 		"status":   output.Status,
 		"roles":    output.Roles,

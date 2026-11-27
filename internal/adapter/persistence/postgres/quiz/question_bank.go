@@ -13,6 +13,7 @@ import (
 
 type questionBankModel struct {
 	ID        string         `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
+	Name      string         `gorm:"column:name"`
 	SubjectID string         `gorm:"column:subject_id"`
 	OwnerID   string         `gorm:"column:owner_id"`
 	Scope     string         `gorm:"column:scope"`
@@ -36,6 +37,7 @@ func NewQuestionBankRepository(db *gorm.DB) *QuestionBankRepository {
 func (r *QuestionBankRepository) Create(ctx context.Context, bank quizdomain.QuestionBank) (string, error) {
 	model := questionBankModel{
 		ID:        bank.ID,
+		Name:      bank.Name,
 		SubjectID: bank.SubjectID,
 		OwnerID:   bank.OwnerID,
 		Scope:     string(bank.Scope),
@@ -75,6 +77,7 @@ func (r *QuestionBankRepository) List(ctx context.Context, filter quizdomain.Que
 	}
 	var rows []struct {
 		ID            string
+		Name          string
 		SubjectID     string
 		OwnerID       string
 		Scope         string
@@ -83,9 +86,9 @@ func (r *QuestionBankRepository) List(ctx context.Context, filter quizdomain.Que
 		QuestionCount int64
 	}
 	err := query.
-		Select("qb.id, qb.subject_id, qb.owner_id, qb.scope, qb.created_at, qb.updated_at, COUNT(q.id) AS question_count").
+		Select("qb.id, qb.name, qb.subject_id, qb.owner_id, qb.scope, qb.created_at, qb.updated_at, COUNT(q.id) AS question_count").
 		Joins("LEFT JOIN questions q ON q.bank_id = qb.id AND q.deleted_at IS NULL").
-		Group("qb.id, qb.subject_id, qb.owner_id, qb.scope, qb.created_at, qb.updated_at").
+		Group("qb.id, qb.name, qb.subject_id, qb.owner_id, qb.scope, qb.created_at, qb.updated_at").
 		Order("qb.created_at, qb.id").
 		Limit(limit).
 		Offset(offset).
@@ -96,7 +99,7 @@ func (r *QuestionBankRepository) List(ctx context.Context, filter quizdomain.Que
 	banks := make([]quizdomain.QuestionBankDetail, len(rows))
 	for i, row := range rows {
 		banks[i] = quizdomain.QuestionBankDetail{
-			QuestionBank:  quizdomain.QuestionBank{ID: row.ID, SubjectID: row.SubjectID, OwnerID: row.OwnerID, Scope: quizdomain.QuestionBankScope(row.Scope), CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt},
+			QuestionBank:  quizdomain.QuestionBank{ID: row.ID, Name: row.Name, SubjectID: row.SubjectID, OwnerID: row.OwnerID, Scope: quizdomain.QuestionBankScope(row.Scope), CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt},
 			QuestionCount: row.QuestionCount,
 		}
 	}
@@ -105,6 +108,7 @@ func (r *QuestionBankRepository) List(ctx context.Context, filter quizdomain.Que
 
 func (r *QuestionBankRepository) Update(ctx context.Context, bank quizdomain.QuestionBank) error {
 	result := r.db.WithContext(ctx).Model(&questionBankModel{}).Where("id = ?", bank.ID).Updates(map[string]interface{}{
+		"name":       bank.Name,
 		"subject_id": bank.SubjectID,
 		"owner_id":   bank.OwnerID,
 		"scope":      string(bank.Scope),
@@ -132,6 +136,7 @@ func (r *QuestionBankRepository) Delete(ctx context.Context, id string) error {
 func (r *QuestionBankRepository) toDomain(model questionBankModel) quizdomain.QuestionBank {
 	return quizdomain.QuestionBank{
 		ID:        model.ID,
+		Name:      model.Name,
 		SubjectID: model.SubjectID,
 		OwnerID:   model.OwnerID,
 		Scope:     quizdomain.QuestionBankScope(model.Scope),

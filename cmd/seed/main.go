@@ -182,7 +182,7 @@ func seedQuiz(ctx context.Context, db *gorm.DB, teacherID, studentID string) err
 	}
 	fmt.Printf("seeded teacher=%s student=%s subject=%s\n", teacherID, studentID, subjectID)
 
-	bank, err := bankUC.CreateBank(ctx, subjectID, teacherID, quizdomain.QuestionBankScopeExam)
+	bank, err := bankUC.CreateBank(ctx, "Quiz Testing", subjectID, teacherID, quizdomain.QuestionBankScopeExam)
 	if err != nil {
 		return fmt.Errorf("create bank: %w", err)
 	}

@@ -134,25 +134,25 @@ func TestQuestionBank_CreateBank(t *testing.T) {
 	uc, _, _, subRepo := setupQuestionBankUseCase()
 
 	// Validation error: invalid scope or empty fields
-	_, err := uc.CreateBank(context.Background(), "", "owner-1", quizdomain.QuestionBankScopePractice)
+	_, err := uc.CreateBank(context.Background(), "Practice Bank", "", "owner-1", quizdomain.QuestionBankScopePractice)
 	if !errors.Is(err, domain.ErrInvalid) {
 		t.Fatalf("expected ErrInvalid, got %v", err)
 	}
 
-	_, err = uc.CreateBank(context.Background(), "sub-1", "owner-1", "invalid-scope")
+	_, err = uc.CreateBank(context.Background(), "Practice Bank", "sub-1", "owner-1", "invalid-scope")
 	if !errors.Is(err, domain.ErrInvalid) {
 		t.Fatalf("expected ErrInvalid, got %v", err)
 	}
 
 	// Subject not found
-	_, err = uc.CreateBank(context.Background(), "sub-notfound", "owner-1", quizdomain.QuestionBankScopePractice)
+	_, err = uc.CreateBank(context.Background(), "Practice Bank", "sub-notfound", "owner-1", quizdomain.QuestionBankScopePractice)
 	if !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 
 	// Success
 	subRepo.subjects["sub-1"] = academicdomain.Subject{ID: "sub-1", Name: "Math"}
-	detail, err := uc.CreateBank(context.Background(), "sub-1", "owner-1", quizdomain.QuestionBankScopeExam)
+	detail, err := uc.CreateBank(context.Background(), "Practice Bank", "sub-1", "owner-1", quizdomain.QuestionBankScopeExam)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

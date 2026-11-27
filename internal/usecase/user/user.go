@@ -39,6 +39,7 @@ func NewUseCase(users userdomain.UserRepository, userRole userdomain.UserRoleRep
 type User struct {
 	ID          string
 	Email       string
+	Phone       string
 	FullName    string
 	Status      userdomain.Status
 	Roles       []string
@@ -50,6 +51,7 @@ type User struct {
 
 type CreateInput struct {
 	Email     string
+	Phone     string
 	Password  string
 	FullName  string
 	Roles     []string
@@ -59,6 +61,7 @@ type CreateInput struct {
 type UpdateInput struct {
 	ID        string
 	Email     *string
+	Phone     *string
 	FullName  *string
 	Status    *userdomain.Status
 	Roles     *[]string
@@ -74,8 +77,9 @@ type Page struct {
 
 func (uc *UseCase) Create(ctx context.Context, input CreateInput) (User, error) {
 	email := strings.TrimSpace(strings.ToLower(input.Email))
+	phone := strings.TrimSpace(input.Phone)
 	name := strings.TrimSpace(input.FullName)
-	if email == "" || !strings.Contains(email, "@") || name == "" || !validPassword(input.Password) {
+	if email == "" || !strings.Contains(email, "@") || !userdomain.ValidPhone(phone) || name == "" || !validPassword(input.Password) {
 		return User{}, domain.ErrInvalid
 	}
 	roles, err := normalizeRoles(input.Roles)
@@ -89,7 +93,7 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (User, error) 
 		return User{}, err
 	}
 	now := uc.now()
-	newUser := userdomain.User{Email: email, PasswordHash: hash, FullName: name, Status: userdomain.StatusActive, CreatedAt: now, UpdatedAt: now}
+	newUser := userdomain.User{Email: email, Phone: phone, PasswordHash: hash, FullName: name, Status: userdomain.StatusActive, CreatedAt: now, UpdatedAt: now}
 	granted := make([]userdomain.UserRole, len(roles))
 	for i, role := range roles {
 		granted[i] = userdomain.UserRole{RoleCode: role, GrantedAt: now, GrantedBy: optional(input.GrantedBy)}
@@ -172,6 +176,13 @@ func (uc *UseCase) Update(ctx context.Context, input UpdateInput) (User, error) 
 		}
 		item.Email = email
 	}
+	if input.Phone != nil {
+		phone := strings.TrimSpace(*input.Phone)
+		if !userdomain.ValidPhone(phone) {
+			return User{}, domain.ErrInvalid
+		}
+		item.Phone = phone
+	}
 	if input.FullName != nil {
 		name := strings.TrimSpace(*input.FullName)
 		if name == "" {
@@ -251,7 +262,7 @@ func validPassword(password string) bool {
 }
 
 func toUser(item userdomain.User, roles []string) User {
-	return User{ID: item.ID, Email: item.Email, FullName: item.FullName, Status: item.Status, Roles: roles, LastLoginAt: item.LastLoginAt, CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt, Profile: nil}
+	return User{ID: item.ID, Email: item.Email, Phone: item.Phone, FullName: item.FullName, Status: item.Status, Roles: roles, LastLoginAt: item.LastLoginAt, CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt, Profile: nil}
 }
 
 func roleCodes(roles []userdomain.UserRole) []string {

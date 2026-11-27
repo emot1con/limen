@@ -10,9 +10,6 @@ services:
       - "host.docker.internal:host-gateway"
     env_file:
       - .env
-    depends_on:
-      - tempo
-      - loki
     restart: always
     networks:
       - app
@@ -49,50 +46,6 @@ services:
     networks:
       - app
     restart: always
-
-  tempo:
-    image: grafana/tempo:2.7.0
-    container_name: tempo
-    command: [ "-config.file=/etc/tempo.yaml" ]
-    volumes:
-      - ./deploy/observability/tempo.yaml:/etc/tempo.yaml:ro,z
-      - tempo_data:/var/tempo:z
-    ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-      - "3200:3200" # Tempo UI / API
-    networks:
-      - app
-    restart: unless-stopped
-
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    command: [ "-config.file=/etc/loki/local-config.yaml" ]
-    volumes:
-      - ./deploy/observability/loki.yaml:/etc/loki/local-config.yaml:ro,z
-      - loki_data:/loki:z
-    ports:
-      - "3100:3100"
-    networks:
-      - app
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - ./deploy/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro,z
-      - grafana_data:/var/lib/grafana:z
-    networks:
-      - app
-    restart: unless-stopped
 
 volumes:
   # postgres_data:

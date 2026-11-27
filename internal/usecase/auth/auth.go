@@ -46,6 +46,7 @@ type LoginInput struct {
 type LoginOutput struct {
 	UserID       string
 	Email        string
+	Phone        string
 	FullName     string
 	Status       string
 	Roles        []string
@@ -59,6 +60,7 @@ type LogoutInput struct {
 type MeOutput struct {
 	UserID   string
 	Email    string
+	Phone    string
 	FullName string
 	Status   string
 	Roles    []string
@@ -124,6 +126,7 @@ func (uc *UseCase) Login(ctx context.Context, input LoginInput) (LoginOutput, er
 	return LoginOutput{
 		UserID:       user.ID,
 		Email:        user.Email,
+		Phone:        user.Phone,
 		FullName:     user.FullName,
 		Status:       string(user.Status),
 		Roles:        roles,
@@ -154,7 +157,7 @@ func (uc *UseCase) Me(ctx context.Context, userID string) (MeOutput, error) {
 	for i, ur := range userRoles {
 		roles[i] = ur.RoleCode
 	}
-	return MeOutput{UserID: user.ID, Email: user.Email, FullName: user.FullName, Status: string(user.Status), Roles: roles}, nil
+	return MeOutput{UserID: user.ID, Email: user.Email, Phone: user.Phone, FullName: user.FullName, Status: string(user.Status), Roles: roles}, nil
 }
 
 func (uc *UseCase) ResetPassword(ctx context.Context, input ResetPasswordInput) error {

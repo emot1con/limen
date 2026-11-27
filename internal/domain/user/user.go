@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"net"
+	"regexp"
 	"time"
 )
 
@@ -14,15 +15,22 @@ const (
 	RoleAdmin             = "admin"
 )
 
+var phonePattern = regexp.MustCompile(`^\+62[0-9]{8,13}$`)
+
 type User struct {
 	ID           string
 	Email        string
+	Phone        string
 	PasswordHash string
 	FullName     string
 	Status       Status
 	LastLoginAt  *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+}
+
+func ValidPhone(phone string) bool {
+	return phonePattern.MatchString(phone)
 }
 
 type UserRole struct {

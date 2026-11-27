@@ -14,6 +14,7 @@ import (
 type userModel struct {
 	ID           string            `gorm:"column:id;primaryKey;default:gen_random_uuid()"`
 	Email        string            `gorm:"column:email"`
+	Phone        string            `gorm:"column:phone"`
 	PasswordHash string            `gorm:"column:password_hash"`
 	FullName     string            `gorm:"column:full_name"`
 	Status       userdomain.Status `gorm:"column:status"`
@@ -39,7 +40,7 @@ func (r *UserRepository) CreateWithRoles(ctx context.Context, user userdomain.Us
 	var id string
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		model := userModel{
-			Email: user.Email, PasswordHash: user.PasswordHash, FullName: user.FullName,
+			Email: user.Email, Phone: user.Phone, PasswordHash: user.PasswordHash, FullName: user.FullName,
 			Status: user.Status, LastLoginAt: user.LastLoginAt, CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt,
 		}
 		if err := tx.Create(&model).Error; err != nil {
@@ -72,6 +73,7 @@ func (r *UserRepository) Create(ctx context.Context, user userdomain.User) (stri
 	model := userModel{
 		ID:           user.ID,
 		Email:        user.Email,
+		Phone:        user.Phone,
 		PasswordHash: user.PasswordHash,
 		FullName:     user.FullName,
 		Status:       user.Status,
@@ -136,6 +138,7 @@ func (r *UserRepository) List(ctx context.Context, q, role, status string, limit
 func (r *UserRepository) Update(ctx context.Context, user userdomain.User) error {
 	result := r.db.WithContext(ctx).Model(&userModel{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
 		"email":         user.Email,
+		"phone":         user.Phone,
 		"password_hash": user.PasswordHash,
 		"full_name":     user.FullName,
 		"status":        user.Status,
@@ -166,6 +169,7 @@ func (r *UserRepository) toDomain(model userModel) userdomain.User {
 	return userdomain.User{
 		ID:           model.ID,
 		Email:        model.Email,
+		Phone:        model.Phone,
 		PasswordHash: model.PasswordHash,
 		FullName:     model.FullName,
 		Status:       model.Status,

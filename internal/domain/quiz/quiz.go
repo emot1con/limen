@@ -29,6 +29,7 @@ const (
 
 type QuestionBank struct {
 	ID        string
+	Name      string
 	SubjectID string
 	OwnerID   string
 	Scope     QuestionBankScope

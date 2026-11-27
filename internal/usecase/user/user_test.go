@@ -101,11 +101,11 @@ func TestCreateNormalizesAndPersistsUserWithRoles(t *testing.T) {
 	roles := &userRoleRepoMock{roles: []userdomain.UserRole{{RoleCode: "siswa"}, {RoleCode: "admin"}}}
 	uc := NewUseCase(users, roles, &userSessionRepoMock{}, logrus.New())
 	uc.now = func() time.Time { return now }
-	out, err := uc.Create(context.Background(), CreateInput{Email: " USER@Example.COM ", Password: "Password123", FullName: " Test User ", Roles: []string{" siswa ", "admin", "admin"}, GrantedBy: "admin-1"})
+	out, err := uc.Create(context.Background(), CreateInput{Email: " USER@Example.COM ", Phone: " +62812345678 ", Password: "Password123", FullName: " Test User ", Roles: []string{" siswa ", "admin", "admin"}, GrantedBy: "admin-1"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if users.created.Email != "user@example.com" || users.created.FullName != "Test User" || users.created.Status != userdomain.StatusActive || !auth.VerifyArgon2idPassword(users.created.PasswordHash, "Password123") {
+	if users.created.Email != "user@example.com" || users.created.Phone != "+62812345678" || users.created.FullName != "Test User" || users.created.Status != userdomain.StatusActive || !auth.VerifyArgon2idPassword(users.created.PasswordHash, "Password123") {
 		t.Fatalf("unexpected persisted user: %#v", users.created)
 	}
 	if !users.created.CreatedAt.Equal(now) || !users.student || len(users.createdRoles) != 2 || users.createdRoles[0].RoleCode != "siswa" || users.createdRoles[0].GrantedBy == nil || *users.createdRoles[0].GrantedBy != "admin-1" {
@@ -117,7 +117,7 @@ func TestCreateNormalizesAndPersistsUserWithRoles(t *testing.T) {
 }
 
 func TestCreateRejectsInvalidInputs(t *testing.T) {
-	cases := []CreateInput{{Email: "bad", Password: "Password123", FullName: "Test", Roles: []string{"admin"}}, {Email: "u@example.com", Password: "weak", FullName: "Test", Roles: []string{"admin"}}, {Email: "u@example.com", Password: "Password123", FullName: "", Roles: []string{"admin"}}, {Email: "u@example.com", Password: "Password123", FullName: "Test", Roles: []string{"invalid"}}}
+	cases := []CreateInput{{Email: "bad", Phone: "+62812345678", Password: "Password123", FullName: "Test", Roles: []string{"admin"}}, {Email: "u@example.com", Phone: "+62812345678", Password: "weak", FullName: "Test", Roles: []string{"admin"}}, {Email: "u@example.com", Phone: "+62812345678", Password: "Password123", FullName: "", Roles: []string{"admin"}}, {Email: "u@example.com", Phone: "0812345678", Password: "Password123", FullName: "Test", Roles: []string{"admin"}}, {Email: "u@example.com", Phone: "+62812345678", Password: "Password123", FullName: "Test", Roles: []string{"invalid"}}}
 	for _, input := range cases {
 		users := &userRepoMock{}
 		_, err := NewUseCase(users, &userRoleRepoMock{}, &userSessionRepoMock{}, logrus.New()).Create(context.Background(), input)
