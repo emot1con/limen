@@ -12,6 +12,8 @@ type QuestionType string
 
 type QuizAttemptStatus string
 
+type QuizExamType string
+
 const (
 	QuestionBankScopePractice QuestionBankScope = "latihan"
 	QuestionBankScopeExam     QuestionBankScope = "ujian"
@@ -25,6 +27,11 @@ const (
 	QuizAttemptStatusInProgress QuizAttemptStatus = "in_progress"
 	QuizAttemptStatusSubmitted  QuizAttemptStatus = "submitted"
 	QuizAttemptStatusGraded     QuizAttemptStatus = "graded"
+
+	QuizExamTypePractice  QuizExamType = "latihan"
+	QuizExamTypeDailyTest QuizExamType = "ulangan_harian"
+	QuizExamTypeMidterm   QuizExamType = "pts"
+	QuizExamTypeFinal     QuizExamType = "pas"
 )
 
 type QuestionBank struct {
@@ -65,6 +72,7 @@ type Quiz struct {
 	OwnerID     string
 	Title       string
 	Description *string
+	ExamType    QuizExamType
 	PublishedAt *time.Time
 	StartTime   *time.Time
 	EndTime     *time.Time
@@ -118,12 +126,14 @@ type QuizSummary struct {
 	Title       string
 	SubjectID   string
 	Description *string
+	ExamType    QuizExamType
 }
 
 type QuizFilter struct {
 	SubjectID string
 	ClassID   string
 	Status    QuizStatus
+	ExamType  QuizExamType
 }
 
 type QuizQuestionDetail struct {
@@ -142,6 +152,7 @@ type QuestionOption struct {
 type QuizDetail struct {
 	ID        string
 	Title     string
+	ExamType  QuizExamType
 	StartTime *time.Time
 	EndTime   *time.Time
 	Questions []QuizQuestionDetail
@@ -212,6 +223,7 @@ type QuizRepository interface {
 type QuizQuestionRepository interface {
 	Add(context.Context, QuizQuestion) error
 	Remove(context.Context, string, string) error
+	Replace(context.Context, string, []string) error
 	ListByQuizID(context.Context, string) ([]QuizQuestion, error)
 	FindByNumber(context.Context, string, int) (QuizQuestion, error)
 	CountByQuizID(context.Context, string) (int64, error)

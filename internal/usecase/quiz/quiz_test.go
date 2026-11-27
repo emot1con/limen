@@ -36,8 +36,14 @@ func (m *quizRepoMock) FindByID(_ context.Context, id string) (quizdomain.Quiz, 
 func (*quizRepoMock) ListByOwnerID(context.Context, string) ([]quizdomain.Quiz, error) {
 	return nil, nil
 }
-func (*quizRepoMock) Update(context.Context, quizdomain.Quiz) error { return nil }
-func (*quizRepoMock) Delete(context.Context, string) error          { return nil }
+func (m *quizRepoMock) Update(_ context.Context, item quizdomain.Quiz) error {
+	if _, ok := m.quizzes[item.ID]; !ok {
+		return domain.ErrNotFound
+	}
+	m.quizzes[item.ID] = item
+	return nil
+}
+func (*quizRepoMock) Delete(context.Context, string) error { return nil }
 
 type questionRepoMock struct {
 	questions map[string]quizdomain.Question
@@ -79,6 +85,13 @@ func (m *quizQuestionRepoMock) Add(_ context.Context, item quizdomain.QuizQuesti
 	return nil
 }
 func (*quizQuestionRepoMock) Remove(context.Context, string, string) error { return nil }
+func (m *quizQuestionRepoMock) Replace(_ context.Context, quizID string, questionIDs []string) error {
+	m.items = m.items[:0]
+	for i, questionID := range questionIDs {
+		m.items = append(m.items, quizdomain.QuizQuestion{QuizID: quizID, QuestionID: questionID, QuestionNumber: i + 1})
+	}
+	return nil
+}
 func (m *quizQuestionRepoMock) ListByQuizID(_ context.Context, quizID string) ([]quizdomain.QuizQuestion, error) {
 	var out []quizdomain.QuizQuestion
 	for _, item := range m.items {
@@ -238,15 +251,18 @@ func newQuizUseCase() (*UseCase, *quizRepoMock, *questionRepoMock, *quizQuestion
 }
 
 func TestQuizFlowCreateStartAnswerAndSubmit(t *testing.T) {
-	uc, _, questions, _, attempts, _, cacheMock := newQuizUseCase()
+	uc, quizzes, questions, _, attempts, _, cacheMock := newQuizUseCase()
 	questions.questions["q-1"] = quizdomain.Question{ID: "q-1", Type: quizdomain.QuestionTypeMultipleChoice, AnswerKey: json.RawMessage(`{"correct":"A"}`)}
 	questions.questions["q-2"] = quizdomain.Question{ID: "q-2", Type: quizdomain.QuestionTypeEssay}
-	detail, err := uc.CreateQuiz(context.Background(), CreateQuizInput{SubjectID: "subject-1", OwnerID: "teacher-1", Title: "  Quiz  ", QuestionIDs: []string{"q-1", "q-2"}})
+	detail, err := uc.CreateQuiz(context.Background(), CreateQuizInput{SubjectID: "subject-1", OwnerID: "teacher-1", Title: "  Quiz  ", ExamType: quizdomain.QuizExamTypePractice, QuestionIDs: []string{"q-1", "q-2"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if cacheMock.bumps != 1 || detail.ID == "" {
 		t.Fatalf("unexpected create result: %#v bumps=%d", detail, cacheMock.bumps)
+	}
+	if quiz, ok := quizzes.quizzes[detail.ID]; !ok || quiz.ExamType != quizdomain.QuizExamTypePractice {
+		t.Fatalf("expected persisted exam type: %#v", quiz)
 	}
 	attempt, err := uc.StartAttempt(context.Background(), "quiz-1", "student-1")
 	if err != nil {
@@ -268,6 +284,32 @@ func TestQuizFlowCreateStartAnswerAndSubmit(t *testing.T) {
 	}
 	if attempts.items[attempt.AttemptID].Status != quizdomain.QuizAttemptStatusSubmitted {
 		t.Fatal("expected persisted submitted status")
+	}
+}
+
+func TestUpdateQuizReplacesQuestionOrder(t *testing.T) {
+	uc, quizzes, questions, quizQuestions, _, _, cacheMock := newQuizUseCase()
+	quizzes.quizzes["quiz-1"] = quizdomain.Quiz{ID: "quiz-1", SubjectID: "subject-1", OwnerID: "teacher-1", Title: "Quiz", ExamType: quizdomain.QuizExamTypePractice}
+	questions.questions["q-1"] = quizdomain.Question{ID: "q-1"}
+	questions.questions["q-2"] = quizdomain.Question{ID: "q-2"}
+	_, err := uc.UpdateQuiz(context.Background(), "quiz-1", UpdateQuizInput{
+		SubjectID:   "subject-1",
+		Title:       " Quiz Baru ",
+		ExamType:    quizdomain.QuizExamTypeMidterm,
+		QuestionIDs: []string{"q-2", "q-1"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := quizzes.quizzes["quiz-1"]
+	if updated.Title != "Quiz Baru" || updated.ExamType != quizdomain.QuizExamTypeMidterm {
+		t.Fatalf("unexpected quiz: %#v", updated)
+	}
+	if len(quizQuestions.items) != 2 || quizQuestions.items[0].QuestionID != "q-2" || quizQuestions.items[0].QuestionNumber != 1 || quizQuestions.items[1].QuestionID != "q-1" || quizQuestions.items[1].QuestionNumber != 2 {
+		t.Fatalf("unexpected questions: %#v", quizQuestions.items)
+	}
+	if cacheMock.bumps != 1 {
+		t.Fatalf("expected cache invalidation, got %d", cacheMock.bumps)
 	}
 }
 

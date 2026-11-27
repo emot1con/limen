@@ -252,6 +252,7 @@ func seedQuiz(ctx context.Context, db *gorm.DB, teacherID, studentID string) err
 		OwnerID:     teacherID,
 		Title:       "Quiz Testing Seeder",
 		Description: ptr("Quiz otomatis untuk menguji mekanisme pengerjaan dan penilaian."),
+		ExamType:    quizdomain.QuizExamTypePractice,
 		QuestionIDs: questionIDs,
 	})
 	if err != nil {

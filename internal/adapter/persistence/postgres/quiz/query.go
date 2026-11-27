@@ -24,6 +24,9 @@ func (r *QueryRepository) ListQuizzes(ctx context.Context, filter quizdomain.Qui
 	if filter.ClassID != "" {
 		query = query.Where("EXISTS (SELECT 1 FROM teaching_assignments ta WHERE ta.subject_id = q.subject_id AND ta.teacher_user_id = q.owner_id AND ta.class_id = ? AND ta.deleted_at IS NULL)", filter.ClassID)
 	}
+	if filter.ExamType != "" {
+		query = query.Where("q.exam_type = ?", string(filter.ExamType))
+	}
 	switch filter.Status {
 	case quizdomain.QuizStatusDraft:
 		query = query.Where("q.published_at IS NULL")
@@ -43,13 +46,14 @@ func (r *QueryRepository) ListQuizzes(ctx context.Context, filter quizdomain.Qui
 		Title       string
 		SubjectID   string
 		Description *string
+		ExamType    string
 	}
-	if err := query.Select("q.id, q.title, q.subject_id, q.description").Order("q.created_at DESC, q.id").Limit(limit).Offset(offset).Scan(&rows).Error; err != nil {
+	if err := query.Select("q.id, q.title, q.subject_id, q.description, q.exam_type").Order("q.created_at DESC, q.id").Limit(limit).Offset(offset).Scan(&rows).Error; err != nil {
 		return nil, 0, err
 	}
 	out := make([]quizdomain.QuizSummary, len(rows))
 	for i, v := range rows {
-		out[i] = quizdomain.QuizSummary{ID: v.ID, Title: v.Title, SubjectID: v.SubjectID, Description: v.Description}
+		out[i] = quizdomain.QuizSummary{ID: v.ID, Title: v.Title, SubjectID: v.SubjectID, Description: v.Description, ExamType: quizdomain.QuizExamType(v.ExamType)}
 	}
 	return out, total, nil
 }
@@ -58,10 +62,11 @@ func (r *QueryRepository) GetQuizDetail(ctx context.Context, quizID string) (qui
 	var quiz struct {
 		ID        string
 		Title     string
+		ExamType  string
 		StartTime *time.Time
 		EndTime   *time.Time
 	}
-	err := r.db.WithContext(ctx).Table("quizzes q").Select("q.id, q.title, q.start_time, q.end_time").Where("q.id = ? AND q.deleted_at IS NULL", quizID).Scan(&quiz).Error
+	err := r.db.WithContext(ctx).Table("quizzes q").Select("q.id, q.title, q.exam_type, q.start_time, q.end_time").Where("q.id = ? AND q.deleted_at IS NULL", quizID).Scan(&quiz).Error
 	if err != nil {
 		return quizdomain.QuizDetail{}, err
 	}
@@ -93,7 +98,7 @@ func (r *QueryRepository) GetQuizDetail(ctx context.Context, quizID string) (qui
 			Options:        decodeOptions(v.Options),
 		}
 	}
-	return quizdomain.QuizDetail{ID: quiz.ID, Title: quiz.Title, StartTime: quiz.StartTime, EndTime: quiz.EndTime, Questions: questions}, nil
+	return quizdomain.QuizDetail{ID: quiz.ID, Title: quiz.Title, ExamType: quizdomain.QuizExamType(quiz.ExamType), StartTime: quiz.StartTime, EndTime: quiz.EndTime, Questions: questions}, nil
 }
 
 func (r *QueryRepository) ListAttempts(ctx context.Context, filter quizdomain.AttemptFilter, limit, offset int) ([]quizdomain.Attempt, int64, error) {

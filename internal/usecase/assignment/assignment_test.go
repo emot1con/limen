@@ -274,6 +274,22 @@ func TestAssignment_Create(t *testing.T) {
 	}
 }
 
+func TestAssignment_Update(t *testing.T) {
+	uc, asgRepo, _, clsRepo, subRepo, _, usrRepo := setupAssignmentUseCase()
+	asgRepo.assignments["asg-1"] = assignmentdomain.Assignment{ID: "asg-1", ClassID: "cls-1", SubjectID: "sub-1", TeacherUserID: "teacher-1", Title: "Tugas Lama", DueAt: time.Now()}
+	clsRepo.classes["cls-2"] = academicdomain.Class{ID: "cls-2"}
+	subRepo.subjects["sub-2"] = academicdomain.Subject{ID: "sub-2"}
+	usrRepo.users["teacher-1"] = userdomain.User{ID: "teacher-1"}
+	dueAt := time.Now().Add(48 * time.Hour).Round(time.Second)
+	updated, err := uc.Update(context.Background(), "asg-1", UpdateInput{ClassID: "cls-2", SubjectID: "sub-2", Title: " Tugas Baru ", DueAt: dueAt})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.ClassID != "cls-2" || updated.SubjectID != "sub-2" || updated.Title != "Tugas Baru" || !updated.DueAt.Equal(dueAt) {
+		t.Fatalf("unexpected updated assignment: %#v", updated)
+	}
+}
+
 func TestAssignment_ListAndListSubmissions(t *testing.T) {
 	uc, asgRepo, subRepo, _, _, _, _ := setupAssignmentUseCase()
 	asgRepo.assignments["asg-1"] = assignmentdomain.Assignment{ID: "asg-1", Title: "Assignment 1"}

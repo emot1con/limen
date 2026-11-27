@@ -37,6 +37,12 @@ type CreateInput struct {
 	DueAt                                    time.Time
 }
 
+type UpdateInput struct {
+	ClassID, SubjectID, Title string
+	Description               *string
+	DueAt                     time.Time
+}
+
 func (uc *UseCase) List(ctx context.Context, filter assignmentdomain.AssignmentFilter, page, pageSize int) ([]assignmentdomain.Assignment, int64, error) {
 	items, total, err := uc.assignments.List(ctx, filter, pageSize, (page-1)*pageSize)
 	if err != nil {
@@ -62,6 +68,35 @@ func (uc *UseCase) Create(ctx context.Context, input CreateInput) (assignmentdom
 	item, err := uc.assignments.FindByID(ctx, id)
 	if err != nil {
 		uc.logError(err, "assignment_get_created", logrus.Fields{"assignment_id": id})
+	}
+	return item, err
+}
+
+func (uc *UseCase) Update(ctx context.Context, assignmentID string, input UpdateInput) (assignmentdomain.Assignment, error) {
+	input.Title = strings.TrimSpace(input.Title)
+	if input.ClassID == "" || input.SubjectID == "" || input.Title == "" || input.DueAt.IsZero() {
+		return assignmentdomain.Assignment{}, domain.ErrInvalid
+	}
+	item, err := uc.assignments.FindByID(ctx, assignmentID)
+	if err != nil {
+		uc.logError(err, "assignment_get_for_update", logrus.Fields{"assignment_id": assignmentID})
+		return assignmentdomain.Assignment{}, err
+	}
+	if err := uc.validateReferences(ctx, input.ClassID, input.SubjectID, item.TeacherUserID); err != nil {
+		return assignmentdomain.Assignment{}, err
+	}
+	item.ClassID = input.ClassID
+	item.SubjectID = input.SubjectID
+	item.Title = input.Title
+	item.Description = trim(input.Description)
+	item.DueAt = input.DueAt
+	if err := uc.assignments.Update(ctx, item); err != nil {
+		uc.logError(err, "assignment_update", logrus.Fields{"assignment_id": assignmentID})
+		return assignmentdomain.Assignment{}, err
+	}
+	item, err = uc.assignments.FindByID(ctx, assignmentID)
+	if err != nil {
+		uc.logError(err, "assignment_get_updated", logrus.Fields{"assignment_id": assignmentID})
 	}
 	return item, err
 }

@@ -1,8 +1,8 @@
 package quiz
 
 import (
-	"limen/internal/adapter/http/handler/common"
 	"encoding/json"
+	"limen/internal/adapter/http/handler/common"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,6 +27,7 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 		SubjectID   string   `json:"subjectId"`
 		Title       string   `json:"title"`
 		Description *string  `json:"description"`
+		ExamType    string   `json:"examType"`
 		PublishedAt *string  `json:"publishedAt"`
 		StartTime   *string  `json:"startTime"`
 		EndTime     *string  `json:"endTime"`
@@ -42,6 +43,10 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 	}
 	if strings.TrimSpace(req.Title) == "" {
 		fields = append(fields, response.FieldError{Field: "title", Message: "required"})
+	}
+	examType := quizdomain.QuizExamType(strings.TrimSpace(req.ExamType))
+	if !validQuizExamType(examType) {
+		fields = append(fields, response.FieldError{Field: "examType", Message: "must be latihan, ulangan_harian, pts, or pas"})
 	}
 	publishedAt, ok := parseTimePtr(req.PublishedAt, "publishedAt", &fields)
 	startTime, okStart := parseTimePtr(req.StartTime, "startTime", &fields)
@@ -72,6 +77,7 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 		OwnerID:     ownerID,
 		Title:       req.Title,
 		Description: req.Description,
+		ExamType:    examType,
 		PublishedAt: publishedAt,
 		StartTime:   startTime,
 		EndTime:     endTime,
@@ -96,6 +102,73 @@ func parseTimePtr(raw *string, field string, fields *[]response.FieldError) (*ti
 	return &value, true
 }
 
+func (h *QuizHandler) UpdateQuiz(c *gin.Context) {
+	quizID := c.Param("quizId")
+	if !common.ValidUUID(quizID) {
+		common.UUIDError(c, "quizId")
+		return
+	}
+	var req struct {
+		SubjectID   string   `json:"subjectId"`
+		Title       string   `json:"title"`
+		Description *string  `json:"description"`
+		ExamType    string   `json:"examType"`
+		PublishedAt *string  `json:"publishedAt"`
+		StartTime   *string  `json:"startTime"`
+		EndTime     *string  `json:"endTime"`
+		QuestionIDs []string `json:"questionIds"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ValidationBody(c)
+		return
+	}
+	var fields []response.FieldError
+	if !common.ValidUUID(req.SubjectID) {
+		fields = append(fields, response.FieldError{Field: "subjectId", Message: "must be a UUID"})
+	}
+	if strings.TrimSpace(req.Title) == "" {
+		fields = append(fields, response.FieldError{Field: "title", Message: "required"})
+	}
+	examType := quizdomain.QuizExamType(strings.TrimSpace(req.ExamType))
+	if !validQuizExamType(examType) {
+		fields = append(fields, response.FieldError{Field: "examType", Message: "must be latihan, ulangan_harian, pts, or pas"})
+	}
+	publishedAt, ok := parseTimePtr(req.PublishedAt, "publishedAt", &fields)
+	startTime, okStart := parseTimePtr(req.StartTime, "startTime", &fields)
+	endTime, okEnd := parseTimePtr(req.EndTime, "endTime", &fields)
+	if !ok || !okStart || !okEnd {
+		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", fields...)
+		return
+	}
+	if startTime != nil && endTime != nil && !startTime.Before(*endTime) {
+		fields = append(fields, response.FieldError{Field: "endTime", Message: "must be after startTime"})
+	}
+	for i, questionID := range req.QuestionIDs {
+		if !common.ValidUUID(questionID) {
+			fields = append(fields, response.FieldError{Field: "questionIds", Message: "item " + strconv.Itoa(i) + " must be a UUID"})
+		}
+	}
+	if len(fields) > 0 {
+		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", fields...)
+		return
+	}
+	detail, err := h.quiz.UpdateQuiz(c.Request.Context(), quizID, quizuc.UpdateQuizInput{
+		SubjectID:   req.SubjectID,
+		Title:       req.Title,
+		Description: req.Description,
+		ExamType:    examType,
+		PublishedAt: publishedAt,
+		StartTime:   startTime,
+		EndTime:     endTime,
+		QuestionIDs: req.QuestionIDs,
+	})
+	if err != nil {
+		common.WriteMappedError(c, err)
+		return
+	}
+	response.WriteOK(c, quizDetailJSON(detail))
+}
+
 func (h *QuizHandler) ListQuizzes(c *gin.Context) {
 	page, size, ok := common.PageQuery(c)
 	if !ok {
@@ -108,6 +181,12 @@ func (h *QuizHandler) ListQuizzes(c *gin.Context) {
 		}
 	}
 	filter := quizdomain.QuizFilter{SubjectID: c.Query("subjectId"), ClassID: c.Query("classId")}
+	if raw := strings.TrimSpace(c.Query("examType")); raw != "" {
+		filter.ExamType = quizdomain.QuizExamType(raw)
+		if !validQuizExamType(filter.ExamType) {
+			fields = append(fields, response.FieldError{Field: "examType", Message: "must be latihan, ulangan_harian, pts, or pas"})
+		}
+	}
 	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
 		status := quizdomain.QuizStatus(raw)
 		if !validQuizStatus(status) {
@@ -296,6 +375,15 @@ func (h *QuizHandler) GradeAnswer(c *gin.Context) {
 	response.WriteOK(c, gin.H{"answerId": result.AnswerID, "isCorrect": result.IsCorrect, "score": result.Score, "gradedBy": result.GradedBy, "gradedAt": result.GradedAt})
 }
 
+func validQuizExamType(examType quizdomain.QuizExamType) bool {
+	switch examType {
+	case quizdomain.QuizExamTypePractice, quizdomain.QuizExamTypeDailyTest, quizdomain.QuizExamTypeMidterm, quizdomain.QuizExamTypeFinal:
+		return true
+	default:
+		return false
+	}
+}
+
 func validQuizStatus(status quizdomain.QuizStatus) bool {
 	switch status {
 	case quizdomain.QuizStatusDraft, quizdomain.QuizStatusPublished, quizdomain.QuizStatusActive, quizdomain.QuizStatusEnded:
@@ -315,7 +403,7 @@ func validAttemptStatus(status quizdomain.QuizAttemptStatus) bool {
 }
 
 func quizSummaryJSON(item quizdomain.QuizSummary) gin.H {
-	return gin.H{"id": item.ID, "title": item.Title, "subjectId": item.SubjectID, "description": item.Description}
+	return gin.H{"id": item.ID, "title": item.Title, "subjectId": item.SubjectID, "description": item.Description, "examType": item.ExamType}
 }
 
 func quizDetailJSON(item quizdomain.QuizDetail) gin.H {
@@ -333,7 +421,7 @@ func quizDetailJSON(item quizdomain.QuizDetail) gin.H {
 			"options":        options,
 		}
 	}
-	return gin.H{"id": item.ID, "title": item.Title, "startTime": item.StartTime, "endTime": item.EndTime, "questions": questions}
+	return gin.H{"id": item.ID, "title": item.Title, "examType": item.ExamType, "startTime": item.StartTime, "endTime": item.EndTime, "questions": questions}
 }
 
 func attemptJSON(item quizdomain.Attempt) gin.H {

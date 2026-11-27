@@ -959,12 +959,13 @@ paths:
     get:
       operationId: API-QZ-001
       tags: [Quiz]
-      summary: Daftar quiz
-      parameters:
-        - { name: subjectId, in: query, schema: { type: string, format: uuid } }
-        - { name: classId, in: query, schema: { type: string, format: uuid } }
-        - { name: status, in: query, schema: { type: string } }
-        - { $ref: '#/components/parameters/Page' }
+       summary: Daftar quiz
+       parameters:
+         - { name: subjectId, in: query, schema: { type: string, format: uuid } }
+         - { name: classId, in: query, schema: { type: string, format: uuid } }
+         - { name: status, in: query, schema: { type: string } }
+         - { name: examType, in: query, schema: { $ref: '#/components/schemas/QuizExamType' } }
+         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/PageSize' }
       responses:
         '200':
@@ -1003,10 +1004,32 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /quizzes/{quizId}:
-    parameters:
-      - { name: quizId, in: path, required: true, schema: { type: string, format: uuid } }
-    get:
+   /quizzes/{quizId}:
+     parameters:
+       - { name: quizId, in: path, required: true, schema: { type: string, format: uuid } }
+     put:
+       operationId: API-QZ-009
+       security:
+         - sessionCookie: []
+           csrfToken: []
+       tags: [Quiz]
+       summary: Ubah quiz dan urutan soal
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema: { $ref: '#/components/schemas/QuizInput' }
+       responses:
+         '200':
+           description: Diubah
+           content:
+             application/json:
+               schema: { $ref: '#/components/schemas/QuizDetail' }
+         '401': { $ref: '#/components/responses/Unauthenticated' }
+         '403': { $ref: '#/components/responses/Forbidden' }
+         '404': { $ref: '#/components/responses/NotFound' }
+         '422': { $ref: '#/components/responses/ValidationError' }
+     get:
       operationId: API-QZ-002
       tags: [Quiz]
       summary: Detail quiz + soal (tanpa kunci)
@@ -1379,8 +1402,41 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationError' }
-  /assignments/{assignmentId}/submissions:
-    get:
+   /assignments/{assignmentId}:
+     put:
+       operationId: API-TGS-005
+       security:
+         - sessionCookie: []
+           csrfToken: []
+       tags: [Assignments]
+       summary: Ubah tugas
+       parameters:
+         - { name: assignmentId, in: path, required: true, schema: { type: string, format: uuid } }
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema:
+               type: object
+               required: [classId, subjectId, title, dueAt]
+               properties:
+                 classId: { type: string, format: uuid }
+                 subjectId: { type: string, format: uuid }
+                 title: { type: string }
+                 description: { type: string, nullable: true }
+                 dueAt: { type: string, format: date-time }
+       responses:
+         '200':
+           description: Diubah
+           content:
+             application/json:
+               schema: { $ref: '#/components/schemas/Assignment' }
+         '401': { $ref: '#/components/responses/Unauthenticated' }
+         '403': { $ref: '#/components/responses/Forbidden' }
+         '404': { $ref: '#/components/responses/NotFound' }
+         '422': { $ref: '#/components/responses/ValidationError' }
+   /assignments/{assignmentId}/submissions:
+     get:
       operationId: API-TGS-003
       tags: [Assignments]
       summary: Daftar pekerjaan siswa
@@ -2281,12 +2337,16 @@ components:
         startTime: { type: string, example: '07:15' }
         endTime: { type: string, example: '08:45' }
         kind: { $ref: '#/components/schemas/ScheduleKind' }
+    QuizExamType:
+      type: string
+      enum: [latihan, ulangan_harian, pts, pas]
     QuizInput:
       type: object
-      required: [subjectId, title, questionIds]
+      required: [subjectId, title, examType, questionIds]
       properties:
         subjectId: { type: string, format: uuid }
         title: { type: string }
+        examType: { $ref: '#/components/schemas/QuizExamType' }
         description: { type: string, nullable: true }
         publishedAt: { type: string, format: date-time, nullable: true }
         startTime: { type: string, format: date-time, nullable: true }
@@ -2301,6 +2361,7 @@ components:
         title: { type: string }
         subjectId: { type: string, format: uuid }
         description: { type: string, nullable: true }
+        examType: { $ref: '#/components/schemas/QuizExamType' }
     QuizQuestion:
       type: object
       properties:
@@ -2320,6 +2381,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
+        examType: { $ref: '#/components/schemas/QuizExamType' }
         startTime: { type: string, format: date-time, nullable: true }
         endTime: { type: string, format: date-time, nullable: true }
         questions:

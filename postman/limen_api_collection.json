@@ -5461,6 +5461,64 @@
             }
           ]
         },
+         {
+          "name": "Update Assignment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "X-CSRF-Token", "value": "{{csrf_token}}", "description": "Derived CSRF token dari session", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assignments/:assignmentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assignments", ":assignmentId"],
+              "variable": [
+                { "key": "assignmentId", "value": "{{sample_assignmentId}}", "description": "UUID Assignment" }
+              ]
+            },
+            "description": "Memperbarui classId, subjectId, title, description, dan dueAt tugas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"classId\": \"{{sample_classId}}\",\n  \"subjectId\": \"{{sample_subjectId}}\",\n  \"title\": \"Tugas Bab 3 Revisi\",\n  \"description\": \"Kerjakan soal evaluasi halaman 45-49.\",\n  \"dueAt\": \"2026-11-27T23:59:59Z\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Assignment Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json", "type": "text" },
+                  { "key": "Accept", "value": "application/json", "type": "text" },
+                  { "key": "X-CSRF-Token", "value": "{{csrf_token}}", "description": "Derived CSRF token dari session", "type": "text" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/assignments/:assignmentId",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "assignments", ":assignmentId"],
+                  "variable": [
+                    { "key": "assignmentId", "value": "{{sample_assignmentId}}", "description": "UUID Assignment" }
+                  ]
+                },
+                "description": "Memperbarui metadata tugas dengan payload lengkap.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"classId\": \"{{sample_classId}}\",\n  \"subjectId\": \"{{sample_subjectId}}\",\n  \"title\": \"Tugas Bab 3 Revisi\",\n  \"description\": \"Kerjakan soal evaluasi halaman 45-49.\",\n  \"dueAt\": \"2026-11-27T23:59:59Z\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"data\": {\n    \"id\": \"a7b89c0d-1e2f-3a4b-5c6d-7e8f901a2b3c\",\n    \"classId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n    \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n    \"teacherUserId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n    \"title\": \"Tugas Bab 3 Revisi\",\n    \"description\": \"Kerjakan soal evaluasi halaman 45-49.\",\n    \"dueAt\": \"2026-11-27T23:59:59Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
+            }
+          ]
+        },
         {
           "name": "List Submissions",
           "request": {
@@ -6481,6 +6539,12 @@
                   "value": "published",
                   "description": "",
                   "disabled": true
+                },
+                {
+                  "key": "examType",
+                  "value": "pts",
+                  "description": "latihan, ulangan_harian, pts, pas",
+                  "disabled": true
                 }
               ]
             },
@@ -6543,6 +6607,12 @@
                       "value": "published",
                       "description": "",
                       "disabled": true
+                    },
+                    {
+                      "key": "examType",
+                      "value": "pts",
+                      "description": "latihan, ulangan_harian, pts, pas",
+                      "disabled": true
                     }
                   ]
                 },
@@ -6558,7 +6628,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n      \"title\": \"Kuis Fisika Bab 2 & 3\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"description\": \"Durasi pengerjaan 60 menit. Dilarang bekerja sama.\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n      \"title\": \"Kuis Fisika Bab 2 & 3\",\n      \"subjectId\": \"d4e5f6a7-b89c-0d1e-2f3a-4b5c6d7e8f90\",\n      \"description\": \"Durasi pengerjaan 60 menit. Dilarang bekerja sama.\",\n      \"examType\": \"pts\"\n    }\n  ],\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\",\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"total\": 1,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         },
@@ -6598,7 +6668,7 @@
             "description": "Guru merakit kuis baru dari butir-butir soal yang ada di bank soal.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"subjectId\": \"{{sample_subjectId}}\",\n  \"title\": \"Kuis Fisika Bab 2 & 3\",\n  \"description\": \"Durasi pengerjaan 60 menit. Dilarang bekerja sama.\",\n  \"publishedAt\": \"2026-11-20T08:00:00Z\",\n  \"startTime\": \"2026-11-20T08:00:00Z\",\n  \"endTime\": \"2026-11-20T09:30:00Z\",\n  \"questionIds\": [\n    \"{{sample_questionId}}\"\n  ]\n}",
+              "raw": "{\n  \"subjectId\": \"{{sample_subjectId}}\",\n  \"title\": \"Kuis Fisika Bab 2 & 3\",\n  \"description\": \"Durasi pengerjaan 60 menit. Dilarang bekerja sama.\",\n  \"examType\": \"pts\",\n  \"publishedAt\": \"2026-11-20T08:00:00Z\",\n  \"startTime\": \"2026-11-20T08:00:00Z\",\n  \"endTime\": \"2026-11-20T09:30:00Z\",\n  \"questionIds\": [\n    \"{{sample_questionId}}\"\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6643,7 +6713,7 @@
                 "description": "Guru merakit kuis baru dari butir-butir soal yang ada di bank soal.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"subjectId\": \"{{sample_subjectId}}\",\n  \"title\": \"Kuis Fisika Bab 2 & 3\",\n  \"description\": \"Durasi pengerjaan 60 menit. Dilarang bekerja sama.\",\n  \"publishedAt\": \"2026-11-20T08:00:00Z\",\n  \"startTime\": \"2026-11-20T08:00:00Z\",\n  \"endTime\": \"2026-11-20T09:30:00Z\",\n  \"questionIds\": [\n    \"{{sample_questionId}}\"\n  ]\n}",
+                  "raw": "{\n  \"subjectId\": \"{{sample_subjectId}}\",\n  \"title\": \"Kuis Fisika Bab 2 & 3\",\n  \"description\": \"Durasi pengerjaan 60 menit. Dilarang bekerja sama.\",\n  \"examType\": \"pts\",\n  \"publishedAt\": \"2026-11-20T08:00:00Z\",\n  \"startTime\": \"2026-11-20T08:00:00Z\",\n  \"endTime\": \"2026-11-20T09:30:00Z\",\n  \"questionIds\": [\n    \"{{sample_questionId}}\"\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -6662,6 +6732,64 @@
               ],
               "cookie": [],
               "body": "{\n  \"data\": {\n    \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n    \"title\": \"Kuis Fisika Bab 2 & 3\",\n    \"startTime\": \"2026-11-20T08:00:00Z\",\n    \"endTime\": \"2026-11-20T09:30:00Z\",\n    \"questions\": [\n      {\n        \"id\": \"c90d1e2f-3a4b-5c6d-7e8f-901a2b3c4d5e\",\n        \"questionNumber\": 1,\n        \"type\": \"pilihan_ganda\",\n        \"question\": \"Sebuah benda bermassa 2 kg bergerak dengan percepatan 3 m/s2...\",\n        \"options\": [\n          {\n            \"id\": \"A\",\n            \"label\": \"5 N\"\n          },\n          {\n            \"id\": \"B\",\n            \"label\": \"6 N\"\n          }\n        ]\n      }\n    ]\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Quiz",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "X-CSRF-Token", "value": "{{csrf_token}}", "description": "Derived CSRF token dari session", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/quizzes/:quizId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "quizzes", ":quizId"],
+              "variable": [
+                { "key": "quizId", "value": "{{sample_quizId}}", "description": "UUID Quiz" }
+              ]
+            },
+            "description": "Memperbarui metadata quiz dan seluruh daftar soal. Urutan questionIds menjadi urutan soal; daftar baru menggantikan daftar lama.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subjectId\": \"{{sample_subjectId}}\",\n  \"title\": \"PTS Fisika Bab 2 & 3\",\n  \"description\": \"Durasi pengerjaan 60 menit.\",\n  \"examType\": \"pts\",\n  \"publishedAt\": \"2026-11-20T08:00:00Z\",\n  \"startTime\": \"2026-11-20T08:00:00Z\",\n  \"endTime\": \"2026-11-20T09:30:00Z\",\n  \"questionIds\": [\n    \"{{sample_questionId}}\"\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Quiz Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json", "type": "text" },
+                  { "key": "Accept", "value": "application/json", "type": "text" },
+                  { "key": "X-CSRF-Token", "value": "{{csrf_token}}", "description": "Derived CSRF token dari session", "type": "text" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/quizzes/:quizId",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "quizzes", ":quizId"],
+                  "variable": [
+                    { "key": "quizId", "value": "{{sample_quizId}}", "description": "UUID Quiz" }
+                  ]
+                },
+                "description": "Memperbarui metadata quiz dan urutan soal dengan payload lengkap.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subjectId\": \"{{sample_subjectId}}\",\n  \"title\": \"PTS Fisika Bab 2 & 3\",\n  \"description\": \"Durasi pengerjaan 60 menit.\",\n  \"examType\": \"pts\",\n  \"publishedAt\": \"2026-11-20T08:00:00Z\",\n  \"startTime\": \"2026-11-20T08:00:00Z\",\n  \"endTime\": \"2026-11-20T09:30:00Z\",\n  \"questionIds\": [\n    \"{{sample_questionId}}\"\n  ]\n}",
+                  "options": { "raw": { "language": "json" } }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"data\": {\n    \"id\": \"d01e2f3a-4b5c-6d7e-8f90-1a2b3c4d5e6f\",\n    \"title\": \"PTS Fisika Bab 2 & 3\",\n    \"examType\": \"pts\",\n    \"startTime\": \"2026-11-20T08:00:00Z\",\n    \"endTime\": \"2026-11-20T09:30:00Z\",\n    \"questions\": []\n  },\n  \"meta\": {\n    \"requestId\": \"req-example-abc123\"\n  }\n}"
             }
           ]
         },

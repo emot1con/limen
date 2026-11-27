@@ -48,6 +48,22 @@ func (r *QuizQuestionRepository) Remove(ctx context.Context, quizID, questionID 
 	return nil
 }
 
+func (r *QuizQuestionRepository) Replace(ctx context.Context, quizID string, questionIDs []string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("quiz_id = ?", quizID).Delete(&quizQuestionModel{}).Error; err != nil {
+			return err
+		}
+		models := make([]quizQuestionModel, len(questionIDs))
+		for i, questionID := range questionIDs {
+			models[i] = quizQuestionModel{QuizID: quizID, QuestionID: questionID, QuestionNumber: i + 1}
+		}
+		if len(models) == 0 {
+			return nil
+		}
+		return tx.Create(&models).Error
+	})
+}
+
 func (r *QuizQuestionRepository) ListByQuizID(ctx context.Context, quizID string) ([]quizdomain.QuizQuestion, error) {
 	var models []quizQuestionModel
 	err := r.db.WithContext(ctx).Where("quiz_id = ?", quizID).Order("question_number").Find(&models).Error

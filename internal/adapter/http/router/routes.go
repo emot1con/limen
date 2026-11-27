@@ -210,6 +210,7 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 
 	authRead.GET("/assignments", sensitiveReadLimiter, assignmentHandler.List)
 	authWrite.POST("/assignments", writeLimiter, assignmentHandler.Create)
+	authWrite.PUT("/assignments/:assignmentId", writeLimiter, assignmentHandler.Update)
 	authRead.GET("/assignments/:assignmentId/submissions", sensitiveReadLimiter, assignmentHandler.ListSubmissions)
 	authWrite.PUT("/assignments/:assignmentId/submissions/:studentUserId", writeLimiter, assignmentHandler.GradeSubmission)
 
@@ -242,6 +243,7 @@ func New(postgresDB *gorm.DB, redisClient *redis.Client, cacheClient cache.Cache
 
 	authRead.GET("/quizzes", sensitiveReadLimiter, quizHandler.ListQuizzes)
 	authWrite.POST("/quizzes", writeLimiter, quizHandler.CreateQuiz)
+	authWrite.PUT("/quizzes/:quizId", writeLimiter, quizHandler.UpdateQuiz)
 	authRead.GET("/quizzes/:quizId", sensitiveReadLimiter, quizHandler.GetQuiz)
 	authWrite.POST("/quizzes/:quizId/attempts", writeLimiter, quizHandler.StartAttempt)
 	authRead.GET("/quiz-attempts", sensitiveReadLimiter, quizHandler.ListAttempts)

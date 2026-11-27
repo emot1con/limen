@@ -17,6 +17,7 @@ type quizModel struct {
 	OwnerID     string         `gorm:"column:owner_id"`
 	Title       string         `gorm:"column:title"`
 	Description *string        `gorm:"column:description"`
+	ExamType    string         `gorm:"column:exam_type"`
 	PublishedAt *time.Time     `gorm:"column:published_at"`
 	StartTime   *time.Time     `gorm:"column:start_time"`
 	EndTime     *time.Time     `gorm:"column:end_time"`
@@ -44,6 +45,7 @@ func (r *QuizRepository) Create(ctx context.Context, quiz quizdomain.Quiz) (stri
 		OwnerID:     quiz.OwnerID,
 		Title:       quiz.Title,
 		Description: quiz.Description,
+		ExamType:    string(quiz.ExamType),
 		PublishedAt: quiz.PublishedAt,
 		StartTime:   quiz.StartTime,
 		EndTime:     quiz.EndTime,
@@ -85,6 +87,7 @@ func (r *QuizRepository) Update(ctx context.Context, quiz quizdomain.Quiz) error
 		"owner_id":     quiz.OwnerID,
 		"title":        quiz.Title,
 		"description":  quiz.Description,
+		"exam_type":    string(quiz.ExamType),
 		"published_at": quiz.PublishedAt,
 		"start_time":   quiz.StartTime,
 		"end_time":     quiz.EndTime,
@@ -116,6 +119,7 @@ func (r *QuizRepository) toDomain(model quizModel) quizdomain.Quiz {
 		OwnerID:     model.OwnerID,
 		Title:       model.Title,
 		Description: model.Description,
+		ExamType:    quizdomain.QuizExamType(model.ExamType),
 		PublishedAt: model.PublishedAt,
 		StartTime:   model.StartTime,
 		EndTime:     model.EndTime,

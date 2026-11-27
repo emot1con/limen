@@ -59,6 +59,18 @@ type CreateQuizInput struct {
 	OwnerID     string
 	Title       string
 	Description *string
+	ExamType    quizdomain.QuizExamType
+	PublishedAt *time.Time
+	StartTime   *time.Time
+	EndTime     *time.Time
+	QuestionIDs []string
+}
+
+type UpdateQuizInput struct {
+	SubjectID   string
+	Title       string
+	Description *string
+	ExamType    quizdomain.QuizExamType
 	PublishedAt *time.Time
 	StartTime   *time.Time
 	EndTime     *time.Time
@@ -87,7 +99,7 @@ type GradeResult struct {
 }
 
 func (uc *UseCase) CreateQuiz(ctx context.Context, input CreateQuizInput) (quizdomain.QuizDetail, error) {
-	if input.SubjectID == "" || input.OwnerID == "" || strings.TrimSpace(input.Title) == "" {
+	if input.SubjectID == "" || input.OwnerID == "" || strings.TrimSpace(input.Title) == "" || !validExamType(input.ExamType) {
 		return quizdomain.QuizDetail{}, domain.ErrInvalid
 	}
 	if input.StartTime != nil && input.EndTime != nil && !input.StartTime.Before(*input.EndTime) {
@@ -97,17 +109,16 @@ func (uc *UseCase) CreateQuiz(ctx context.Context, input CreateQuizInput) (quizd
 		uc.logError(err, "quiz_create_validate_subject", logrus.Fields{"subject_id": input.SubjectID})
 		return quizdomain.QuizDetail{}, err
 	}
-	for _, questionID := range input.QuestionIDs {
-		if _, err := uc.questions.FindByID(ctx, questionID); err != nil {
-			uc.logError(err, "quiz_create_validate_question", logrus.Fields{"question_id": questionID})
-			return quizdomain.QuizDetail{}, err
-		}
+	if err := uc.validateQuestionIDs(ctx, input.QuestionIDs); err != nil {
+		uc.logError(err, "quiz_create_validate_questions", nil)
+		return quizdomain.QuizDetail{}, err
 	}
 	id, err := uc.quizzes.Create(ctx, quizdomain.Quiz{
 		SubjectID:   input.SubjectID,
 		OwnerID:     input.OwnerID,
 		Title:       strings.TrimSpace(input.Title),
 		Description: input.Description,
+		ExamType:    input.ExamType,
 		PublishedAt: input.PublishedAt,
 		StartTime:   input.StartTime,
 		EndTime:     input.EndTime,
@@ -116,11 +127,9 @@ func (uc *UseCase) CreateQuiz(ctx context.Context, input CreateQuizInput) (quizd
 		uc.logError(err, "quiz_create", nil)
 		return quizdomain.QuizDetail{}, err
 	}
-	for i, questionID := range input.QuestionIDs {
-		if err := uc.quizQs.Add(ctx, quizdomain.QuizQuestion{QuizID: id, QuestionID: questionID, QuestionNumber: i + 1}); err != nil {
-			uc.logError(err, "quiz_create_add_question", logrus.Fields{"quiz_id": id, "question_id": questionID})
-			return quizdomain.QuizDetail{}, err
-		}
+	if err := uc.quizQs.Replace(ctx, id, input.QuestionIDs); err != nil {
+		uc.logError(err, "quiz_create_add_questions", logrus.Fields{"quiz_id": id})
+		return quizdomain.QuizDetail{}, err
 	}
 
 	if uc.cache != nil {
@@ -136,10 +145,57 @@ func (uc *UseCase) CreateQuiz(ctx context.Context, input CreateQuizInput) (quizd
 	return detail, err
 }
 
+func (uc *UseCase) UpdateQuiz(ctx context.Context, quizID string, input UpdateQuizInput) (quizdomain.QuizDetail, error) {
+	if input.SubjectID == "" || strings.TrimSpace(input.Title) == "" || !validExamType(input.ExamType) {
+		return quizdomain.QuizDetail{}, domain.ErrInvalid
+	}
+	if input.StartTime != nil && input.EndTime != nil && !input.StartTime.Before(*input.EndTime) {
+		return quizdomain.QuizDetail{}, domain.ErrInvalid
+	}
+	if _, err := uc.subjects.FindByID(ctx, input.SubjectID); err != nil {
+		uc.logError(err, "quiz_update_validate_subject", logrus.Fields{"subject_id": input.SubjectID})
+		return quizdomain.QuizDetail{}, err
+	}
+	if err := uc.validateQuestionIDs(ctx, input.QuestionIDs); err != nil {
+		uc.logError(err, "quiz_update_validate_questions", nil)
+		return quizdomain.QuizDetail{}, err
+	}
+	quiz, err := uc.quizzes.FindByID(ctx, quizID)
+	if err != nil {
+		uc.logError(err, "quiz_update_get", logrus.Fields{"quiz_id": quizID})
+		return quizdomain.QuizDetail{}, err
+	}
+	quiz.SubjectID = input.SubjectID
+	quiz.Title = strings.TrimSpace(input.Title)
+	quiz.Description = input.Description
+	quiz.ExamType = input.ExamType
+	quiz.PublishedAt = input.PublishedAt
+	quiz.StartTime = input.StartTime
+	quiz.EndTime = input.EndTime
+	if err := uc.quizzes.Update(ctx, quiz); err != nil {
+		uc.logError(err, "quiz_update", logrus.Fields{"quiz_id": quizID})
+		return quizdomain.QuizDetail{}, err
+	}
+	if err := uc.quizQs.Replace(ctx, quizID, input.QuestionIDs); err != nil {
+		uc.logError(err, "quiz_update_replace_questions", logrus.Fields{"quiz_id": quizID})
+		return quizdomain.QuizDetail{}, err
+	}
+	if uc.cache != nil {
+		if _, err := uc.cache.BumpVersion(ctx, groupQuizzes); err != nil {
+			uc.logger.WithError(err).Warn("cache invalidation failed")
+		}
+	}
+	detail, err := uc.query.GetQuizDetail(ctx, quizID)
+	if err != nil {
+		uc.logError(err, "quiz_update_get_detail", logrus.Fields{"quiz_id": quizID})
+	}
+	return detail, err
+}
+
 func (uc *UseCase) ListQuizzes(ctx context.Context, filter quizdomain.QuizFilter, page, pageSize int) ([]quizdomain.QuizSummary, int64, error) {
 	if uc.cache != nil {
 		ver, _ := uc.cache.GetVersion(ctx, groupQuizzes)
-		params := fmt.Sprintf("subject=%s&class=%s&status=%s&page=%d&pageSize=%d", filter.SubjectID, filter.ClassID, filter.Status, page, pageSize)
+		params := fmt.Sprintf("subject=%s&class=%s&status=%s&examType=%s&page=%d&pageSize=%d", filter.SubjectID, filter.ClassID, filter.Status, filter.ExamType, page, pageSize)
 		key := cache.KeyWithHash(groupQuizzes, ver, params)
 
 		var cached struct {
@@ -159,7 +215,7 @@ func (uc *UseCase) ListQuizzes(ctx context.Context, filter quizdomain.QuizFilter
 
 	if uc.cache != nil {
 		ver, _ := uc.cache.GetVersion(ctx, groupQuizzes)
-		params := fmt.Sprintf("subject=%s&class=%s&status=%s&page=%d&pageSize=%d", filter.SubjectID, filter.ClassID, filter.Status, page, pageSize)
+		params := fmt.Sprintf("subject=%s&class=%s&status=%s&examType=%s&page=%d&pageSize=%d", filter.SubjectID, filter.ClassID, filter.Status, filter.ExamType, page, pageSize)
 		key := cache.KeyWithHash(groupQuizzes, ver, params)
 		_ = uc.cache.Set(ctx, key, struct {
 			Items []quizdomain.QuizSummary
@@ -416,6 +472,23 @@ func (uc *UseCase) buildResult(ctx context.Context, attempt quizdomain.QuizAttem
 	return assembleResult(attemptView(attempt, quiz.Title), qqList, questionsByID, answerList), nil
 }
 
+func (uc *UseCase) validateQuestionIDs(ctx context.Context, ids []string) error {
+	questions, err := uc.questions.ListByIDs(ctx, ids)
+	if err != nil {
+		return err
+	}
+	found := make(map[string]struct{}, len(questions))
+	for _, question := range questions {
+		found[question.ID] = struct{}{}
+	}
+	for _, id := range ids {
+		if _, ok := found[id]; !ok {
+			return domain.ErrNotFound
+		}
+	}
+	return nil
+}
+
 func (uc *UseCase) loadQuestions(ctx context.Context, qqList []quizdomain.QuizQuestion) (map[string]quizdomain.Question, error) {
 	ids := make([]string, len(qqList))
 	for i, qq := range qqList {
@@ -505,6 +578,15 @@ func attemptView(attempt quizdomain.QuizAttempt, quizTitle string) quizdomain.At
 		SubmittedAt: attempt.SubmittedAt,
 		Status:      attempt.Status,
 		Score:       attempt.Score,
+	}
+}
+
+func validExamType(examType quizdomain.QuizExamType) bool {
+	switch examType {
+	case quizdomain.QuizExamTypePractice, quizdomain.QuizExamTypeDailyTest, quizdomain.QuizExamTypeMidterm, quizdomain.QuizExamTypeFinal:
+		return true
+	default:
+		return false
 	}
 }
 

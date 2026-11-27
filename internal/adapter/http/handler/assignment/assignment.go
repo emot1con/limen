@@ -97,6 +97,53 @@ func (h *AssignmentHandler) Create(c *gin.Context) {
 	response.WriteCreated(c, assignmentTaskJSON(item))
 }
 
+func (h *AssignmentHandler) Update(c *gin.Context) {
+	assignmentID := c.Param("assignmentId")
+	if !common.ValidUUID(assignmentID) {
+		common.UUIDError(c, "assignmentId")
+		return
+	}
+	var req struct {
+		ClassID     string  `json:"classId"`
+		SubjectID   string  `json:"subjectId"`
+		Title       string  `json:"title"`
+		Description *string `json:"description"`
+		DueAt       string  `json:"dueAt"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ValidationBody(c)
+		return
+	}
+	var fields []response.FieldError
+	if !common.ValidUUID(req.ClassID) {
+		fields = append(fields, response.FieldError{Field: "classId", Message: "must be a UUID"})
+	}
+	if !common.ValidUUID(req.SubjectID) {
+		fields = append(fields, response.FieldError{Field: "subjectId", Message: "must be a UUID"})
+	}
+	if strings.TrimSpace(req.Title) == "" {
+		fields = append(fields, response.FieldError{Field: "title", Message: "required"})
+	}
+	var dueAt time.Time
+	if strings.TrimSpace(req.DueAt) == "" {
+		fields = append(fields, response.FieldError{Field: "dueAt", Message: "required"})
+	} else if parsed, err := time.Parse(time.RFC3339, req.DueAt); err != nil {
+		fields = append(fields, response.FieldError{Field: "dueAt", Message: "must be an RFC3339 date-time"})
+	} else {
+		dueAt = parsed
+	}
+	if len(fields) > 0 {
+		response.WriteError(c, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "validation failed", fields...)
+		return
+	}
+	item, err := h.assignments.Update(c.Request.Context(), assignmentID, assignmentuc.UpdateInput{ClassID: req.ClassID, SubjectID: req.SubjectID, Title: req.Title, Description: req.Description, DueAt: dueAt})
+	if err != nil {
+		common.WriteMappedError(c, err)
+		return
+	}
+	response.WriteOK(c, assignmentTaskJSON(item))
+}
+
 func (h *AssignmentHandler) ListSubmissions(c *gin.Context) {
 	assignmentID := c.Param("assignmentId")
 	if !common.ValidUUID(assignmentID) {
