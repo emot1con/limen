@@ -28,19 +28,20 @@ import (
 type seedUser struct {
 	email    string
 	fullName string
+	phone    string
 	roleCode string
 	nis      string
 	nip      string
 }
 
 var users = []seedUser{
-	{email: "siswa@limen.test", fullName: "Siswa Limen", roleCode: "siswa", nis: "SISWA-001"},
-	{email: "guru.mapel@limen.test", fullName: "Guru Mata Pelajaran", roleCode: "guru_mapel", nip: "GURU-001"},
-	{email: "guru.wali@limen.test", fullName: "Guru Wali Kelas", roleCode: "guru_wali", nip: "GURU-002"},
-	{email: "guru.bk@limen.test", fullName: "Guru Bimbingan Konseling", roleCode: "guru_bk", nip: "GURU-003"},
-	{email: "admin@limen.test", fullName: "Admin Limen", roleCode: "admin"},
-	{email: "guru.quiz@limen.test", fullName: "Guru Quiz", roleCode: "guru_mapel"},
-	{email: "siswa.quiz@limen.test", fullName: "Siswa Quiz", roleCode: "siswa"},
+	{email: "siswa@limen.test", fullName: "Siswa Limen", phone: "", roleCode: "siswa", nis: "SISWA-001"},
+	{email: "guru.mapel@limen.test", fullName: "Guru Mata Pelajaran", phone: "", roleCode: "guru_mapel", nip: "GURU-001"},
+	{email: "guru.wali@limen.test", fullName: "Guru Wali Kelas", phone: "", roleCode: "guru_wali", nip: "GURU-002"},
+	{email: "guru.bk@limen.test", fullName: "Guru Bimbingan Konseling", phone: "", roleCode: "guru_bk", nip: "GURU-003"},
+	{email: "admin@limen.test", fullName: "Admin Limen", phone: "", roleCode: "admin"},
+	{email: "guru.quiz@limen.test", fullName: "Guru Quiz", phone: "", roleCode: "guru_mapel"},
+	{email: "siswa.quiz@limen.test", fullName: "Siswa Quiz", phone: "", roleCode: "siswa"},
 }
 
 func main() {
@@ -110,16 +111,17 @@ func seedAccounts(ctx context.Context, sqlDB *sql.DB, hash string) (map[string]s
 func seedAccount(ctx context.Context, tx *sql.Tx, user seedUser, hash string) (string, error) {
 	var userID string
 	if err := tx.QueryRowContext(ctx, `
-		INSERT INTO users (email, password_hash, full_name, status)
-		VALUES ($1, $2, $3, 'active')
+		INSERT INTO users (email, password_hash, full_name, phone, status)
+		VALUES ($1, $2, $3, $4, 'active')
 		ON CONFLICT (email) WHERE deleted_at IS NULL DO UPDATE
 		SET password_hash = EXCLUDED.password_hash,
 			full_name = EXCLUDED.full_name,
+			phone = EXCLUDED.phone,
 			status = 'active',
 			updated_at = now(),
 			deleted_at = NULL
 		RETURNING id
-	`, strings.ToLower(user.email), hash, user.fullName).Scan(&userID); err != nil {
+	`, strings.ToLower(user.email), hash, user.fullName, user.phone).Scan(&userID); err != nil {
 		return "", fmt.Errorf("seed user %s: %w", user.email, err)
 	}
 

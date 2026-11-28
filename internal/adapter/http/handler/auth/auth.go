@@ -47,7 +47,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 	csrfToken := deriveCSRF(output.SessionToken)
-	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetSameSite(http.SameSiteNoneMode)
 	const cookieMaxAge = 12 * 365 * 24 * 3600 // 12 tahun dalam detik
 	c.SetCookie("session", output.SessionToken, cookieMaxAge, "/", "", true, true)
 	c.SetCookie("csrf", csrfToken, cookieMaxAge, "/", "", true, false)
@@ -74,7 +74,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		response.WriteError(c, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
 	}
-	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetSameSite(http.SameSiteNoneMode)
 	c.SetCookie("session", "", -1, "/", "", true, true)
 	c.SetCookie("csrf", "", -1, "/", "", true, false)
 	response.WriteNoContent(c)
